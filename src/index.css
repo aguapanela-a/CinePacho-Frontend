@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --color-carbon: #0D0D0F;
+  --color-surface: #151518;
+  --color-surface-light: #1E1E23;
+  
+  /* Brand Palette */
+  --color-magenta: #C8167A;
+  --color-vinotinto: #5E093D;
+  --color-gold: #D4922A;
+  --color-gold-light: #EBB04D;
+  
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #A3A3A3;
+  --color-border: #2A2A35;
+  
+  /* Fonts */
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  /* Custom animations for Tailwind v4 */
+  --animate-fade-up: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+}
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+/* Global Styles */
+body {
+  background-color: var(--color-carbon);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-carbon);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-light);
+  border-radius: 3px;
+}
+
+/* Gradient text utility */
+.gradient-brand {
+  background: linear-gradient(135deg, var(--color-magenta), var(--color-vinotinto), var(--color-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+}
+
+/* Glow effects */
+.glow-magenta {
+  box-shadow: 0 0 20px rgba(200, 22, 122, 0.3), 0 0 40px rgba(200, 22, 122, 0.1);
+}
+.glow-gold {
+  box-shadow: 0 0 15px rgba(212, 146, 42, 0.3), 0 0 30px rgba(212, 146, 42, 0.1);
+}
+
+/* Animations Variables / Keyframes */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Base styles for the animated gradient background orbs */
+.orb-magenta {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,22,122,0.15) 0%, rgba(0,0,0,0) 70%);
+  filter: blur(80px);
+  z-index: -10;
+  pointer-events: none;
+}
+.orb-gold {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,146,42,0.1) 0%, rgba(0,0,0,0) 70%);
+  filter: blur(80px);
+  z-index: -10;
+  pointer-events: none;
+}
