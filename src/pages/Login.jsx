@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, BadgeCheck, User, KeyRound, ArrowLeft } from 'lucide-react'
 import Input from '../components/Input'
 import Button from '../components/Button'
+import { useApp } from '../context/AppContext'
 
 const tabs = [
   { id: 'cliente', label: 'Cliente', icon: User },
@@ -11,9 +12,13 @@ const tabs = [
 ]
 
 export default function Login() {
+  const navigate = useNavigate()
+  const { loginUser } = useApp()
+
   const [activeTab, setActiveTab] = useState('cliente')
   const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
+  const [serverError, setServerError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e) => {
@@ -21,11 +26,12 @@ export default function Login() {
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: '' })
     }
+    if (serverError) setServerError('')
   }
 
   const validate = () => {
     const newErrors = {}
-    
+
     // Todos los tipos de usuario inician sesión con email + password
     if (!form.email.trim()) newErrors.email = 'El correo es requerido'
     else if (!/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'El formato de correo es inválido'
@@ -47,32 +53,46 @@ export default function Login() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (validate()) {
-      setIsSubmitting(true)
+    if (!validate()) return
 
-      // Payload que espera el backend: { Email, Password }
-      const payload = {
-        Email: form.email,
-        Password: form.password,
+    setIsSubmitting(true)
+    setServerError('')
+
+    // Payload que espera el backend (LoginRequestDTO): { email, password }
+    const payload = {
+      email: form.email,
+      password: form.password,
+    }
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(errorData?.message || `Error ${res.status}: Credenciales inválidas`)
       }
 
-      console.log(`Login payload (${activeTab}):`, payload)
-
-      // TODO: Reemplazar con llamada real a la API de login
-      // fetch('/api/auth/login', { method: 'POST', body: JSON.stringify(payload), ... })
-      setTimeout(() => {
-        setIsSubmitting(false)
-        alert(`Inicio de sesión exitoso como ${activeTab}`)
-      }, 1500)
+      // Respuesta exitosa del backend (AuthResponseDTO): { token, userType, name }
+      const data = await res.json()
+      loginUser(data)
+      navigate('/')
+    } catch (err) {
+      setServerError(err.message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
       {/* Background orbs are handled in App.jsx now, global layout */}
-      
+
       <div className="w-full max-w-md animate-[fadeUp_0.6s_ease-out_forwards]">
         {/* Back link */}
         <Link
@@ -104,18 +124,25 @@ export default function Login() {
                 onClick={() => {
                   setActiveTab(id)
                   setErrors({})
+                  setServerError('')
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer ${
-                  activeTab === id
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer ${activeTab === id
                     ? 'bg-gradient-to-r from-magenta to-vinotinto text-white shadow-lg shadow-magenta/20'
                     : 'text-text-secondary hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon size={16} />
                 <span>{label}</span>
               </button>
             ))}
           </div>
+
+          {/* Error del servidor */}
+          {serverError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold rounded-xl px-4 py-3 mb-6 text-center">
+              {serverError}
+            </div>
+          )}
 
           {/* Form — Todos los roles usan email + password */}
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -173,3 +200,4 @@ export default function Login() {
     </div>
   )
 }
+

@@ -4,8 +4,9 @@ const AppContext = createContext()
 
 /**
  * AppProvider: Gestor de estado global de la aplicación.
- * Centraliza la lógica del carrito de compras y la gestión básica de puntos "Pacho"
- * para evitar el prop-drilling a través de los múltiples componentes.
+ * Centraliza la lógica del carrito de compras, autenticación JWT
+ * y la gestión básica de puntos "Pacho" para evitar el prop-drilling
+ * a través de los múltiples componentes.
  */
 export function AppProvider({ children }) {
   // Estado principal del carrito (boletas y snacks)
@@ -13,10 +14,46 @@ export function AppProvider({ children }) {
   
   // Control de visibilidad del Drawer lateral del carrito
   const [isCartOpen, setIsCartOpen] = useState(false)
+
+  // ─── Estado de autenticación ───
+  // Se rehidrata desde localStorage para persistir la sesión entre recargas del navegador.
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('cinepacho_user')
+    return saved ? JSON.parse(saved) : null
+  })
+
+  const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
+
+  /**
+   * loginUser: Almacena las credenciales del usuario autenticado.
+   * Recibe la respuesta directa del backend (AuthResponseDTO):
+   *   { token: string, userType: string, name: string }
+   */
+  const loginUser = (authResponse) => {
+    const { token: jwt, userType, name } = authResponse
+    const userData = { name, userType }
+    
+    localStorage.setItem('cinepacho_token', jwt)
+    localStorage.setItem('cinepacho_user', JSON.stringify(userData))
+    
+    setToken(jwt)
+    setUser(userData)
+  }
+
+  /**
+   * logoutUser: Limpia toda la sesión del usuario activo,
+   * incluyendo el carrito y los datos persistidos en localStorage.
+   */
+  const logoutUser = () => {
+    localStorage.removeItem('cinepacho_token')
+    localStorage.removeItem('cinepacho_user')
+    setToken(null)
+    setUser(null)
+    setCart([])
+  }
   
-  // Estado base de los puntos del usuario activo. 
-  // TODO: Conectar esto con la API de usuarios tras agregar la capa de autenticación JWT.
-  // Por defecto se inicia en 0 hasta confirmar sesión.
+  // Estado base de los puntos del usuario activo.
+  // Se inicia en 0 hasta que se obtengan desde el endpoint del perfil del usuario.
   const [basePoints, setBasePoints] = useState(0)
 
   /**
@@ -63,7 +100,11 @@ export function AppProvider({ children }) {
       setIsCartOpen,
       cartTotal,
       basePoints,
-      pendingPoints
+      pendingPoints,
+      user,
+      token,
+      loginUser,
+      logoutUser,
     }}>
       {children}
     </AppContext.Provider>

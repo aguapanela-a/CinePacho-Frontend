@@ -25,7 +25,9 @@ export default function Register() {
     password: '',
   })
   const [errors, setErrors] = useState({})
+  const [serverError, setServerError] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e) => {
@@ -33,12 +35,14 @@ export default function Register() {
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: '' })
     }
+    if (serverError) setServerError('')
   }
 
   const validate = () => {
     const newErrors = {}
     
     if (!form.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
+    else if (form.nombre.length < 2 || form.nombre.length > 30) newErrors.nombre = 'El nombre debe tener entre 2 y 30 caracteres'
     
     // Email
     if (!form.email.trim()) newErrors.email = 'El correo es requerido'
@@ -52,27 +56,41 @@ export default function Register() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (validate()) {
-      setIsSubmitting(true)
+    if (!validate()) return
 
-      // Payload que espera el backend: { email, name, password, userType }
-      const payload = {
-        email: form.email,
-        name: form.nombre,
-        password: form.password,
-        userType: 'BUYER',
+    setIsSubmitting(true)
+    setServerError('')
+
+    // Payload que espera el backend (RegisterRequestDTO)
+    const payload = {
+      email: form.email,
+      name: form.nombre,
+      password: form.password,
+      userType: 'BUYER',
+    }
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(errorData?.message || `Error ${res.status}: No se pudo registrar la cuenta. Es posible que el correo ya esté en uso.`)
       }
 
-      console.log('Register payload:', payload)
-
-      // TODO: Reemplazar con llamada real a la API de registro
-      // fetch('/api/auth/register', { method: 'POST', body: JSON.stringify(payload), ... })
-      setTimeout(() => {
-        setIsSubmitting(false)
-        setIsSuccess(true)
-      }, 1500)
+      // Respuesta exitosa: { userType, username, message }
+      const data = await res.json()
+      setSuccessMessage(data.message || 'Por favor, revisa tu correo electrónico para verificar tu cuenta.')
+      setIsSuccess(true)
+    } catch (err) {
+      setServerError(err.message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -81,17 +99,17 @@ export default function Register() {
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-surface/80 backdrop-blur-2xl border border-gold/30 rounded-[2rem] p-10 text-center shadow-[0_0_50px_rgba(212,146,42,0.2)] animate-[fadeUp_0.5s_ease-out_forwards]">
           <div className="w-24 h-24 bg-gradient-to-br from-magenta to-gold rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(200,22,122,0.5)]">
-            <span className="text-4xl">🎉</span>
+            <span className="text-4xl">📧</span>
           </div>
           <h2 className="text-4xl font-display text-white mb-2 tracking-widest uppercase">
             ¡Registro <span className="gradient-brand">Exitoso!</span>
           </h2>
           <p className="text-text-secondary font-medium mb-8">
-            Bienvenido al programa de Fidelización. Ya puedes empezar a disfrutar de tus beneficios y sumar puntos.
+            {successMessage}
           </p>
           <Link to="/login" className="block">
             <Button variant="primary" className="w-full">
-              Continuar al Login
+              Ir a Iniciar Sesión
             </Button>
           </Link>
         </div>
@@ -140,6 +158,13 @@ export default function Register() {
               ))}
             </div>
           </div>
+
+          {/* Error del servidor */}
+          {serverError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-bold rounded-xl px-4 py-3 mb-6 text-center">
+              {serverError}
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
