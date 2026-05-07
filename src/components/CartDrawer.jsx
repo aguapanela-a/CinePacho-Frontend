@@ -1,10 +1,26 @@
-import React from 'react'
-import { X, Trash2, ShoppingBag } from 'lucide-react'
+import React, { useEffect, useCallback } from 'react'
+import { X, Trash2, ShoppingBag, Star } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Button from './Button'
 
 export default function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, cartTotal, pendingPoints } = useApp()
+
+  // Cierre con tecla Escape — Ley de Jakob: los usuarios esperan poder cerrar paneles con Esc
+  const handleEscape = useCallback((e) => {
+    if (e.key === 'Escape') setIsCartOpen(false)
+  }, [setIsCartOpen])
+
+  useEffect(() => {
+    if (isCartOpen) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [isCartOpen, handleEscape])
 
   if (!isCartOpen) return null
 
@@ -16,23 +32,30 @@ export default function CartDrawer() {
   return (
     <>
       {/* Capa de fondo oscuro: Cierra el carrito al hacer clic fuera del área del Drawer */}
-      <div 
+      <div
         className="fixed inset-0 bg-carbon/60 backdrop-blur-sm z-[60] animate-[fadeIn_0.3s_ease-out]"
         onClick={() => setIsCartOpen(false)}
       />
-      
+
       {/* Contenedor principal del menú lateral con animación slide-in */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface border-l border-border/50 z-[70] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] flex flex-col transform transition-transform duration-300 ease-out animate-[slideInRight_0.4s_ease-out]">
-        
-        {/* Cabecera del carrito: Contiene el título y la acción rápida de cerrar */}
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface border-l border-border/50 z-[70] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] flex flex-col animate-[slideInRight_0.4s_ease-out]">
+
+        {/* Cabecera del carrito: Contiene el título, contador de items y la acción rápida de cerrar */}
         <div className="flex items-center justify-between p-6 border-b border-border/50 bg-carbon/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-magenta/10 rounded-xl text-magenta">
               <ShoppingBag size={20} />
             </div>
-            <h2 className="text-xl font-display tracking-widest text-white">Mi Orden</h2>
+            <div>
+              <h2 className="text-xl font-display tracking-widest text-white">Mi Orden</h2>
+              {cart.length > 0 && (
+                <p className="text-xs text-text-secondary">
+                  {cart.reduce((acc, item) => acc + item.qty, 0)} artículo{cart.reduce((acc, item) => acc + item.qty, 0) !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsCartOpen(false)}
             className="p-2 hover:bg-surface-light rounded-full text-text-secondary hover:text-white transition-colors"
           >
@@ -50,8 +73,8 @@ export default function CartDrawer() {
             </div>
           ) : (
             cart.map((item, index) => (
-              <div 
-                key={`${item.id}-${item.type}-${item.showtime || index}`} 
+              <div
+                key={`${item.id}-${item.type}-${item.showtime || 'snack'}-${index}`}
                 className="bg-carbon border border-border/50 rounded-2xl p-4 flex gap-4 animate-[fadeUp_0.4s_ease-out_forwards]"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
@@ -67,8 +90,11 @@ export default function CartDrawer() {
                           {item.showtime} • {item.format}
                         </p>
                       )}
+                      {item.type === 'snack' && (
+                        <p className="text-xs text-text-secondary mt-0.5">Snack</p>
+                      )}
                     </div>
-                    <button 
+                    <button
                       onClick={() => removeFromCart(item.id, item.type, item.showtime)}
                       className="text-text-secondary hover:text-red-500 transition-colors p-1"
                     >
@@ -90,15 +116,18 @@ export default function CartDrawer() {
           <div className="p-6 border-t border-border/50 bg-carbon">
             {/* Indicador de impacto en fidelización: Muestra cuántos puntos Pacho proyecta el usuario */}
             <div className="flex items-center justify-between px-4 py-3 bg-gold/10 border border-gold/30 rounded-xl mb-4">
-              <span className="text-sm font-bold text-white uppercase tracking-wide">Sumarás</span>
+              <div className="flex items-center gap-2">
+                <Star size={16} className="text-gold" fill="currentColor" />
+                <span className="text-sm font-bold text-white uppercase tracking-wide">Sumarás</span>
+              </div>
               <span className="text-gold font-display text-xl tracking-widest">+{pendingPoints} PTS</span>
             </div>
-            
+
             <div className="flex items-center justify-between mb-6">
               <span className="text-text-secondary font-bold tracking-wide">Subtotal</span>
               <span className="text-3xl font-display text-white tracking-widest">{formatPrice(cartTotal)}</span>
             </div>
-            
+
             <Button variant="primary" className="w-full shadow-[0_0_20px_rgba(200,22,122,0.3)]">
               Ir a Pagar
             </Button>

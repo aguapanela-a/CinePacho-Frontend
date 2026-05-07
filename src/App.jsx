@@ -21,7 +21,7 @@ function AppLayout() {
       <div className="orb-magenta top-1/2 right-0 translate-x-1/2 -translate-y-1/2 opacity-50" />
 
       {!isAuthPage && <Navbar />}
-      <main className="flex-1 relative z-10 animate-[fadeUp_0.8s_ease-out_forwards]">
+      <main className="flex-1 relative z-10 animate-[fadeUp_0.5s_ease-out_forwards]">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/snacks" element={<Snacks />} />

@@ -1,3 +1,6 @@
+/* Google Fonts — debe ir antes de todo @import según spec CSS */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
 @import "tailwindcss";
 
 @theme {
@@ -20,13 +23,10 @@
   --font-body: 'DM Sans', sans-serif;
 
   /* Custom animations for Tailwind v4 */
-  --animate-fade-up: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-up: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-float: float 6s ease-in-out infinite;
   --animate-shimmer: shimmer 2s linear infinite;
 }
-
-/* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 /* Global Styles */
 body {
@@ -49,9 +49,16 @@ body {
   border-radius: 3px;
 }
 
-/* Gradient text utility */
+/* Gradient text utilities */
 .gradient-brand {
   background: linear-gradient(135deg, var(--color-magenta), var(--color-vinotinto), var(--color-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-magenta), var(--color-gold));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -70,10 +77,15 @@ h1, h2, h3, h4, .font-display {
   box-shadow: 0 0 15px rgba(212, 146, 42, 0.3), 0 0 30px rgba(212, 146, 42, 0.1);
 }
 
-/* Animations Variables / Keyframes */
+/* Animations Keyframes */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes float {
@@ -84,6 +96,21 @@ h1, h2, h3, h4, .font-display {
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Base styles for the animated gradient background orbs */

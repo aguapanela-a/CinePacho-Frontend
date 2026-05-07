@@ -12,7 +12,7 @@ const tabs = [
 
 export default function Login() {
   const [activeTab, setActiveTab] = useState('cliente')
-  const [form, setForm] = useState({ email: '', password: '', codigo: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -26,13 +26,9 @@ export default function Login() {
   const validate = () => {
     const newErrors = {}
     
-    if (activeTab === 'empleado') {
-      if (!form.codigo.trim()) newErrors.codigo = 'El código de empleado es requerido'
-      else if (form.codigo.length < 5) newErrors.codigo = 'Debe tener al menos 5 caracteres'
-    } else {
-      if (!form.email.trim()) newErrors.email = 'El correo es requerido'
-      else if (!/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'El formato de correo es inválido'
-    }
+    // Todos los tipos de usuario inician sesión con email + password
+    if (!form.email.trim()) newErrors.email = 'El correo es requerido'
+    else if (!/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'El formato de correo es inválido'
 
     if (!form.password) {
       newErrors.password = 'La contraseña es requerida'
@@ -42,11 +38,30 @@ export default function Login() {
     return Object.keys(newErrors).length === 0
   }
 
+  // Etiqueta contextual del campo email según el tab activo
+  const emailLabel = () => {
+    switch (activeTab) {
+      case 'admin': return 'CORREO DE ADMINISTRADOR'
+      case 'empleado': return 'CORREO DE EMPLEADO'
+      default: return 'CORREO ELECTRÓNICO'
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (validate()) {
       setIsSubmitting(true)
-      // Simulate API call
+
+      // Payload que espera el backend: { Email, Password }
+      const payload = {
+        Email: form.email,
+        Password: form.password,
+      }
+
+      console.log(`Login payload (${activeTab}):`, payload)
+
+      // TODO: Reemplazar con llamada real a la API de login
+      // fetch('/api/auth/login', { method: 'POST', body: JSON.stringify(payload), ... })
       setTimeout(() => {
         setIsSubmitting(false)
         alert(`Inicio de sesión exitoso como ${activeTab}`)
@@ -102,30 +117,18 @@ export default function Login() {
             ))}
           </div>
 
-          {/* Form */}
+          {/* Form — Todos los roles usan email + password */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {activeTab === 'empleado' ? (
-              <Input
-                label="CÓDIGO DE EMPLEADO"
-                name="codigo"
-                icon={BadgeCheck}
-                placeholder="Ej: EMP-1234"
-                value={form.codigo}
-                onChange={handleChange}
-                error={errors.codigo}
-              />
-            ) : (
-              <Input
-                label={activeTab === 'admin' ? "CORREO DE ADMINISTRADOR" : "CORREO ELECTRÓNICO"}
-                name="email"
-                type="email"
-                icon={Mail}
-                placeholder="usuario@correo.com"
-                value={form.email}
-                onChange={handleChange}
-                error={errors.email}
-              />
-            )}
+            <Input
+              label={emailLabel()}
+              name="email"
+              type="email"
+              icon={Mail}
+              placeholder="usuario@correo.com"
+              value={form.email}
+              onChange={handleChange}
+              error={errors.email}
+            />
 
             <Input
               label="CONTRASEÑA"

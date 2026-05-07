@@ -7,7 +7,7 @@ export default function MovieCard({ movie, onClick }) {
   return (
     <div 
       onClick={onClick}
-      className="group relative bg-surface rounded-2xl overflow-hidden border border-border/50 hover:border-magenta/50 transition-all duration-500 hover:shadow-2xl hover:shadow-magenta/20 cursor-pointer animate-[fadeUp_0.8s_ease-out_forwards]"
+      className="group relative bg-surface rounded-2xl overflow-hidden border border-border/50 hover:border-magenta/50 transition-all duration-500 hover:shadow-2xl hover:shadow-magenta/20 cursor-pointer animate-[fadeUp_0.5s_ease-out_forwards]"
     >
       {/* Contenedor del Póster: Relación de aspecto estándar para mantener consistencia en la grilla */}
       <div className="relative aspect-[2/3] overflow-hidden">

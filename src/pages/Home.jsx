@@ -26,7 +26,7 @@ const moviesData = [
     duration: '2h 46min',
     year: '2024',
     director: 'Denis Villeneuve',
-    posterUrl: 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2JGjjc9k1.jpg',
+    posterUrl: 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg',
     synopsis: 'Paul Atreides se une a Chani y a los Fremen mientras busca venganza contra los conspiradores que destruyeron a su familia, enfrentándose a un destino ineludible.',
   },
@@ -38,8 +38,8 @@ const moviesData = [
     duration: '1h 40min',
     year: '2024',
     director: 'Kelsey Mann',
-    posterUrl: 'https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvZLvOGBkPal.jpg',
-    backdropUrl: 'https://image.tmdb.org/t/p/original/stKGOm8UyhuLPR9sLsGAjdjoaA.jpg',
+    posterUrl: 'https://image.tmdb.org/t/p/w1280/lE3DCRI7bQgHSiIuEPcFiXpiuGV.jpg',
+    backdropUrl: 'https://image.tmdb.org/t/p/w1280/lE3DCRI7bQgHSiIuEPcFiXpiuGV.jpg',
     synopsis: 'Riley entra en la pubertad, y el Cuartel General sufre una repentina reforma para hacerle hueco a algo totalmente inesperado: ¡nuevas emociones como la Ansiedad!',
   },
   {
@@ -62,8 +62,8 @@ const moviesData = [
     duration: '2h 12min',
     year: '2024',
     director: 'Robert Eggers',
-    posterUrl: 'https://image.tmdb.org/t/p/w500/5qGIxdEO841C0tdY0Aw2DJiU20m.jpg',
-    backdropUrl: 'https://image.tmdb.org/t/p/original/vIgyYkXkg6NC2whRbYjBD7eb3Er.jpg',
+    posterUrl: 'https://image.tmdb.org/t/p/w1280/jivUhECegXI3OYtPVflWoIDtENt.jpg',
+    backdropUrl: 'https://image.tmdb.org/t/p/w1280/jivUhECegXI3OYtPVflWoIDtENt.jpg',
     synopsis: 'Gótica historia de obsesión entre una joven atormentada y un terrorífico y antiguo vampiro de Transilvania enamorado de ella, en medio de la plaga.',
   },
   {
@@ -121,7 +121,7 @@ export default function Home() {
   const [selectedMovie, setSelectedMovie] = useState(null)
 
   const filteredMovies = moviesData.filter((m) =>
-    m.title.toLowerCase().includes(search.toLowerCase()) || 
+    m.title.toLowerCase().includes(search.toLowerCase()) ||
     m.genre.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -129,8 +129,8 @@ export default function Home() {
     <div className="min-h-screen pb-12">
       {/* Sección Hero: Punto focal primario diseñado para alto impacto visual y conversión inmediata */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-10">
-        <div className="relative w-full rounded-3xl overflow-hidden min-h-[450px] lg:min-h-[500px] flex items-center bg-carbon border border-border/50 animate-[fadeUp_0.8s_ease-out_forwards]">
-          
+        <div className="relative w-full rounded-3xl overflow-hidden min-h-[450px] lg:min-h-[500px] flex items-center bg-carbon border border-border/50 animate-[fadeUp_0.5s_ease-out_forwards]">
+
           {/* Capa Base: Renderizado optimizado del Background principal con overlay */}
           <div className="absolute inset-0 z-0">
             <img
@@ -171,10 +171,10 @@ export default function Home() {
               </p>
 
               <div className="pt-2">
-                <Button 
+                <Button
                   onClick={() => setSelectedMovie(moviesData[0])}
-                  variant="primary" 
-                  size="lg" 
+                  variant="primary"
+                  size="lg"
                   className="rounded-2xl px-8 shadow-[0_0_30px_rgba(200,22,122,0.4)] hover:shadow-[0_0_40px_rgba(200,22,122,0.6)]"
                 >
                   <Play size={18} fill="currentColor" />
@@ -187,9 +187,9 @@ export default function Home() {
           {/* Overlay Decorativo (Derecha): Tarjeta interactiva con Floating Animation (Aislamiento visual) */}
           <div className="hidden lg:block absolute right-16 top-1/2 -translate-y-1/2 z-20 animate-[float_6s_ease-in-out_infinite]">
             <div className="relative w-64 rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl shadow-magenta/20 bg-carbon cursor-pointer" onClick={() => setSelectedMovie(moviesData[0])}>
-              <img 
-                src="https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" 
-                alt="Oppenheimer Poster" 
+              <img
+                src="https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg"
+                alt="Oppenheimer Poster"
                 className="w-full h-auto hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-carbon/90 backdrop-blur-md border border-gold/50 text-gold px-3 py-1 rounded-full text-xs font-bold glow-gold">
@@ -215,11 +215,10 @@ export default function Home() {
               <button
                 key={plex}
                 onClick={() => setActivePlex(plex)}
-                className={`px-5 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer border ${
-                  activePlex === plex
-                    ? 'bg-gradient-to-r from-magenta to-vinotinto text-white border-magenta/50 shadow-[0_0_15px_rgba(200,22,122,0.4)]'
-                    : 'bg-surface border-border/80 text-text-secondary hover:text-white hover:border-magenta/50'
-                }`}
+                className={`px-5 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer border ${activePlex === plex
+                  ? 'bg-gradient-to-r from-magenta to-vinotinto text-white border-magenta/50 shadow-[0_0_15px_rgba(200,22,122,0.4)]'
+                  : 'bg-surface border-border/80 text-text-secondary hover:text-white hover:border-magenta/50'
+                  }`}
               >
                 {plex}
               </button>
@@ -247,8 +246,8 @@ export default function Home() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {filteredMovies.map((movie, index) => (
-            <div key={movie.id} style={{ animationDelay: `${index * 0.1}s` }} className="animate-[fadeUp_0.8s_ease-out_forwards]">
-               <MovieCard movie={movie} onClick={() => setSelectedMovie(movie)} />
+            <div key={movie.id} style={{ animationDelay: `${index * 0.07}s` }} className="animate-[fadeUp_0.5s_ease-out_forwards]">
+              <MovieCard movie={movie} onClick={() => setSelectedMovie(movie)} />
             </div>
           ))}
         </div>

@@ -9,10 +9,16 @@ const navLinks = [
   { to: '/compras', label: 'Mis Compras', icon: ShoppingBag },
 ]
 
+// Puntos necesarios para una entrada gratis (Efecto de Tendencia a la Meta)
+const POINTS_FOR_REWARD = 100
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   const { basePoints, cart, setIsCartOpen } = useApp()
+
+  // Cálculo del progreso hacia la siguiente recompensa
+  const pointsProgress = Math.min((basePoints / POINTS_FOR_REWARD) * 100, 100)
 
   return (
     <nav className="sticky top-0 z-50 bg-carbon/80 backdrop-blur-xl border-b border-border/50">
@@ -50,15 +56,24 @@ export default function Navbar() {
 
           {/* Agrupación Derecha: Elementos transaccionales (Fidelización, Carrito, Autenticación) */}
           <div className="flex items-center gap-3">
-            {/* Distintivo de Fidelización: Muestra el saldo de puntos "Pacho" del estado global */}
-            <div className="hidden md:flex items-center gap-1.5 bg-gold/10 border border-gold/30 text-gold px-3 py-1.5 rounded-full text-sm font-semibold glow-gold">
-              <Star size={14} fill="currentColor" />
-              <span>{basePoints} PTS</span>
+            {/* Distintivo de Fidelización con micro-barra de progreso (Efecto de Tendencia a la Meta) */}
+            <div className="hidden md:flex flex-col items-center gap-0.5">
+              <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/30 text-gold px-3 py-1.5 rounded-full text-sm font-semibold glow-gold">
+                <Star size={14} fill="currentColor" />
+                <span>{basePoints} PTS</span>
+              </div>
+              {/* Barra de progreso sutil hacia la recompensa */}
+              <div className="w-full h-0.5 bg-border/50 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-gold to-gold-light rounded-full transition-all duration-500"
+                  style={{ width: `${pointsProgress}%` }}
+                />
+              </div>
             </div>
 
             {/* Controles Transaccionales: Botón del Carrito dinámico y Enlaces de Sesión */}
             <div className="hidden md:flex items-center gap-4 border-l border-border/50 pl-4 ml-2">
-              <button 
+              <button
                 onClick={() => setIsCartOpen(true)}
                 className="relative p-2 text-text-secondary hover:text-white transition-colors cursor-pointer"
               >
@@ -113,7 +128,7 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                 location.pathname === to
-                  ? 'text-neon-pink bg-neon-pink/10'
+                  ? 'text-magenta bg-magenta/10'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'
               }`}
             >
@@ -121,7 +136,7 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
-          
+
           <div className="flex items-center gap-1.5 text-gold font-bold bg-gold/10 px-4 py-3 rounded-xl border border-gold/30">
             <Star size={16} fill="currentColor" />
             <span>{basePoints} PTS</span>
@@ -139,7 +154,7 @@ export default function Navbar() {
               <ShoppingBag size={16} />
               Mi Orden ({cart.length})
             </button>
-            
+
             <div className="flex gap-2">
               <Link
                 to="/login"

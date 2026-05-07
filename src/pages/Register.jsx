@@ -2,8 +2,6 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   User,
-  CreditCard,
-  Phone,
   Mail,
   Lock,
   ArrowLeft,
@@ -23,9 +21,7 @@ const benefits = [
 export default function Register() {
   const [form, setForm] = useState({
     nombre: '',
-    cedula: '',
-    telefono: '',
-    correo: '',
+    email: '',
     password: '',
   })
   const [errors, setErrors] = useState({})
@@ -44,19 +40,11 @@ export default function Register() {
     
     if (!form.nombre.trim()) newErrors.nombre = 'El nombre es requerido'
     
-    // Cédula: 7 a 12 dígitos
-    if (!form.cedula.trim()) newErrors.cedula = 'La cédula es requerida'
-    else if (!/^\d{7,12}$/.test(form.cedula)) newErrors.cedula = 'Debe tener entre 7 y 12 dígitos numéricos'
+    // Email
+    if (!form.email.trim()) newErrors.email = 'El correo es requerido'
+    else if (!/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'Ingresa un correo válido'
     
-    // Teléfono: exactamente 10 dígitos
-    if (!form.telefono.trim()) newErrors.telefono = 'El teléfono es requerido'
-    else if (!/^\d{10}$/.test(form.telefono)) newErrors.telefono = 'Debe tener exactamente 10 dígitos numéricos'
-    
-    // Correo
-    if (!form.correo.trim()) newErrors.correo = 'El correo es requerido'
-    else if (!/^\S+@\S+\.\S+$/.test(form.correo)) newErrors.correo = 'Ingresa un correo válido'
-    
-    // Password: minimo 8 caracteres
+    // Password: mínimo 8 caracteres
     if (!form.password) newErrors.password = 'La contraseña es requerida'
     else if (form.password.length < 8) newErrors.password = 'Mínimo 8 caracteres'
 
@@ -68,7 +56,19 @@ export default function Register() {
     e.preventDefault()
     if (validate()) {
       setIsSubmitting(true)
-      // Simulate API registration call (animating to success)
+
+      // Payload que espera el backend: { email, name, password, userType }
+      const payload = {
+        email: form.email,
+        name: form.nombre,
+        password: form.password,
+        userType: 'BUYER',
+      }
+
+      console.log('Register payload:', payload)
+
+      // TODO: Reemplazar con llamada real a la API de registro
+      // fetch('/api/auth/register', { method: 'POST', body: JSON.stringify(payload), ... })
       setTimeout(() => {
         setIsSubmitting(false)
         setIsSuccess(true)
@@ -153,36 +153,15 @@ export default function Register() {
               error={errors.nombre}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <Input
-                label="CÉDULA"
-                name="cedula"
-                icon={CreditCard}
-                placeholder="1234567890"
-                value={form.cedula}
-                onChange={handleChange}
-                error={errors.cedula}
-              />
-              <Input
-                label="TELÉFONO"
-                name="telefono"
-                icon={Phone}
-                placeholder="3001234567"
-                value={form.telefono}
-                onChange={handleChange}
-                error={errors.telefono}
-              />
-            </div>
-
             <Input
               label="CORREO ELECTRÓNICO"
-              name="correo"
+              name="email"
               type="email"
               icon={Mail}
               placeholder="tu@correo.com"
-              value={form.correo}
+              value={form.email}
               onChange={handleChange}
-              error={errors.correo}
+              error={errors.email}
             />
 
             <Input

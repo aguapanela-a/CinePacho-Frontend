@@ -13,7 +13,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Buscar pelí
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full bg-surface/80 backdrop-blur-sm border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text-primary placeholder-text-secondary/50 outline-none transition-all duration-300 focus:border-neon-pink/50 focus:ring-2 focus:ring-neon-pink/15 focus:bg-surface text-sm sm:text-base"
+        className="w-full bg-surface/80 backdrop-blur-sm border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text-primary placeholder-text-secondary/50 outline-none transition-all duration-300 focus:border-magenta/50 focus:ring-2 focus:ring-magenta/15 focus:bg-surface text-sm sm:text-base"
       />
     </div>
   )
