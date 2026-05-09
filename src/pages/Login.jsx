@@ -5,6 +5,10 @@ import Input from '../components/Input'
 import Button from '../components/Button'
 import { useApp } from '../context/AppContext'
 
+// Local: /api/auth/register (proxy de Vite lo maneja)
+// Railway: https://backend.railway.app/api/auth/register
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 const tabs = [
   { id: 'cliente', label: 'Cliente', icon: User },
   { id: 'empleado', label: 'Cajero', icon: BadgeCheck },
@@ -67,7 +71,7 @@ export default function Login() {
     }
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

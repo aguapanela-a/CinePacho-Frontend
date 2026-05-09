@@ -12,6 +12,10 @@ import {
 import Input from '../components/Input'
 import Button from '../components/Button'
 
+// variabl de entorno del servidor al desplegar
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+
 const benefits = [
   { icon: Star, text: '10 puntos por cada boleta comprada' },
   { icon: Gift, text: '5 puntos por cada snack' },
@@ -72,7 +76,7 @@ export default function Register() {
     }
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
