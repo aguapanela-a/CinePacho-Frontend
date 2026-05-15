@@ -45,6 +45,8 @@ export default function AdminEmployees() {
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [employees, setEmployees] = useState(initialEmployees)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = useState(null)
 
   const [newEmployee, setNewEmployee] = useState({
     nombre: '',
@@ -64,6 +66,31 @@ export default function AdminEmployees() {
 
   )
 
+//Borrar empleados local
+
+ const handleDeleteEmployee = (id) => {
+  setEmployees(
+    employees.filter((employee) => employee.id !== id)
+  )
+}
+
+//confirmar borrar empleados
+
+const confirmDeleteEmployee = () => {
+  setEmployees(
+    employees.filter(
+      (employee) => employee.id !== employeeToDelete.id
+    )
+  )
+
+  setIsDeleteModalOpen(false)
+  setEmployeeToDelete(null)
+}
+
+
+
+//Crear empleados local
+
   const handleCreateEmployee = () => {
   if (
     !newEmployee.nombre ||
@@ -74,6 +101,7 @@ export default function AdminEmployees() {
   ) {
     return
   }
+
 
   const employee = {
     id: employees.length + 1,
@@ -90,6 +118,8 @@ export default function AdminEmployees() {
     cargo: '',
     multiplex: '',
   })
+
+
 
   setIsModalOpen(false)
 }
@@ -242,13 +272,22 @@ export default function AdminEmployees() {
 
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-center gap-2">
-                      <button className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white">
+                      <button 
+                      className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white">
                         <Pencil size={16} />
                       </button>
 
-                      <button className="w-10 h-10 rounded-xl border border-border/50 hover:border-red-500/40 hover:bg-red-500/10 transition-all flex items-center justify-center text-text-secondary hover:text-red-400">
+                    <button
+                        onClick={() => {
+                            setEmployeeToDelete(employee)
+                            setIsDeleteModalOpen(true)
+                        }}
+                        className="w-10 h-10 rounded-xl border border-border/50 hover:border-red-500/40 hover:bg-red-500/10 transition-all flex items-center justify-center text-text-secondary hover:text-red-400"
+                        >
                         <Trash2 size={16} />
-                      </button>
+                    </button>
+
+                      
                     </div>
                   </td>
                 </tr>
@@ -414,8 +453,67 @@ export default function AdminEmployees() {
               </button>
             </div>
           </div>
+
+
         </div>
+
+    
+
       )}
+
+      
+    {/* Modal Confirmar Eliminación */}
+    {isDeleteModalOpen && (
+  <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+          <Trash2 className="text-red-400" size={24} />
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-display tracking-widest text-white uppercase">
+            Confirmar eliminación
+          </h2>
+
+          <p className="text-text-secondary text-sm mt-1">
+            Esta acción no se puede deshacer
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-8">
+        <p className="text-text-secondary text-sm">
+          ¿Deseas eliminar al empleado:
+        </p>
+
+        <p className="text-white font-bold text-lg mt-2">
+          {employeeToDelete?.nombre}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          onClick={() => {
+            setIsDeleteModalOpen(false)
+            setEmployeeToDelete(null)
+          }}
+          className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={confirmDeleteEmployee}
+          className="px-6 py-3 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all shadow-lg"
+        >
+          Eliminar empleado
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }
