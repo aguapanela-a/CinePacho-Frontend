@@ -43,6 +43,15 @@ const employeesMock = [
 
 export default function AdminEmployees() {
   const [search, setSearch] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const [newEmployee, setNewEmployee] = useState({
+    nombre: '',
+    correo: '',
+    telefono: '',
+    cargo: '',
+    multiplex: '',
+    })
 
   const filteredEmployees = employeesMock.filter((employee) =>
     employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -72,11 +81,15 @@ export default function AdminEmployees() {
           </div>
         </div>
 
-        <button className="flex items-center justify-center gap-2 bg-gradient-to-r from-magenta to-vinotinto hover:opacity-90 transition-all text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 cursor-pointer">
-          <Plus size={18} />
-          Nuevo empleado
-        </button>
-      </div>
+     <button
+        onClick={() => setIsModalOpen(true)}
+        className="flex items-center justify-center gap-2 bg-gradient-to-r from-magenta to-vinotinto hover:opacity-90 transition-all text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 cursor-pointer"
+        >
+        <Plus size={18} />
+        Nuevo empleado
+    </button>
+
+    </div>
 
       {/* Search */}
       <div className="bg-surface border border-border/50 rounded-3xl p-5">
@@ -209,7 +222,7 @@ export default function AdminEmployees() {
           </table>
         </div>
 
-        {filteredEmployees.length === 0 && (
+         {filteredEmployees.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-text-secondary">
               No se encontraron empleados.
@@ -217,6 +230,156 @@ export default function AdminEmployees() {
           </div>
         )}
       </div>
+
+      {/* Modal Crear Empleado */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-display tracking-widest text-white uppercase">
+                  Nuevo <span className="gradient-brand">Empleado</span>
+                </h2>
+
+                <p className="text-text-secondary text-sm mt-1">
+                  Registrar nuevo empleado del sistema
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Nombre completo
+                </label>
+
+                <input
+                  type="text"
+                  value={newEmployee.nombre}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      nombre: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Juan Pérez"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Correo
+                </label>
+
+                <input
+                  type="email"
+                  value={newEmployee.correo}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      correo: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="empleado@cinepacho.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Teléfono
+                </label>
+
+                <input
+                  type="text"
+                  value={newEmployee.telefono}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      telefono: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="3001234567"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Cargo
+                </label>
+
+                <select
+                  value={newEmployee.cargo}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      cargo: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="Cajero">Cajero</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Administrador">Administrador</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Multiplex
+                </label>
+
+                <select
+                  value={newEmployee.multiplex}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      multiplex: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                >
+                  <option value="">Seleccionar multiplex</option>
+                  <option value="Titán">Titán</option>
+                  <option value="Unicentro">Unicentro</option>
+                  <option value="Gran Estación">Gran Estación</option>
+                  <option value="Embajador">Embajador</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+              >
+                Cancelar
+              </button>
+
+              <button
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20"
+              >
+                Guardar empleado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
