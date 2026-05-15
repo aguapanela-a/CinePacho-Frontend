@@ -8,6 +8,7 @@ import Register from './pages/Register'
 import Snacks from './pages/Snacks'
 import { AppProvider } from './context/AppContext'
 import CartDrawer from './components/CartDrawer'
+import AdminDashboard from './pages/admin/AdminDashboard'
 
 function AppLayout() {
   const location = useLocation()
@@ -27,6 +28,9 @@ function AppLayout() {
           <Route path="/snacks" element={<Snacks />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
+
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          
         </Routes>
       </main>
       {!isAuthPage && <Footer />}
