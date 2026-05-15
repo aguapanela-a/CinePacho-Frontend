@@ -9,6 +9,7 @@ import Snacks from './pages/Snacks'
 import { AppProvider } from './context/AppContext'
 import CartDrawer from './components/CartDrawer'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminEmployees from './pages/admin/AdminEmployees'
 
 function AppLayout() {
   const location = useLocation()
@@ -31,6 +32,8 @@ function AppLayout() {
           <Route path="/registro" element={<Register />} />
 
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+          <Route path="/admin/empleados" element={<AdminEmployees />} />
 
         </Routes>
       </main>
