@@ -47,6 +47,8 @@ export default function AdminEmployees() {
   const [employees, setEmployees] = useState(initialEmployees)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [employeeToEdit, setEmployeeToEdit] = useState(null)
 
   const [newEmployee, setNewEmployee] = useState({
     nombre: '',
@@ -85,6 +87,22 @@ const confirmDeleteEmployee = () => {
 
   setIsDeleteModalOpen(false)
   setEmployeeToDelete(null)
+}
+
+
+//Editar empleados
+
+const handleEditEmployee = () => {
+  setEmployees(
+    employees.map((employee) =>
+      employee.id === employeeToEdit.id
+        ? employeeToEdit
+        : employee
+    )
+  )
+
+  setIsEditModalOpen(false)
+  setEmployeeToEdit(null)
 }
 
 
@@ -272,10 +290,15 @@ const confirmDeleteEmployee = () => {
 
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-center gap-2">
-                      <button 
-                      className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white">
+                    <button
+                        onClick={() => {
+                            setEmployeeToEdit(employee)
+                            setIsEditModalOpen(true)
+                        }}
+                        className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white"
+                        >
                         <Pencil size={16} />
-                      </button>
+                    </button>
 
                     <button
                         onClick={() => {
@@ -460,6 +483,157 @@ const confirmDeleteEmployee = () => {
     
 
       )}
+
+
+
+    {/* Modal Editar Empleado */}
+{isEditModalOpen && (
+  <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-display tracking-widest text-white uppercase">
+            Editar <span className="gradient-brand">Empleado</span>
+          </h2>
+
+          <p className="text-text-secondary text-sm mt-1">
+            Modificar información del empleado
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            setIsEditModalOpen(false)
+            setEmployeeToEdit(null)
+          }}
+          className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Nombre completo
+          </label>
+
+          <input
+            type="text"
+            value={employeeToEdit?.nombre || ''}
+            onChange={(e) =>
+              setEmployeeToEdit({
+                ...employeeToEdit,
+                nombre: e.target.value,
+              })
+            }
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Correo
+          </label>
+
+          <input
+            type="email"
+            value={employeeToEdit?.correo || ''}
+            onChange={(e) =>
+              setEmployeeToEdit({
+                ...employeeToEdit,
+                correo: e.target.value,
+              })
+            }
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Teléfono
+          </label>
+
+          <input
+            type="text"
+            value={employeeToEdit?.telefono || ''}
+            onChange={(e) =>
+              setEmployeeToEdit({
+                ...employeeToEdit,
+                telefono: e.target.value,
+              })
+            }
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Cargo
+          </label>
+
+          <select
+            value={employeeToEdit?.cargo || ''}
+            onChange={(e) =>
+              setEmployeeToEdit({
+                ...employeeToEdit,
+                cargo: e.target.value,
+              })
+            }
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          >
+            <option value="Cajero">Cajero</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Administrador">Administrador</option>
+          </select>
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Multiplex
+          </label>
+
+          <select
+            value={employeeToEdit?.multiplex || ''}
+            onChange={(e) =>
+              setEmployeeToEdit({
+                ...employeeToEdit,
+                multiplex: e.target.value,
+              })
+            }
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          >
+            <option value="Titán">Titán</option>
+            <option value="Unicentro">Unicentro</option>
+            <option value="Gran Estación">Gran Estación</option>
+            <option value="Embajador">Embajador</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3 mt-8">
+        <button
+          onClick={() => {
+            setIsEditModalOpen(false)
+            setEmployeeToEdit(null)
+          }}
+          className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={handleEditEmployee}
+          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20"
+        >
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       
     {/* Modal Confirmar Eliminación */}
