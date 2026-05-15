@@ -13,6 +13,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 function AppLayout() {
   const location = useLocation()
   const isAuthPage = ['/login', '/registro'].includes(location.pathname)
+  const isAdminPage = location.pathname.startsWith('/admin')
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden font-body text-text-primary bg-carbon">
@@ -21,7 +22,7 @@ function AppLayout() {
       <div className="orb-gold bottom-0 -right-64 translate-y-1/2" />
       <div className="orb-magenta top-1/2 right-0 translate-x-1/2 -translate-y-1/2 opacity-50" />
 
-      {!isAuthPage && <Navbar />}
+      {!isAuthPage && !isAdminPage && <Navbar />}
       <main className="flex-1 relative z-10 animate-[fadeUp_0.5s_ease-out_forwards]">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -30,10 +31,10 @@ function AppLayout() {
           <Route path="/registro" element={<Register />} />
 
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          
+
         </Routes>
       </main>
-      {!isAuthPage && <Footer />}
+      {!isAuthPage && !isAdminPage && <Footer />}
       
       {/* Global Modals/Drawers */}
       <CartDrawer />
