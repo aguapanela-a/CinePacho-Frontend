@@ -11,7 +11,7 @@ import {
   Pencil,
 } from 'lucide-react'
 
-const employeesMock = [
+const initialEmployees = [
   {
     id: 1,
     nombre: 'Laura González',
@@ -44,6 +44,7 @@ const employeesMock = [
 export default function AdminEmployees() {
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [employees, setEmployees] = useState(initialEmployees)
 
   const [newEmployee, setNewEmployee] = useState({
     nombre: '',
@@ -53,11 +54,45 @@ export default function AdminEmployees() {
     multiplex: '',
     })
 
-  const filteredEmployees = employeesMock.filter((employee) =>
+  const filteredEmployees = employees.filter((employee) =>
     employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
     employee.correo.toLowerCase().includes(search.toLowerCase()) ||
     employee.multiplex.toLowerCase().includes(search.toLowerCase())
+
+
+
+
   )
+
+  const handleCreateEmployee = () => {
+  if (
+    !newEmployee.nombre ||
+    !newEmployee.correo ||
+    !newEmployee.telefono ||
+    !newEmployee.cargo ||
+    !newEmployee.multiplex
+  ) {
+    return
+  }
+
+  const employee = {
+    id: employees.length + 1,
+    ...newEmployee,
+    estado: 'Activo',
+  }
+
+  setEmployees([...employees, employee])
+
+  setNewEmployee({
+    nombre: '',
+    correo: '',
+    telefono: '',
+    cargo: '',
+    multiplex: '',
+  })
+
+  setIsModalOpen(false)
+}
 
   return (
     <div className="space-y-8 animate-[fadeUp_0.4s_ease-out_forwards]">
@@ -372,6 +407,7 @@ export default function AdminEmployees() {
               </button>
 
               <button
+                onClick={handleCreateEmployee}
                 className="px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20"
               >
                 Guardar empleado
