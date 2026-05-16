@@ -26,24 +26,48 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// 3. Simular Login (POST)
+// 3. Simular Login Unificado (POST)
+// El sistema detecta automáticamente el tipo de usuario según las credenciales.
+// En este mock, usamos patrones del email para simular los diferentes roles.
+//
+// Emails de prueba:
+//   - admin@cinepacho.com    → ADMIN    (redirige a /admin/dashboard)
+//   - gerente@cinepacho.com  → MANAGER  (redirige a /manager/dashboard)
+//   - cajero@cinepacho.com   → EMPLOYEE (redirige a /cajero)
+//   - cualquier@otro.com     → BUYER    (redirige a /)
 app.post('/api/auth/login', (req, res) => {
   console.log('Mock: Petición de login recibida:', req.body);
 
   // Generamos un token JWT falso pero con el formato correcto de tres partes
   const fakeToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmYWtlX3Rva2VuX3BhcmFfcHJ1ZWJhcyJ9.mock_signature_123456";
   
-  // Asignamos el rol de forma insensible a mayúsculas
+  // Detección del tipo de usuario por patrones del email (simula lo que hace el backend real)
   const email = (req.body.email || '').toLowerCase();
   let tipoUsuario = 'BUYER';
-  if (email.includes('admin')) tipoUsuario = 'ADMIN';
-  else if (email.includes('empleado') || email.includes('cajero')) tipoUsuario = 'EMPLOYEE';
+  let nombre = 'Cliente Pacho';
+  let multiplexId = null;
+
+  if (email.includes('admin')) {
+    tipoUsuario = 'ADMIN';
+    nombre = 'Administrador General';
+  } else if (email.includes('gerente')) {
+    tipoUsuario = 'MANAGER';
+    nombre = 'Gerente Titán';
+    multiplexId = 'titan';
+  } else if (email.includes('empleado') || email.includes('cajero') || email.includes('employee')) {
+    tipoUsuario = 'EMPLOYEE';
+    nombre = 'Cajero Pacho';
+    multiplexId = 'titan';
+  }
+
+  console.log(`  → Tipo detectado: ${tipoUsuario} para ${email}`);
 
   // Simulamos la respuesta exitosa (AuthResponseDTO)
   res.status(200).json({
     token: fakeToken,
     userType: tipoUsuario,
-    name: 'Usuario Mock'
+    name: nombre,
+    multiplexId: multiplexId
   });
 });
 
@@ -67,10 +91,17 @@ app.listen(PORT, () => {
   console.log(`🎭 MOCK SERVER CORRIENDO EN EL PUERTO ${PORT} 🎭`);
   console.log('===================================================');
   console.log('Tu frontend ahora creerá que está hablando con el verdadero backend de Java!');
+  console.log('');
   console.log('Rutas simuladas:');
   console.log(' - POST /api/auth/register');
   console.log(' - POST /api/auth/login');
   console.log(' - GET  /api/auth/verify');
   console.log(' - POST /api/admin/register_employee');
+  console.log('');
+  console.log('Emails de prueba para login:');
+  console.log('  admin@cinepacho.com    → ADMIN    → /admin/dashboard');
+  console.log('  gerente@cinepacho.com  → MANAGER  → /manager/dashboard');
+  console.log('  cajero@cinepacho.com   → EMPLOYEE → /cajero');
+  console.log('  cliente@correo.com     → BUYER    → /');
   console.log('===================================================\n');
 });

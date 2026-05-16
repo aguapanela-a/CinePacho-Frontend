@@ -1,25 +1,34 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, BadgeCheck, User, KeyRound, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, ArrowLeft, Film } from 'lucide-react'
 import Input from '../components/Input'
 import Button from '../components/Button'
 import { useApp } from '../context/AppContext'
 
-// Local: /api/auth/register (proxy de Vite lo maneja)
-// Railway: https://backend.railway.app/api/auth/register
+// Local: /api/auth/login (proxy de Vite lo redirige al backend)
+// Producción: https://backend.railway.app/api/auth/login
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-const tabs = [
-  { id: 'cliente', label: 'Cliente', icon: User },
-  { id: 'empleado', label: 'Cajero', icon: BadgeCheck },
-  { id: 'admin', label: 'Admin', icon: KeyRound },
-]
-
+/**
+ * Login Unificado: Formulario único de inicio de sesión para todos los roles.
+ *
+ * Diseño limpio sin tabs visibles — el sistema detecta automáticamente el tipo
+ * de usuario (BUYER, EMPLOYEE, ADMIN) por las credenciales y redirige a la
+ * vista correspondiente. Los clientes solo ven un formulario estándar de cine,
+ * sin saber que empleados y admins también inician sesión aquí.
+ *
+ * Flujo:
+ *   1. Usuario ingresa email + contraseña
+ *   2. Backend valida y responde con { token, userType, name }
+ *   3. Frontend almacena sesión y redirige según userType:
+ *      - BUYER    → / (cartelera)
+ *      - EMPLOYEE → /cajero (punto de venta)
+ *      - ADMIN    → /admin/dashboard (panel administrativo)
+ */
 export default function Login() {
   const navigate = useNavigate()
   const { loginUser } = useApp()
 
-  const [activeTab, setActiveTab] = useState('cliente')
   const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
@@ -36,7 +45,6 @@ export default function Login() {
   const validate = () => {
     const newErrors = {}
 
-    // Todos los tipos de usuario inician sesión con email + password
     if (!form.email.trim()) newErrors.email = 'El correo es requerido'
     else if (!/^\S+@\S+\.\S+$/.test(form.email)) newErrors.email = 'El formato de correo es inválido'
 
@@ -48,13 +56,19 @@ export default function Login() {
     return Object.keys(newErrors).length === 0
   }
 
-  // Etiqueta contextual del campo email según el tab activo
-  const emailLabel = () => {
-    switch (activeTab) {
-      case 'admin': return 'CORREO DE ADMINISTRADOR'
-      case 'empleado': return 'CORREO DE EMPLEADO'
-      default: return 'CORREO ELECTRÓNICO'
+  /**
+   * Mapa de redirección según el tipo de usuario.
+   * El backend devuelve el userType en la respuesta de login
+   * y el frontend lo usa para navegar a la vista correcta.
+   */
+  const getRedirectPath = (userType) => {
+    const routes = {
+      ADMIN: '/admin/dashboard',
+      MANAGER: '/manager/dashboard',
+      EMPLOYEE: '/cajero',
+      BUYER: '/',
     }
+    return routes[userType] || '/'
   }
 
   const handleSubmit = async (e) => {
@@ -85,7 +99,9 @@ export default function Login() {
       // Respuesta exitosa del backend (AuthResponseDTO): { token, userType, name }
       const data = await res.json()
       loginUser(data)
-      navigate('/')
+
+      // Redirección inteligente según el rol detectado por el backend
+      navigate(getRedirectPath(data.userType))
     } catch (err) {
       setServerError(err.message)
     } finally {
@@ -109,36 +125,18 @@ export default function Login() {
 
         {/* Dynamic Card */}
         <div className="bg-surface/80 backdrop-blur-2xl border border-border/50 rounded-[2rem] p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-          {/* Header */}
+          {/* Header con ícono del cine */}
           <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-magenta to-vinotinto rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-[0_0_25px_rgba(200,22,122,0.4)]">
+              <Film size={30} className="text-white" />
+            </div>
+
             <h1 className="text-4xl font-display tracking-widest text-white">
               INICIAR <span className="gradient-brand">SESIÓN</span>
             </h1>
             <p className="text-sm font-medium text-text-secondary mt-2">
               Ingresa a tu cuenta para continuar
             </p>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex bg-carbon rounded-2xl p-1 mb-8 border border-border/30">
-            {tabs.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setActiveTab(id)
-                  setErrors({})
-                  setServerError('')
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer ${activeTab === id
-                    ? 'bg-gradient-to-r from-magenta to-vinotinto text-white shadow-lg shadow-magenta/20'
-                    : 'text-text-secondary hover:text-white'
-                  }`}
-              >
-                <Icon size={16} />
-                <span>{label}</span>
-              </button>
-            ))}
           </div>
 
           {/* Error del servidor */}
@@ -148,10 +146,10 @@ export default function Login() {
             </div>
           )}
 
-          {/* Form — Todos los roles usan email + password */}
+          {/* Formulario unificado — email + contraseña para todos los roles */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label={emailLabel()}
+              label="CORREO ELECTRÓNICO"
               name="email"
               type="email"
               icon={Mail}
@@ -190,18 +188,15 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Register link (only for clients) */}
-          {activeTab === 'cliente' && (
-            <p className="text-center text-sm font-bold text-text-secondary mt-8">
-              ¿No tienes cuenta?{' '}
-              <Link to="/registro" className="text-magenta hover:text-white transition-colors">
-                Regístrate aquí
-              </Link>
-            </p>
-          )}
+          {/* Enlace de registro — visible para todos (solo clientes pueden registrarse) */}
+          <p className="text-center text-sm font-bold text-text-secondary mt-8">
+            ¿No tienes cuenta?{' '}
+            <Link to="/registro" className="text-magenta hover:text-white transition-colors">
+              Regístrate aquí
+            </Link>
+          </p>
         </div>
       </div>
     </div>
   )
 }
-

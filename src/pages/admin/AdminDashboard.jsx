@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 
 import AdminLayout from '../../components/admin/AdminLayout'
+import { Link, useNavigate } from 'react-router-dom'
+import { multiplexes } from '../../data/mockMultiplexData'
 
 const stats = [
   {
@@ -124,28 +126,23 @@ export default function AdminDashboard() {
           </div>
 
           <div className="space-y-4">
-            {[
-              'Titán',
-              'Unicentro',
-              'Gran Estación',
-              'Plaza Central',
-              'Embajador',
-            ].map((plex, i) => (
-              <div
+            {multiplexes.slice(0, 5).map((plex, i) => (
+              <Link
                 key={i}
-                className="bg-carbon border border-border/40 rounded-2xl px-4 py-4 flex items-center justify-between"
+                to={`/admin/multiplex/${plex.id}/dashboard`}
+                className="group bg-carbon border border-border/40 rounded-2xl px-4 py-4 flex items-center justify-between hover:border-magenta/40 hover:bg-magenta/5 transition-all"
               >
-                <span className="font-medium text-white">
-                  {plex}
+                <span className="font-medium text-white group-hover:text-magenta transition-colors">
+                  {plex.name}
                 </span>
 
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-sm text-green-400 font-bold">
-                    Activo
+                  <div className={`w-2.5 h-2.5 rounded-full ${plex.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                  <span className={`text-sm font-bold ${plex.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
+                    {plex.status === 'active' ? 'Activo' : 'Inactivo'}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
