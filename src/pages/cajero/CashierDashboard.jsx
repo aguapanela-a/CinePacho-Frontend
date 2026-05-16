@@ -24,6 +24,7 @@ export default function CashierDashboard() {
   const [searchCustomer, setSearchCustomer] = useState('')
   const [activeCustomer, setActiveCustomer] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [wantsPoints, setWantsPoints] = useState(false)
   
   // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null)
@@ -86,6 +87,7 @@ export default function CashierDashboard() {
   const resetPOS = () => {
     setCart([])
     setActiveCustomer(null)
+    setWantsPoints(false)
     setShowSuccess(false)
   }
 
@@ -274,10 +276,44 @@ export default function CashierDashboard() {
             </div>
             
             {activeCustomer && cart.length > 0 && (
-              <div className="mb-4 text-center bg-gold/10 border border-gold/30 rounded-lg py-2">
-                <p className="text-xs text-gold font-bold">
-                  🌟 El cliente ganará <span className="text-white">{POINTS_PER_PURCHASE} puntos fijos</span> con esta compra.
+              <div className="mb-4 bg-gold/10 border border-gold/30 rounded-xl p-4">
+                
+                <p className="text-xs font-bold text-gold uppercase tracking-widest mb-3">
+                  ¿Desea acumular puntos?
                 </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setWantsPoints(true)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                      wantsPoints
+                        ? 'bg-gold text-carbon'
+                        : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
+                    }`}
+                  >
+                    Sí
+                  </button>
+
+                  <button
+                    onClick={() => setWantsPoints(false)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                      !wantsPoints
+                        ? 'bg-red-500 text-white'
+                        : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+
+                {wantsPoints && (
+                  <p className="text-xs text-gold font-bold mt-3 text-center">
+                    🌟 El cliente ganará{' '}
+                    <span className="text-white">
+                      {POINTS_PER_PURCHASE} puntos
+                    </span>
+                  </p>
+                )}
               </div>
             )}
 
@@ -354,7 +390,7 @@ export default function CashierDashboard() {
             <h2 className="text-2xl font-display text-white tracking-widest uppercase mb-2">Venta Exitosa</h2>
             <p className="text-text-secondary mb-6">Total cobrado: <strong className="text-white">${total.toLocaleString('es-CO')}</strong></p>
             
-            {activeCustomer && (
+            {activeCustomer && wantsPoints && (
               <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 mb-6">
                 <p className="text-gold font-bold text-sm mb-1">¡Puntos Asignados!</p>
                 <p className="text-white text-xs">Se sumaron {POINTS_PER_PURCHASE} pts a la cuenta de {activeCustomer.name}</p>
