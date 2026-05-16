@@ -60,18 +60,28 @@ export default function MultiplexInventory({
     }, 2000)
   }
 
-  // ── Agregar stock directo (Admin) ──
-  const handleAddStock = () => {
-    const qty = parseInt(requestQty)
-    if (!qty || qty <= 0) return
-    setItems(items.map((i) =>
-      i.id === selectedItem.id ? { ...i, stock: i.stock + qty } : i
-    ))
-    setIsRequestModalOpen(false)
-    setSelectedItem(null)
-    setRequestQty('')
-    setRequestReason('')
-  }
+// ── Agregar stock directo (Solo Admin) ──
+const handleAddStock = () => {
+  if (!canAddStock) return
+
+  const qty = parseInt(requestQty)
+
+  if (!qty || qty <= 0) return
+
+  setItems(
+    items.map((i) =>
+      i.id === selectedItem.id
+        ? { ...i, stock: i.stock + qty }
+        : i
+    )
+  )
+
+  setIsRequestModalOpen(false)
+  setSelectedItem(null)
+  setRequestQty('')
+  setRequestReason('')
+}
+
 
   const openStockModal = (item) => {
     setSelectedItem(item)
@@ -219,7 +229,12 @@ export default function MultiplexInventory({
                     }`}
                   >
                     {canAddStock ? <PackagePlus size={14} /> : <Send size={14} />}
-                    {canAddStock ? 'Agregar' : 'Solicitar'}
+                    {canAddStock
+                    ? 'Agregar'
+                    : canRequestStock
+                    ? 'Solicitar'
+                    : 'Sin permisos'}
+
                   </button>
                 )}
               </div>
@@ -317,7 +332,13 @@ export default function MultiplexInventory({
                     Cancelar
                   </button>
                   <button
-                    onClick={canAddStock ? handleAddStock : handleRequestStock}
+                  onClick={() => {
+                    if (canAddStock) {
+                      handleAddStock()
+                    } else if (canRequestStock) {
+                      handleRequestStock()
+                    }
+                  }}
                     disabled={!requestQty || parseInt(requestQty) <= 0}
                     className={`px-6 py-3 rounded-2xl text-white font-bold transition-all shadow-lg cursor-pointer ${
                       requestQty && parseInt(requestQty) > 0
