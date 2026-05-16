@@ -69,7 +69,7 @@ export default function AdminSidebar() {
   const linksToRender = getLinks()
 
   return (
-    <aside className="w-72 min-h-screen bg-surface/80 backdrop-blur-2xl border-r border-border/50 p-6 flex flex-col">
+    <aside className="w-[280px] max-w-[85vw] h-screen bg-surface/80 backdrop-blur-2xl border-r border-border/50 p-6 flex flex-col">
       
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10">

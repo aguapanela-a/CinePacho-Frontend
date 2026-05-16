@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Users,
   Plus,
@@ -10,6 +11,8 @@ import {
   Trash2,
   Pencil,
 } from 'lucide-react'
+
+
 
 const initialEmployees = [
   {
@@ -143,6 +146,7 @@ const handleEditEmployee = () => {
 }
 
   return (
+     <AdminLayout>
     <div className="space-y-8 animate-[fadeUp_0.4s_ease-out_forwards]">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
@@ -687,7 +691,10 @@ const handleEditEmployee = () => {
       </div>
     </div>
   </div>
+  
 )}
     </div>
+  </AdminLayout>
+    
   )
 }
