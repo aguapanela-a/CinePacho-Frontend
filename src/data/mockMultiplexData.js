@@ -53,6 +53,17 @@ export const multiplexes = [
     status: 'active',
     managerId: null,
   },
+
+  {
+  id: 'las-americas',
+  name: 'Las Américas',
+  address: 'Av. Las Américas #68B-45, Bogotá',
+  salas: 8,
+  status: 'active',
+  managerId: null,
+},
+
+
 ]
 
 // ─── EMPLEADOS ─────────────────────────────────────────────
