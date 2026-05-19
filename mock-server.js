@@ -17,7 +17,7 @@ app.get('/api/auth/verify', (req, res) => {
 // 2. Simular Registro (POST)
 app.post('/api/auth/register', (req, res) => {
   console.log('Mock: Petición de registro recibida:', req.body);
-  
+
   // Simulamos la respuesta exitosa (RegisterResponseDTO)
   res.status(201).json({
     userType: req.body.userType || 'BUYER',
@@ -40,7 +40,7 @@ app.post('/api/auth/login', (req, res) => {
 
   // Generamos un token JWT falso pero con el formato correcto de tres partes
   const fakeToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmYWtlX3Rva2VuX3BhcmFfcHJ1ZWJhcyJ9.mock_signature_123456";
-  
+
   // Detección del tipo de usuario por patrones del email (simula lo que hace el backend real)
   const email = (req.body.email || '').toLowerCase();
   let tipoUsuario = 'BUYER';
@@ -73,17 +73,63 @@ app.post('/api/auth/login', (req, res) => {
 
 // 4. Simular Registro de Empleado por el Admin (POST)
 app.post('/api/admin/register_employee', (req, res) => {
-    console.log('Mock: Registro de empleado recibido:', req.body);
-    // Verificamos si envió el token en el header (simulación)
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'No autorizado. Falta el token de administrador.' });
-    }
+  console.log('Mock: Registro de empleado recibido:', req.body);
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No autorizado. Falta el token de administrador.' });
+  }
 
-    res.status(201).json({
-        message: 'Empleado registrado con éxito'
-    });
+  res.status(201).json({
+    message: 'Empleado registrado con éxito'
+  });
 });
+
+// ==========================================
+// MOCKS DE ADMINISTRACIÓN (NUEVOS ENDPOINTS)
+// ==========================================
+
+let multiplexes = [
+  { id: '1234-abcd', nameMultiplex: 'Cine Pacho Central', addressMultiplex: 'Cra 4 # 12-34', cityMultiplex: 'Bogotá' }
+];
+
+let snacks = [
+  { id: '1111', nameSnack: 'Palomitas Grandes', descriptionSnack: 'Para compartir', priceSnack: 15000, quantitySnack: 100 }
+];
+
+// Multiplex
+app.get('/api/admin/multiplexes', (req, res) => res.json(multiplexes));
+app.post('/api/admin/multiplexes', (req, res) => {
+  const newMpx = { id: Date.now().toString(), ...req.body };
+  multiplexes.push(newMpx);
+  res.status(201).json(newMpx);
+});
+app.delete('/api/admin/multiplexes/:id', (req, res) => {
+  multiplexes = multiplexes.filter(m => m.id !== req.params.id);
+  res.sendStatus(204);
+});
+
+// Snacks
+app.get('/api/admin/snacks', (req, res) => res.json(snacks));
+app.post('/api/admin/snacks', (req, res) => {
+  const newSnack = { id: Date.now().toString(), ...req.body };
+  snacks.push(newSnack);
+  res.status(201).json(newSnack);
+});
+app.delete('/api/admin/snacks/:id', (req, res) => {
+  snacks = snacks.filter(s => s.id !== req.params.id);
+  res.sendStatus(204);
+});
+
+// Rooms
+app.get('/api/admin/rooms', (req, res) => res.json([]));
+app.post('/api/admin/rooms', (req, res) => res.status(201).json({ message: 'Room created' }));
+
+// Movies
+app.get('/admin/search', (req, res) => res.json([{ id: 1, originalTitle: 'Mock Movie', overview: 'Mock desc' }]));
+app.post('/admin/select/:id', (req, res) => res.json({ originalTitle: 'Mock', message: 'Seleccionada' }));
+app.post('/admin/:multiplexName/createScreening', (req, res) => res.json({ status: 'ACTIVE', movieId: req.body.movieId }));
+app.put('/admin/:multiplexName/:screeningId/status', (req, res) => res.json({ status: req.query.status }));
+
 
 const PORT = 8010;
 app.listen(PORT, () => {

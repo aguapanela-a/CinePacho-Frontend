@@ -64,14 +64,16 @@ export function AppProvider({ children }) {
   const addToCart = (item) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === item.id && i.type === item.type && i.showtime === item.showtime)
+      const qtyToAdd = item.qty || 1
+
       if (existing) {
         return prev.map((i) => 
           i.id === item.id && i.type === item.type && i.showtime === item.showtime
-            ? { ...i, qty: i.qty + 1 }
+            ? { ...i, qty: i.qty + qtyToAdd }
             : i
         )
       }
-      return [...prev, { ...item, qty: 1 }]
+      return [...prev, { ...item, qty: qtyToAdd }]
     })
     // Forzamos la apertura del Drawer al usuario para feedback inmediato según la Meta de Acción. (Leyes de UX)
     setIsCartOpen(true)

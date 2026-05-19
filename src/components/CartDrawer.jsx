@@ -1,10 +1,12 @@
 import React, { useEffect, useCallback } from 'react'
 import { X, Trash2, ShoppingBag, Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import Button from './Button'
 
 export default function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, cartTotal, pendingPoints } = useApp()
+  const navigate = useNavigate()
 
   // Cierre con tecla Escape — Ley de Jakob: los usuarios esperan poder cerrar paneles con Esc
   const handleEscape = useCallback((e) => {
@@ -128,7 +130,11 @@ export default function CartDrawer() {
               <span className="text-3xl font-display text-white tracking-widest">{formatPrice(cartTotal)}</span>
             </div>
 
-            <Button variant="primary" className="w-full shadow-[0_0_20px_rgba(200,22,122,0.3)]">
+            <Button
+              variant="primary"
+              className="w-full shadow-[0_0_20px_rgba(200,22,122,0.3)]"
+              onClick={() => { setIsCartOpen(false); navigate('/checkout') }}
+            >
               Ir a Pagar
             </Button>
           </div>

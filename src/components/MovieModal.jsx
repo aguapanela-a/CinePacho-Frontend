@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, Play, Clock, Star, MapPin, Clock4, Armchair, Gift, Clapperboard, Calendar } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import Button from './Button'
+import SeatSelector from './SeatSelector'
 
 const showtimeDates = [
   { day: 'Hoy', date: '24 Oct' },
@@ -28,6 +29,7 @@ export default function MovieModal({ movie, onClose }) {
   const [selectedDate, setSelectedDate] = useState(showtimeDates[0].date)
   const [selectedTime, setSelectedTime] = useState(null)
   const [selectedFormat, setSelectedFormat] = useState(null)
+  const [step, setStep] = useState(1) // 1: Select function, 2: Select seats
   const { addToCart } = useApp()
 
   const handleEscape = useCallback((e) => {
@@ -50,22 +52,28 @@ export default function MovieModal({ movie, onClose }) {
       setSelectedDate(showtimeDates[0].date)
       setSelectedTime(null)
       setSelectedFormat(null)
+      setStep(1)
     }
   }, [movie])
 
   if (!movie) return null
 
-  const canAddToCart = selectedDate && selectedTime && selectedFormat
+  const canProceedToSeats = selectedDate && selectedTime && selectedFormat
 
-  const handleAddToCart = () => {
-    if (!canAddToCart) return
+  const handleProceedToSeats = () => {
+    if (!canProceedToSeats) return
+    setStep(2)
+  }
+
+  const handleConfirmSeats = (selectedSeats, total) => {
     addToCart({
-      id: movie.id,
+      id: `${movie.id}-${selectedDate}-${selectedTime}`, // Unique ID for this specific showtime
       name: movie.title,
       type: 'ticket',
-      showtime: `${selectedDate} - ${selectedTime}`,
+      showtime: `${selectedDate} - ${selectedTime} • Sillas: ${selectedSeats.join(', ')}`,
       format: selectedFormat,
-      price: selectedFormat === 'IMAX' ? '$25.000' : selectedFormat === '3D' ? '$20.000' : '$15.000',
+      price: `$${(total / selectedSeats.length).toLocaleString('es-CO')}`, // unit price for display
+      qty: selectedSeats.length,
       points: 10,
       image: movie.posterUrl,
     })
@@ -74,9 +82,9 @@ export default function MovieModal({ movie, onClose }) {
 
   const getPrice = () => {
     if (!selectedFormat) return null
-    if (selectedFormat === 'IMAX') return '$25.000'
-    if (selectedFormat === '3D') return '$20.000'
-    return '$15.000'
+    if (selectedFormat === 'IMAX') return '$20.000'
+    if (selectedFormat === '3D') return '$15.000'
+    return '$11.000'
   }
 
   // createPortal renderiza fuera del árbol DOM de <main>, 
@@ -137,7 +145,15 @@ export default function MovieModal({ movie, onClose }) {
             {/* ─── CONTENIDO (columna derecha) ─── */}
             <div className="flex-1 p-5 sm:p-6 lg:p-7 flex flex-col gap-5 min-w-0">
 
-              {/* TÍTULO + BADGES */}
+              {step === 2 ? (
+                <SeatSelector 
+                  onBack={() => setStep(1)}
+                  onConfirm={handleConfirmSeats}
+                  formatPrice={getPrice()}
+                />
+              ) : (
+                <>
+                  {/* TÍTULO + BADGES */}
               <div>
                 <h2 className="text-3xl sm:text-4xl font-display uppercase tracking-widest text-white leading-none mb-3 pr-8">
                   {movie.title}
@@ -223,9 +239,9 @@ export default function MovieModal({ movie, onClose }) {
                     <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">Formato</p>
                     <div className="flex gap-1.5">
                       {[
-                        { fmt: '2D', price: '$15K' },
-                        { fmt: '3D', price: '$20K' },
-                        { fmt: 'IMAX', price: '$25K' },
+                        { fmt: '2D', price: '$11K' },
+                        { fmt: '3D', price: '$15K' },
+                        { fmt: 'IMAX', price: '$20K' },
                       ].map(({ fmt, price }) => (
                         <button
                           key={fmt}
@@ -267,7 +283,7 @@ export default function MovieModal({ movie, onClose }) {
 
               {/* CTA FINAL */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                {canAddToCart && (
+                {canProceedToSeats && (
                   <div className="flex-1 bg-carbon/40 border border-border/30 rounded-xl px-4 py-2 animate-[fadeIn_0.2s_ease-out]">
                     <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">Selección</p>
                     <p className="text-white text-sm font-medium">
@@ -277,18 +293,21 @@ export default function MovieModal({ movie, onClose }) {
                   </div>
                 )}
                 <Button
-                  onClick={handleAddToCart}
+                  onClick={handleProceedToSeats}
                   variant="primary"
                   size="md"
                   className={`w-full sm:w-auto px-8 rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)] ${
-                    !canAddToCart ? 'opacity-40 cursor-not-allowed' : ''
+                    !canProceedToSeats ? 'opacity-40 cursor-not-allowed' : ''
                   }`}
-                  disabled={!canAddToCart}
+                  disabled={!canProceedToSeats}
                 >
                   <Armchair size={16} />
-                  {canAddToCart ? 'Agregar al Carrito' : 'Selecciona función'}
+                  {canProceedToSeats ? 'Seleccionar Sillas' : 'Selecciona función'}
                 </Button>
               </div>
+
+                </>
+              )}
 
             </div>
           </div>

@@ -12,6 +12,11 @@ export default defineConfig({
         target: 'http://localhost:8010',
         changeOrigin: true,
       },
+      // Proxy para los endpoints de administración del backend
+      '/admin': {
+        target: 'http://localhost:8010',
+        changeOrigin: true,
+      },
     },
   },
 })

@@ -22,6 +22,10 @@ import ManagerInventory from './pages/manager/ManagerInventory'
 import ManagerReports from './pages/manager/ManagerReports'
 import AdminMultiplexList from './pages/admin/AdminMultiplexList'
 import AdminMultiplexDetail from './pages/admin/AdminMultiplexDetail'
+import AdminMovies from './pages/admin/AdminMovies'
+import AdminSnacks from './pages/admin/AdminSnacks'
+import Checkout from './pages/Checkout'
+import OrderConfirmation from './pages/OrderConfirmation'
 
 function AppLayout() {
   const location = useLocation()
@@ -160,6 +164,14 @@ function AppLayout() {
             }
           />
           <Route
+            path="/admin/multiplex/:multiplexId/salas"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminMultiplexDetail section="salas" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/multiplex/:multiplexId/inventario"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
@@ -175,6 +187,28 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
+
+          {/* ── Rutas Protegidas: Películas y Snacks admin (solo ADMIN) ── */}
+          <Route
+            path="/admin/peliculas"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminMovies />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/snacks"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminSnacks />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ── Rutas de Checkout y Confirmación ── */}
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/confirmacion" element={<OrderConfirmation />} />
         </Routes>
       </main>
       {!isAuthPage && !isAdminPage && !isCashierPage && !isManagerPage && <Footer />}

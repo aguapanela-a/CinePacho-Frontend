@@ -1,0 +1,40 @@
+/**
+ * multiplexService.js
+ * Servicios para el CRUD completo de Multiplex.
+ * Endpoints: /admin/multiplexes
+ */
+
+import { apiFetch } from './api'
+
+/** GET /admin/multiplexes — Lista todos los multiplex */
+export const getAllMultiplexes = () =>
+  apiFetch('/api/admin/multiplexes')
+
+/** GET /admin/multiplexes/{id} — Obtiene un multiplex con sus salas */
+export const getMultiplexById = (id) =>
+  apiFetch(`/api/admin/multiplexes/${id}`)
+
+/**
+ * POST /admin/multiplexes — Crea un nuevo multiplex
+ * @param {{ nameMultiplex, addressMultiplex, cityMultiplex }} data
+ */
+export const createMultiplex = (data) =>
+  apiFetch('/api/admin/multiplexes', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+/**
+ * PUT /admin/multiplexes/{id} — Actualiza un multiplex existente
+ * @param {string} id
+ * @param {{ nameMultiplex, addressMultiplex, cityMultiplex }} data
+ */
+export const updateMultiplex = (id, data) =>
+  apiFetch(`/api/admin/multiplexes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+
+/** DELETE /admin/multiplexes/{id} — Elimina un multiplex */
+export const deleteMultiplex = (id) =>
+  apiFetch(`/api/admin/multiplexes/${id}`, { method: 'DELETE' })

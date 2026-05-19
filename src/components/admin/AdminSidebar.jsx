@@ -7,7 +7,9 @@ import {
   Popcorn,
   FileBarChart2,
   LogOut,
-  ArrowLeft
+  ArrowLeft,
+  Film,
+  DoorOpen,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 
@@ -28,9 +30,19 @@ const globalLinks = [
     icon: Building2,
   },
   {
+    to: '/admin/peliculas',
+    label: 'Películas',
+    icon: Film,
+  },
+  {
+    to: '/admin/snacks',
+    label: 'Snacks',
+    icon: Popcorn,
+  },
+  {
     to: '/admin/inventario',
     label: 'Inventario',
-    icon: Popcorn,
+    icon: FileBarChart2,
   },
   {
     to: '/admin/reportes',
@@ -57,10 +69,11 @@ export default function AdminSidebar() {
   const getLinks = () => {
     if (isDrillDown && activeMultiplexId) {
       return [
-        { to: `/admin/multiplex/${activeMultiplexId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
-        { to: `/admin/multiplex/${activeMultiplexId}/empleados`, label: 'Empleados', icon: Users },
-        { to: `/admin/multiplex/${activeMultiplexId}/inventario`, label: 'Inventario', icon: Popcorn },
-        { to: `/admin/multiplex/${activeMultiplexId}/reportes`, label: 'Reportes', icon: FileBarChart2 },
+        { to: `/admin/multiplex/${activeMultiplexId}/dashboard`, label: 'Dashboard',  icon: LayoutDashboard },
+        { to: `/admin/multiplex/${activeMultiplexId}/empleados`, label: 'Empleados',  icon: Users },
+        { to: `/admin/multiplex/${activeMultiplexId}/salas`,     label: 'Salas',      icon: DoorOpen },
+        { to: `/admin/multiplex/${activeMultiplexId}/inventario`,label: 'Inventario', icon: Popcorn },
+        { to: `/admin/multiplex/${activeMultiplexId}/reportes`,  label: 'Reportes',   icon: FileBarChart2 },
       ]
     }
     return globalLinks
