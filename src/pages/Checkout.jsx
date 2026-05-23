@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { ShieldCheck, Loader2, AlertCircle, ArrowLeft } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useLanguage } from '../context/LanguageContext'
 
 /**
  * CheckoutForm — Formulario interno que usa los hooks de Stripe.
  * Debe estar dentro de un <Elements> provider (StripeProvider).
  */
-function CheckoutForm({ total }) {
+function CheckoutForm({ total, onPaymentSuccess }) {
   const stripe = useStripe()
   const elements = useElements()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [processing, setProcessing] = useState(false)
   const [payError, setPayError] = useState(null)
 
@@ -35,7 +37,7 @@ function CheckoutForm({ total }) {
       setPayError(error.message)
       setProcessing(false)
     } else {
-      // Pago exitoso sin redirección externa
+      onPaymentSuccess?.()
       navigate('/confirmacion')
     }
   }
@@ -61,15 +63,15 @@ function CheckoutForm({ total }) {
         className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-magenta/25 disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {processing ? (
-          <><Loader2 size={20} className="animate-spin" /> Procesando...</>
+          <><Loader2 size={20} className="animate-spin" /> {t('common.processing')}</>
         ) : (
-          <><ShieldCheck size={20} /> Pagar ${total.toLocaleString('es-CO')}</>
+          <><ShieldCheck size={20} /> {t('checkout.pay')} ${total.toLocaleString('es-CO')}</>
         )}
       </button>
 
       <p className="text-center text-xs text-text-secondary flex items-center justify-center gap-1.5">
         <ShieldCheck size={13} className="text-green-400" />
-        Pago seguro con cifrado SSL · Powered by Stripe
+        {t('checkout.securePayment')}
       </p>
     </form>
   )
@@ -79,6 +81,7 @@ function CheckoutForm({ total }) {
 
 import StripeProvider from '../components/StripeProvider'
 import { createPaymentIntent } from '../services/paymentService'
+import { saveOrderSnapshot } from '../components/CheckoutGuard'
 
 /**
  * Checkout — Página principal de pago.
@@ -88,14 +91,45 @@ import { createPaymentIntent } from '../services/paymentService'
  * "pendiente de conexión al backend" con un aviso claro.
  */
 export default function Checkout() {
-  const { cart, cartTotal } = useApp()
+  const { cart, cartTotal, pendingPoints } = useApp()
   const navigate = useNavigate()
+  const { t } = useLanguage()
+
+  const [shippingInfo, setShippingInfo] = useState({
+    address: '',
+    city: '',
+    postalCode: '',
+    phone: ''
+  })
+  const [shippingErrors, setShippingErrors] = useState({})
+
+  const handlePaymentSuccess = () => {
+    saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo })
+  }
 
   const [clientSecret, setClientSecret] = useState(null)
   const [loadingIntent, setLoadingIntent] = useState(true)
   const [intentError, setIntentError] = useState(null)
   const backendReady = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY &&
     import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY !== 'pk_test_REEMPLAZA_CON_TU_CLAVE_AQUI'
+
+  const validateShipping = () => {
+    const errors = {}
+    if (!shippingInfo.address.trim()) errors.address = t('checkout.addressRequired')
+    if (!shippingInfo.city.trim()) errors.city = t('checkout.cityRequired')
+    if (!shippingInfo.postalCode.trim()) errors.postalCode = t('checkout.postalCodeRequired')
+    if (!shippingInfo.phone.trim()) errors.phone = t('checkout.phoneRequired')
+    setShippingErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleShippingChange = (e) => {
+    const { name, value } = e.target
+    setShippingInfo(prev => ({ ...prev, [name]: value }))
+    if (shippingErrors[name]) {
+      setShippingErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
 
   useEffect(() => {
     if (!backendReady) { setLoadingIntent(false); return }
@@ -126,13 +160,13 @@ export default function Checkout() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors mb-8 text-sm"
         >
-          <ArrowLeft size={16} /> Volver
+          <ArrowLeft size={16} /> {t('common.back')}
         </button>
 
         <h1 className="text-4xl font-display uppercase tracking-widest text-white mb-2">
-          <span className="gradient-brand">Checkout</span>
+          <span className="gradient-brand">{t('checkout.title')}</span>
         </h1>
-        <p className="text-text-secondary mb-10">Revisa tu orden y completa el pago</p>
+        <p className="text-text-secondary mb-10">{t('checkout.subtitle')}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
 
@@ -140,11 +174,11 @@ export default function Checkout() {
           <div className="lg:col-span-2">
             <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl sticky top-8">
               <h2 className="font-display text-xl tracking-widest uppercase text-white mb-6">
-                Tu Orden
+                {t('checkout.yourOrder')}
               </h2>
 
               {cart.length === 0 ? (
-                <p className="text-text-secondary text-sm">El carrito está vacío.</p>
+                <p className="text-text-secondary text-sm">{t('cart.empty')}</p>
               ) : (
                 <div className="space-y-4">
                   {cart.map((item, i) => (
@@ -161,7 +195,7 @@ export default function Checkout() {
                   ))}
 
                   <div className="pt-4 border-t border-border/50 flex items-center justify-between">
-                    <span className="font-bold text-white">Total</span>
+                    <span className="font-bold text-white">{t('checkout.total')}</span>
                     <span className="text-2xl font-display text-gold">
                       ${cartTotal.toLocaleString('es-CO')}
                     </span>
@@ -172,10 +206,86 @@ export default function Checkout() {
           </div>
 
           {/* ── Formulario de pago ──────────────────────────────────────── */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-6">
+            {/* Dirección de Envío */}
+            <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl">
+              <h2 className="font-display text-lg tracking-widest uppercase text-white mb-4">
+                {t('checkout.shippingAddress')}
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-bold text-text-secondary block mb-1">
+                    {t('checkout.address')}
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={shippingInfo.address}
+                    onChange={handleShippingChange}
+                    placeholder={t('checkout.addressPlaceholder')}
+                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
+                      shippingErrors.address ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                    }`}
+                  />
+                  {shippingErrors.address && <p className="text-red-500 text-xs mt-1">{shippingErrors.address}</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-bold text-text-secondary block mb-1">
+                      {t('checkout.city')}
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={shippingInfo.city}
+                      onChange={handleShippingChange}
+                      placeholder={t('checkout.cityPlaceholder')}
+                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
+                        shippingErrors.city ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                      }`}
+                    />
+                    {shippingErrors.city && <p className="text-red-500 text-xs mt-1">{shippingErrors.city}</p>}
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-text-secondary block mb-1">
+                      {t('checkout.postalCode')}
+                    </label>
+                    <input
+                      type="text"
+                      name="postalCode"
+                      value={shippingInfo.postalCode}
+                      onChange={handleShippingChange}
+                      placeholder="080001"
+                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
+                        shippingErrors.postalCode ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                      }`}
+                    />
+                    {shippingErrors.postalCode && <p className="text-red-500 text-xs mt-1">{shippingErrors.postalCode}</p>}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-bold text-text-secondary block mb-1">
+                    {t('checkout.phone')}
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={shippingInfo.phone}
+                    onChange={handleShippingChange}
+                    placeholder="+57 300 0000000"
+                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
+                      shippingErrors.phone ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                    }`}
+                  />
+                  {shippingErrors.phone && <p className="text-red-500 text-xs mt-1">{shippingErrors.phone}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Formulario de pago */}
             <div className="bg-surface/80 border border-border/50 rounded-3xl p-8 backdrop-blur-xl">
               <h2 className="font-display text-xl tracking-widest uppercase text-white mb-6">
-                Método de Pago
+                {t('checkout.paymentMethod')}
               </h2>
 
               {/* Estado: sin API key / sin backend */}
@@ -183,7 +293,7 @@ export default function Checkout() {
                 <div className="space-y-4">
                   <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-2xl px-5 py-4 text-sm">
                     <p className="font-bold flex items-center gap-2 mb-2">
-                      <AlertCircle size={16} /> Integración Stripe pendiente
+                      <AlertCircle size={16} /> {t('checkout.stripePending')}
                     </p>
 
                   </div>
@@ -191,21 +301,21 @@ export default function Checkout() {
                   {/* Formulario de demostración visual */}
                   <div className="space-y-4 opacity-50 pointer-events-none select-none">
                     <div className="bg-carbon border border-border/50 rounded-2xl px-4 py-4">
-                      <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">Número de tarjeta</p>
+                      <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">{t('checkout.cardNumber')}</p>
                       <p className="text-text-secondary font-mono tracking-widest">•••• •••• •••• ••••</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-carbon border border-border/50 rounded-2xl px-4 py-4">
-                        <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">Vencimiento</p>
+                        <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">{t('checkout.expiry')}</p>
                         <p className="text-text-secondary font-mono">MM / AA</p>
                       </div>
                       <div className="bg-carbon border border-border/50 rounded-2xl px-4 py-4">
-                        <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">CVC</p>
+                        <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">{t('checkout.cvc')}</p>
                         <p className="text-text-secondary font-mono">•••</p>
                       </div>
                     </div>
                     <button disabled className="w-full py-4 rounded-2xl bg-gradient-to-r from-magenta/50 to-vinotinto/50 text-white font-bold text-lg opacity-60">
-                      Pagar ${cartTotal.toLocaleString('es-CO')}
+                      {t('checkout.pay')} ${cartTotal.toLocaleString('es-CO')}
                     </button>
                   </div>
                 </div>
@@ -215,7 +325,7 @@ export default function Checkout() {
               {backendReady && loadingIntent && (
                 <div className="flex items-center justify-center py-16 gap-3 text-text-secondary">
                   <Loader2 size={24} className="animate-spin text-magenta" />
-                  <span>Preparando pago seguro...</span>
+                  <span>{t('checkout.preparingSecurePayment')}</span>
                 </div>
               )}
 
@@ -229,11 +339,11 @@ export default function Checkout() {
               {/* Estado: listo para pagar */}
               {backendReady && clientSecret && (
                 <StripeProvider clientSecret={clientSecret}>
-                  <CheckoutForm total={cartTotal} />
+                  <CheckoutForm total={cartTotal} onPaymentSuccess={handlePaymentSuccess} />
                 </StripeProvider>
               )}
             </div>
-          </div>
+            </div>
         </div>
       </div>
     </div>

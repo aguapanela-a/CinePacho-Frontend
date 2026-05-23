@@ -12,7 +12,7 @@ import { apiFetch } from './api'
  * @param {string} query - Texto de búsqueda
  */
 export const searchMovies = (query) =>
-  apiFetch(`/admin/search?query=${encodeURIComponent(query)}`)
+  apiFetch(`/api/admin/search?query=${encodeURIComponent(query)}`)
 
 /**
  * POST /admin/select/{movieId}
@@ -20,7 +20,7 @@ export const searchMovies = (query) =>
  * @param {number} movieId - ID de TMDB
  */
 export const selectMovie = (movieId) =>
-  apiFetch(`/admin/select/${movieId}`, { method: 'POST' })
+  apiFetch(`/api/admin/select/${movieId}`, { method: 'POST' })
 
 /**
  * POST /admin/{multiplexName}/createScreening
@@ -29,7 +29,7 @@ export const selectMovie = (movieId) =>
  * @param {{ movieId, roomId, dateTime, price }} data
  */
 export const createScreening = (multiplexName, data) =>
-  apiFetch(`/admin/${encodeURIComponent(multiplexName)}/createScreening`, {
+  apiFetch(`/api/admin/${encodeURIComponent(multiplexName)}/createScreening`, {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -43,7 +43,7 @@ export const createScreening = (multiplexName, data) =>
  */
 export const updateScreeningStatus = (multiplexName, screeningId, status) =>
   apiFetch(
-    `/admin/${encodeURIComponent(multiplexName)}/${screeningId}/status?status=${status}`,
+    `/api/admin/${encodeURIComponent(multiplexName)}/${screeningId}/status?status=${status}`,
     {
       method: 'PUT',
     }

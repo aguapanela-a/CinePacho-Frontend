@@ -10,6 +10,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/8rpDcsfLJypbO6vtec8OysZoxTC.jpg',
     synopsis: 'La asombrosa y paradójica historia del brillante físico J. Robert Oppenheimer, quien debe arriesgarse a destruir el mundo para poder salvarlo.',
+    multiplexes: ['Titán', 'Gran Estación', 'Santafé'],
   },
   {
     id: 2,
@@ -22,6 +23,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg',
     synopsis: 'Paul Atreides se une a Chani y a los Fremen mientras busca venganza contra los conspiradores que destruyeron a su familia, enfrentándose a un destino ineludible.',
+    multiplexes: ['Unicentro', 'Embajador'],
   },
   {
     id: 3,
@@ -34,6 +36,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w1280/lE3DCRI7bQgHSiIuEPcFiXpiuGV.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/w1280/lE3DCRI7bQgHSiIuEPcFiXpiuGV.jpg',
     synopsis: 'Riley entra en la pubertad, y el Cuartel General sufre una repentina reforma para hacerle hueco a algo totalmente inesperado: ¡nuevas emociones como la Ansiedad!',
+    multiplexes: ['Titán', 'Plaza Central', 'Las Américas'],
   },
   {
     id: 4,
@@ -46,6 +49,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w500/2cxhvwyEwRlysAmRH4iodkvo0z5.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/euYIwmwkmz95mnXvufEmbL6ovhZ.jpg',
     synopsis: 'Años después de presenciar la heroica muerte del venerado Máximo, Lucio adulto se ve obligado a entrar en el Coliseo y luchar por el futuro del Imperio Romano.',
+    multiplexes: ['Gran Estación', 'Santafé'],
   },
   {
     id: 5,
@@ -58,6 +62,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w1280/jivUhECegXI3OYtPVflWoIDtENt.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/w1280/jivUhECegXI3OYtPVflWoIDtENt.jpg',
     synopsis: 'Gótica historia de obsesión entre una joven atormentada y un terrorífico y antiguo vampiro de Transilvania enamorado de ella, en medio de la plaga.',
+    multiplexes: ['Unicentro', 'Las Américas'],
   },
   {
     id: 6,
@@ -70,6 +75,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w500/xDGbZ0JJ3mYaGKy4Nzd9Kph6M9L.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/uLqNE9BcDOkceKAFIhYMYpFEmuA.jpg',
     synopsis: 'La historia no contada de las brujas de Oz. Elphaba, una joven incomprendida por su inusual color de piel verde, y Glinda, la popular chica dorada.',
+    multiplexes: ['Titán', 'Embajador', 'Plaza Central'],
   },
   {
     id: 7,
@@ -82,6 +88,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/9l1eZiJHmhr5jIlthMdJN5WYoff.jpg',
     synopsis: 'Un Wade Wilson apático se une a un Wolverine profundamente reacio para salvar su universo, cruzando caminos para cambiar por siempre el MCU de manera épica.',
+    multiplexes: ['Santafé', 'Plaza Central'],
   },
   {
     id: 8,
@@ -94,15 +101,16 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w500/b33nnKl1GSFbao4l3fZDDqsMx0F.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/9r1BwA2OqM5J1hZIn01tN5Sik7t.jpg',
     synopsis: 'Mientras hurgan en las profundidades de una estación espacial abandonada, un grupo de jóvenes colonizadores se enfrenta cara a cara con la forma de vida más aterradora del universo.',
+    multiplexes: ['Titán', 'Unicentro', 'Gran Estación'],
   },
 ]
 
 // También podemos exportar las fechas y horarios mock para uso global en toda la app
 export const showtimeDates = [
-  { day: 'Hoy', date: '24 Oct' },
-  { day: 'Mañana', date: '25 Oct' },
-  { day: 'Jueves', date: '26 Oct' },
-  { day: 'Viernes', date: '27 Oct' },
+  { dayKey: 'movie.today', date: '24 Oct' },
+  { dayKey: 'movie.tomorrow', date: '25 Oct' },
+  { dayKey: 'movie.thursday', date: '26 Oct' },
+  { dayKey: 'movie.friday', date: '27 Oct' },
 ]
 
 export const showtimes = ['14:30', '16:45', '19:15', '21:00', '22:45']

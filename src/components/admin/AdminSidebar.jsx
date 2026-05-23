@@ -12,6 +12,7 @@ import {
   DoorOpen,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { useLanguage } from '../../context/LanguageContext'
 
 const globalLinks = [
   {
@@ -55,8 +56,11 @@ export default function AdminSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const { logoutUser, user } = useApp()
+  const { t } = useLanguage()
 
   const handleLogout = () => {
+    const shouldSignOut = window.confirm(t('nav.logoutConfirm') || '¿Seguro que deseas cerrar sesión?')
+    if (!shouldSignOut) return
     logoutUser()
     navigate('/login')
   }
@@ -69,14 +73,22 @@ export default function AdminSidebar() {
   const getLinks = () => {
     if (isDrillDown && activeMultiplexId) {
       return [
-        { to: `/admin/multiplex/${activeMultiplexId}/dashboard`, label: 'Dashboard',  icon: LayoutDashboard },
-        { to: `/admin/multiplex/${activeMultiplexId}/empleados`, label: 'Empleados',  icon: Users },
-        { to: `/admin/multiplex/${activeMultiplexId}/salas`,     label: 'Salas',      icon: DoorOpen },
-        { to: `/admin/multiplex/${activeMultiplexId}/inventario`,label: 'Inventario', icon: Popcorn },
-        { to: `/admin/multiplex/${activeMultiplexId}/reportes`,  label: 'Reportes',   icon: FileBarChart2 },
+        { to: `/admin/multiplex/${activeMultiplexId}/dashboard`, label: t('admin.dashboard'),  icon: LayoutDashboard },
+        { to: `/admin/multiplex/${activeMultiplexId}/empleados`, label: t('admin.employees'),  icon: Users },
+        { to: `/admin/multiplex/${activeMultiplexId}/salas`,     label: t('admin.rooms'),      icon: DoorOpen },
+        { to: `/admin/multiplex/${activeMultiplexId}/inventario`,label: t('admin.inventory'), icon: Popcorn },
+        { to: `/admin/multiplex/${activeMultiplexId}/reportes`,  label: t('admin.reports'),   icon: FileBarChart2 },
       ]
     }
-    return globalLinks
+    return [
+      { to: '/admin/dashboard', label: t('admin.dashboard'), icon: LayoutDashboard },
+      { to: '/admin/empleados', label: t('admin.employees'), icon: Users },
+      { to: '/admin/multiplex', label: t('admin.multiplex'), icon: Building2 },
+      { to: '/admin/peliculas', label: t('admin.movies'), icon: Film },
+      { to: '/admin/snacks', label: t('admin.snacks'), icon: Popcorn },
+      { to: '/admin/inventario', label: t('admin.inventory'), icon: FileBarChart2 },
+      { to: '/admin/reportes', label: t('admin.reports'), icon: FileBarChart2 },
+    ]
   }
 
   const linksToRender = getLinks()
@@ -98,7 +110,7 @@ export default function AdminSidebar() {
           </h1>
 
           <p className="text-xs text-text-secondary font-bold tracking-widest uppercase">
-            Panel Admin
+            {t('admin.sidebarTitle')}
           </p>
         </div>
       </div>
@@ -106,7 +118,7 @@ export default function AdminSidebar() {
       {/* Usuario */}
       <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-8">
         <p className="text-xs text-text-secondary uppercase tracking-widest mb-1">
-          Administrador
+          {t('roles.ADMIN')}
         </p>
 
         <h2 className="text-white font-bold text-lg">
@@ -140,7 +152,7 @@ export default function AdminSidebar() {
               className="flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-magenta hover:bg-magenta/10 transition-all duration-300"
             >
               <ArrowLeft size={20} />
-              <span>Volver a General</span>
+              <span>{t('admin.backToGeneral')}</span>
             </NavLink>
           </div>
         )}
@@ -152,7 +164,7 @@ export default function AdminSidebar() {
         className="mt-8 flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all duration-300 rounded-2xl py-3 font-bold cursor-pointer"
       >
         <LogOut size={18} />
-        Cerrar sesión
+        {t('admin.logout')}
       </button>
     </aside>
   )

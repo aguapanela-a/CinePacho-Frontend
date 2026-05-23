@@ -3,6 +3,8 @@ import {
   Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../../context/ToastContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { moviesData, showtimes, ticketFormats } from '../../data/mockMoviesData'
 import { snacksData } from '../../data/mockSnacksData'
@@ -15,6 +17,8 @@ const mockCustomers = [
 
 export default function CashierDashboard() {
   const { user, logoutUser } = useApp()
+  const toast = useToast()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
@@ -28,6 +32,8 @@ export default function CashierDashboard() {
   
   // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(null)
+  const rooms = Array.from({ length: 15 }, (_, i) => `Sala ${i + 1}`)
   
   // Puntos fijos por compra
   const POINTS_PER_PURCHASE = 10
@@ -51,14 +57,19 @@ export default function CashierDashboard() {
   }
 
   const handleAddTicket = (time, type, price) => {
-    const ticketId = `${selectedMovie.id}-${time}-${type}`
+    if (!selectedRoom) {
+      toast.error('Por favor selecciona una sala')
+      return
+    }
+    const ticketId = `${selectedMovie.id}-${time}-${type}-${selectedRoom}`
     addToCart({
       id: ticketId,
-      name: `Boleta ${type} - ${selectedMovie.title} (${time})`,
+      name: `Boleta ${type} - ${selectedMovie.title} (${time}) - ${selectedRoom}`,
       price: price,
       type: 'ticket'
     })
     setSelectedMovie(null) // Cerrar modal
+    setSelectedRoom(null) // Reset sala
   }
 
   const removeFromCart = (itemId) => {
@@ -75,7 +86,7 @@ export default function CashierDashboard() {
       setActiveCustomer(found)
       setSearchCustomer('')
     } else {
-      alert('Cliente no encontrado')
+      toast.error(t('cashier.customerNotFound'))
     }
   }
 
@@ -354,6 +365,27 @@ export default function CashierDashboard() {
             <div className="space-y-6">
               <div>
                 <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                  Sala
+                </h3>
+                <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
+                  {rooms.map(room => (
+                    <button
+                      key={room}
+                      onClick={() => setSelectedRoom(room)}
+                      className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                        selectedRoom === room
+                          ? 'bg-cyan-400 text-carbon'
+                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-cyan-400/50 hover:text-white'
+                      }`}
+                    >
+                      {room}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
                   <Clock size={14} /> Horarios Disponibles
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -362,7 +394,7 @@ export default function CashierDashboard() {
                       <p className="font-bold text-white mb-2">{time}</p>
                       <div className="flex flex-col gap-2">
                         {ticketFormats.map(({ fmt, price }) => (
-                          <button 
+                          <button
                             key={`${time}-${fmt}`}
                             onClick={() => handleAddTicket(time, fmt, price)}
                             className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-1.5 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"

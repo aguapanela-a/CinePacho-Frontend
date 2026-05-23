@@ -421,9 +421,9 @@ export default function AdminMovies() {
               </p>
             </div>
           ) : (
-            <div className="bg-surface/50 border border-border/50 rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+            <div className="bg-surface/50 border border-border/50 rounded-3xl overflow-hidden w-full max-w-full">
+              <div className="overflow-x-auto w-full max-w-full">
+                <table className="w-full min-w-[800px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border/50">
                       {['Película', 'Multiplex', 'Fecha / Hora', 'Precio', 'Estado', 'Cambiar Estado'].map(h => (

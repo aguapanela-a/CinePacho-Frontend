@@ -7,10 +7,14 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Snacks from './pages/Snacks'
 import { AppProvider } from './context/AppContext'
+import { LanguageProvider } from './context/LanguageContext'
+import { ToastProvider } from './context/ToastContext'
+import LanguageToggle from './components/LanguageToggle'
 import CartDrawer from './components/CartDrawer'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 import Profile from './pages/Profile'
+import NotFound from './pages/NotFound'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminInventory from './pages/admin/AdminInventory'
 import AdminReports from './pages/admin/AdminReports'
@@ -26,6 +30,9 @@ import AdminMovies from './pages/admin/AdminMovies'
 import AdminSnacks from './pages/admin/AdminSnacks'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
+import SearchResults from './pages/SearchResults'
+import CheckoutGuard from './components/CheckoutGuard'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function AppLayout() {
   const location = useLocation()
@@ -41,6 +48,12 @@ function AppLayout() {
       <div className="orb-gold bottom-0 -right-64 translate-y-1/2" />
       <div className="orb-magenta top-1/2 right-0 translate-x-1/2 -translate-y-1/2 opacity-50" />
 
+      {isAuthPage && (
+        <div className="absolute top-4 right-4 z-50">
+          <LanguageToggle />
+        </div>
+      )}
+
       {!isAuthPage && !isAdminPage && !isCashierPage && !isManagerPage && <Navbar />}
       <main className="flex-1 relative z-10 animate-[fadeUp_0.5s_ease-out_forwards]">
         <Routes>
@@ -50,9 +63,17 @@ function AppLayout() {
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/registro" element={<PublicRoute><Register /></PublicRoute>} />
 
-          {/* ── Perfil Universal ── */}
+          {/* ── Perfil Universal y Compras ── */}
           <Route 
             path="/perfil" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/compras" 
             element={
               <ProtectedRoute>
                 <Profile />
@@ -206,9 +227,15 @@ function AppLayout() {
             }
           />
 
+          {/* ── Rutas de búsqueda y discovery ── */}
+          <Route path="/search" element={<PublicRoute><SearchResults /></PublicRoute>} />
+
           {/* ── Rutas de Checkout y Confirmación ── */}
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/confirmacion" element={<OrderConfirmation />} />
+          <Route path="/checkout" element={<CheckoutGuard><Checkout /></CheckoutGuard>} />
+          <Route path="/confirmacion" element={<CheckoutGuard requireSnapshot><OrderConfirmation /></CheckoutGuard>} />
+
+          {/* ── 404 No Encontrado ── */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       {!isAuthPage && !isAdminPage && !isCashierPage && !isManagerPage && <Footer />}
@@ -221,10 +248,16 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Router>
-        <AppLayout />
-      </Router>
-    </AppProvider>
+    <LanguageProvider>
+      <ToastProvider>
+        <AppProvider>
+          <Router>
+            <ErrorBoundary>
+              <AppLayout />
+            </ErrorBoundary>
+          </Router>
+        </AppProvider>
+      </ToastProvider>
+    </LanguageProvider>
   )
 }

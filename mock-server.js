@@ -93,7 +93,12 @@ let multiplexes = [
 ];
 
 let snacks = [
-  { id: '1111', nameSnack: 'Palomitas Grandes', descriptionSnack: 'Para compartir', priceSnack: 15000, quantitySnack: 100 }
+  { id: 's1', nameSnack: 'Combo Mega Cine', descriptionSnack: 'Palomitas gigantes, 2 refrescos grandes y nachos con queso', priceSnack: 45000, quantitySnack: 50 },
+  { id: 's2', nameSnack: 'Palomitas Mantequilla (Grandes)', descriptionSnack: 'Las clásicas palomitas de cine recién hechas', priceSnack: 20000, quantitySnack: 50 },
+  { id: 's3', nameSnack: 'Nachos Cine Pacho', descriptionSnack: 'Nachos con queso fundido', priceSnack: 18000, quantitySnack: 50 },
+  { id: 's4', nameSnack: 'Combo Pareja', descriptionSnack: 'Palomitas, 2 refrescos y perro caliente', priceSnack: 38000, quantitySnack: 50 },
+  { id: 's5', nameSnack: 'Refresco Grande', descriptionSnack: 'Bebida 32oz a elegir', priceSnack: 12000, quantitySnack: 50 },
+  { id: 's6', nameSnack: 'Chocolatina Grande', descriptionSnack: 'Barra de chocolate premium', priceSnack: 8000, quantitySnack: 50 },
 ];
 
 // Multiplex

@@ -62,7 +62,14 @@ export const multiplexes = [
   status: 'active',
   managerId: null,
 },
-
+{
+  id: 'santafe',
+  name: 'Santafé',
+  address: 'Cra. 7 #32-15, Bogotá',
+  salas: 10,
+  status: 'active',
+  managerId: null,
+},
 
 ]
 

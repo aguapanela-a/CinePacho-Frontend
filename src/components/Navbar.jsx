@@ -14,13 +14,9 @@ import {
   User,
   ChevronDown,
 } from 'lucide-react'
+import LanguageToggle from './LanguageToggle'
 import { useApp } from '../context/AppContext'
-
-const navLinks = [
-  { to: '/', label: 'Cartelera', icon: Ticket },
-  { to: '/snacks', label: 'Snacks', icon: Popcorn },
-  { to: '/compras', label: 'Mis Compras', icon: ShoppingBag },
-]
+import { useLanguage } from '../context/LanguageContext'
 
 // Puntos necesarios para una entrada gratis (Efecto de Tendencia a la Meta)
 const POINTS_FOR_REWARD = 100
@@ -31,11 +27,20 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { basePoints, cart, setIsCartOpen, user, logoutUser } = useApp()
+  const { t } = useLanguage()
+
+  const navLinks = [
+    { to: '/', label: t('nav.billboard'), icon: Ticket },
+    { to: '/snacks', label: t('nav.snacks'), icon: Popcorn },
+    { to: '/compras', label: t('nav.myPurchases'), icon: ShoppingBag },
+  ]
 
   // Cálculo del progreso hacia la siguiente recompensa
   const pointsProgress = Math.min((basePoints / POINTS_FOR_REWARD) * 100, 100)
 
   const handleLogout = () => {
+    const shouldSignOut = window.confirm(t('nav.logoutConfirm') || '¿Seguro que deseas cerrar sesión?')
+    if (!shouldSignOut) return
     logoutUser()
     setUserMenuOpen(false)
     navigate('/')
@@ -56,13 +61,7 @@ export default function Navbar() {
    * Texto descriptivo del rol del usuario para el menú.
    */
   const getRoleLabel = (userType) => {
-    const labels = {
-      ADMIN: 'Administrador',
-      MANAGER: 'Gerente',
-      EMPLOYEE: 'Cajero',
-      BUYER: 'Cliente',
-    }
-    return labels[userType] || 'Usuario'
+    return t(`roles.${userType}`) || t('roles.UNKNOWN')
   }
 
   return (
@@ -188,7 +187,7 @@ export default function Navbar() {
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-text-secondary hover:text-white hover:bg-surface-light transition-all"
                           >
                             <User size={16} />
-                            Mi perfil
+                            {t('nav.profile')}
                           </Link>
 
                           {/* Acceso discreto al panel admin */}
@@ -199,7 +198,7 @@ export default function Navbar() {
                               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-magenta hover:bg-magenta/10 transition-all"
                             >
                               <LayoutDashboard size={16} />
-                              Panel Admin
+                              {t('nav.adminPanel')}
                             </Link>
                           )}
 
@@ -211,7 +210,7 @@ export default function Navbar() {
                               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-magenta hover:bg-magenta/10 transition-all"
                             >
                               <LayoutDashboard size={16} />
-                              Panel Gerente
+                              {t('nav.managerPanel')}
                             </Link>
                           )}
 
@@ -223,7 +222,7 @@ export default function Navbar() {
                               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gold hover:bg-gold/10 transition-all"
                             >
                               <Ticket size={16} />
-                              Punto de Venta
+                              {t('nav.cashierPanel')}
                             </Link>
                           )}
                         </div>
@@ -235,7 +234,7 @@ export default function Navbar() {
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
                           >
                             <LogOut size={16} />
-                            Cerrar sesión
+                            {t('nav.logout')}
                           </button>
                         </div>
                       </div>
@@ -250,15 +249,16 @@ export default function Navbar() {
                     className="flex items-center gap-1.5 text-sm font-bold text-text-secondary hover:text-magenta transition-colors px-3 py-2 rounded-xl hover:bg-magenta/10"
                   >
                     <LogIn size={16} />
-                    Ingresar
+                    {t('nav.login')}
                   </Link>
                   <Link
                     to="/registro"
                     className="flex items-center gap-1.5 text-sm bg-gradient-to-r from-magenta via-vinotinto to-gold text-white px-4 py-2 rounded-xl font-bold hover:shadow-lg hover:shadow-magenta/30 transition-all duration-300"
                   >
                     <UserPlus size={16} />
-                    Registro
+                    {t('nav.register')}
                   </Link>
+                  <LanguageToggle className="ml-2 hidden sm:flex" />
                 </div>
               )}
             </div>
@@ -312,7 +312,7 @@ export default function Navbar() {
               className="w-full flex items-center justify-center gap-2 text-sm font-bold text-white bg-surface-light border border-border rounded-xl py-2.5 hover:bg-magenta/10 transition-colors"
             >
               <ShoppingBag size={16} />
-              Mi Orden ({cart.length})
+              {t('nav.myOrder')} ({cart.length})
             </button>
 
             {user ? (
@@ -337,7 +337,7 @@ export default function Navbar() {
                     className="flex items-center justify-center gap-2 text-sm font-bold text-magenta border border-magenta/30 rounded-xl py-2.5 hover:bg-magenta/10 transition-colors"
                   >
                     <LayoutDashboard size={16} />
-                    Panel Admin
+                    {t('nav.adminPanel')}
                   </Link>
                 )}
 
@@ -348,7 +348,7 @@ export default function Navbar() {
                     className="flex items-center justify-center gap-2 text-sm font-bold text-magenta border border-magenta/30 rounded-xl py-2.5 hover:bg-magenta/10 transition-colors"
                   >
                     <LayoutDashboard size={16} />
-                    Panel Gerente
+                    {t('nav.managerPanel')}
                   </Link>
                 )}
 
@@ -359,7 +359,7 @@ export default function Navbar() {
                     className="flex items-center justify-center gap-2 text-sm font-bold text-gold border border-gold/30 rounded-xl py-2.5 hover:bg-gold/10 transition-colors"
                   >
                     <Ticket size={16} />
-                    Punto de Venta
+                    {t('nav.cashierPanel')}
                   </Link>
                 )}
 
@@ -371,7 +371,7 @@ export default function Navbar() {
                   className="w-full flex items-center justify-center gap-2 text-sm font-bold text-red-400 border border-red-500/30 rounded-xl py-2.5 hover:bg-red-500/10 transition-colors"
                 >
                   <LogOut size={16} />
-                  Cerrar sesión
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
@@ -383,7 +383,7 @@ export default function Navbar() {
                   className="flex-1 flex items-center justify-center gap-2 text-sm font-bold text-magenta border border-magenta/30 rounded-xl py-2.5 hover:bg-magenta/10 transition-colors"
                 >
                   <LogIn size={16} />
-                  Ingresar
+                  {t('nav.login')}
                 </Link>
                 <Link
                   to="/registro"
@@ -391,10 +391,14 @@ export default function Navbar() {
                   className="flex-1 flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-magenta to-gold text-white rounded-xl py-2.5 font-bold"
                 >
                   <UserPlus size={16} />
-                  Registro
+                  {t('nav.register')}
                 </Link>
               </div>
             )}
+            
+            <div className="flex justify-center mt-2">
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       </div>
