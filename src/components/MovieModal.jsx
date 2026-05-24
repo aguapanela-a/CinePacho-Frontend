@@ -64,18 +64,12 @@ function MovieModalContent({ movie, onClose, multiplexName }) {
     
     const unitPrice = Math.round(total / selectedSeats.length)
     addToCart({
-      id: `${movie.id}-${selectedDate}-${selectedTime}-${selectedRoom}`, // Include selectedRoom in ID
+      id: `${movie.id}-${selectedDate}-${selectedTime}-${selectedRoom}`,
       name: movie.title,
       type: 'ticket',
-      showtime: `${selectedDate} - ${selectedTime} • ${selectedRoom} • ${t('movie.seats')}: ${selectedSeats.join(', ')}`, // Include selectedRoom in showtime string
+      showtime: `${selectedDate} - ${selectedTime} • ${selectedRoom} • ${t('movie.seats')}: ${selectedSeats.join(', ')}`,
       format: selectedFormat,
-      unitPrice,
-      price: formatCurrency(unitPrice),
-      qty: selectedSeats.length,
-      points: 10,
-      image: movie.posterUrl,
-    })
-    toast.success(t('toast.addedToCart'))
+      seatIds: selectedSeats.map((seat) => `seat-${movie.id}-${selectedDate}-${selectedTime}-${selectedRoom}-${seat}`),
     setIsAddingToCart(false)
     onClose()
   }

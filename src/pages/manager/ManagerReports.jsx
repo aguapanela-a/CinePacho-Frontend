@@ -1,10 +1,14 @@
-import React from 'react'
 import ManagerLayout from '../../components/manager/ManagerLayout'
-import { FileBarChart2, TrendingUp, Ticket, Popcorn, Users, Building2 } from 'lucide-react'
+import { TrendingUp, Ticket, Popcorn, Users, Building2 } from 'lucide-react'
+import { useApp } from '../../context/useApp'
 
 export default function ManagerReports() {
-  const multiplexName = 'Titán'
+  // Obtener el nombre del multiplex del usuario logueado
+  const { user } = useApp()
+  const multiplexName = user?.multiplexId || 'Centro Comercial' // Default si no hay multiplexId
 
+  // Datos de prueba específicos para el multiplex actual
+  // En producción, estos vendrían de la API filtrados por multiplexId
   const stats = [
     {
       title: 'Ventas del Mes',
