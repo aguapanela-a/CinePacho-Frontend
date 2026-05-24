@@ -29,15 +29,15 @@ export function AppProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
 
   const loginUser = (authResponse) => {
-    const { token: jwt, userType, name } = authResponse
-    const userData = { name, userType }
+    const { token: jwt, userType, name, multiplexId } = authResponse; // Destructure multiplexId
+    const userData = { name, userType, multiplexId }; // Include multiplexId in userData
 
-    localStorage.setItem('cinepacho_token', jwt)
-    localStorage.setItem('cinepacho_user', JSON.stringify(userData))
+    localStorage.setItem('cinepacho_token', jwt);
+    localStorage.setItem('cinepacho_user', JSON.stringify(userData));
 
-    setToken(jwt)
-    setUser(userData)
-  }
+    setToken(jwt);
+    setUser(userData);
+  };
 
   const logoutUser = () => {
     localStorage.removeItem('cinepacho_token')

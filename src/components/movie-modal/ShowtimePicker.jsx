@@ -16,13 +16,13 @@ export default function ShowtimePicker({
   setSelectedFormat,
   selectedTime,
   setSelectedTime,
-  selectedRoom,
-  setSelectedRoom,
+  selectedRoom, // Now received as a display prop
+  // setSelectedRoom is no longer needed here as room is not user-selectable
   canProceedToSeats,
   handleProceedToSeats,
   getPrice,
 }) {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
 
   return (
     <>
@@ -54,25 +54,18 @@ export default function ShowtimePicker({
           </div>
         </div>
 
-        {/* NEW: Room Selector */}
+        {/* Room information is now display-only */}
         <div>
           <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">
-            {t('movie.roomLabel', 'Sala')} {/* Default for movie.roomLabel if not in translations */}
+            {t('movie.roomLabel', 'Sala')}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: 15 }, (_, i) => `Sala ${i + 1}`).map((room) => (
-              <button
-                key={room}
-                onClick={() => setSelectedRoom(room)}
-                className={`min-w-[60px] justify-center px-3 py-1.5 rounded-lg border text-xs transition-all duration-150 cursor-pointer ${
-                  selectedRoom === room
-                    ? 'border-cyan-400 bg-cyan-400/10 text-cyan-400'
-                    : 'border-border/40 bg-carbon text-text-secondary hover:border-cyan-400/40 hover:text-white'
-                }`}
-              >
-                <span className="font-display text-sm tracking-wider">{room}</span>
-              </button>
-            ))}
+            {/* Display the selectedRoom here, but no interactive buttons */}
+            <div
+              className={`min-w-[60px] justify-center px-3 py-1.5 rounded-lg border text-xs text-cyan-400 border-cyan-400 bg-cyan-400/10`}
+            >
+              <span className="font-display text-sm tracking-wider">{selectedRoom}</span>
+            </div>
           </div>
         </div>
 
@@ -126,7 +119,7 @@ export default function ShowtimePicker({
           <div className="flex-1 bg-carbon/40 border border-border/30 rounded-xl px-4 py-2 animate-[fadeIn_0.2s_ease-out]">
             <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">{t('movie.selectionLabel')}</p>
             <p className="text-white text-sm font-medium">
-              {selectedDate} • {selectedTime} • {selectedFormat} • {selectedRoom} {/* ADD selectedRoom */}
+              {selectedDate} • {selectedTime} • {selectedFormat} • {selectedRoom} {/* Display selectedRoom */}
               <span className="text-gold font-bold ml-2">${getPrice().toLocaleString('es-CO')}</span>
             </p>
           </div>
@@ -145,5 +138,5 @@ export default function ShowtimePicker({
         </Button>
       </div>
     </>
-  )
+  );
 }

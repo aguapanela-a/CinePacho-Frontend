@@ -69,12 +69,12 @@ export default function AdminEmployees() {
     cargo: '',
     multiplex: '',
     password: '',
-    indentityCard: '',
+    identityCard: '', // Corrected typo
     salary: '',
     fechaContrato: '',
-  })
-  const [creating, setCreating] = useState(false)
-  const [errorForm, setErrorForm] = useState(null)
+  });
+  const [creating, setCreating] = useState(false);
+  const [errorForm, setErrorForm] = useState(null);
 
   const filteredEmployees = employees.filter((employee) =>
     employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -143,20 +143,20 @@ const handleEditEmployee = () => {
         email: newEmployee.correo,
         password: newEmployee.password,
         userType: 'EMPLOYEE',
-        indentityCard: newEmployee.indentityCard,
+        identityCard: newEmployee.identityCard, // Corrected typo
         phoneNumber: newEmployee.telefono,
         salary: parseFloat(newEmployee.salary),
         position: newEmployee.cargo,
         // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
-      }
+      };
 
-      await registerEmployee(payload)
+      await registerEmployee(payload);
       
       const employee = {
         id: employees.length + 1,
         ...newEmployee,
         estado: 'Activo',
-      }
+      };
 
       setEmployees([...employees, employee])
 
@@ -328,7 +328,7 @@ const handleEditEmployee = () => {
                       {(() => {
                         const referenceDate = employee.fechaRotacion
                           ? new Date(employee.fechaRotacion)
-                          : (employee.fechaContrato ? new Date(employee.fechaContrato) : null);
+                          : (employee.fechaContrato ? new Date(employee.fechaContrato) : null); // Use fechaContrato if fechaRotacion is null
                         const threeMonthsAgo = new Date();
                         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -496,6 +496,7 @@ const handleEditEmployee = () => {
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 >
+                  <option value=""></option>
                   <option value="Director">Director</option>
                   <option value="Cajero">Cajero</option>
                   <option value="Despachador de comida">Despachador de comida</option>
@@ -525,9 +526,9 @@ const handleEditEmployee = () => {
                 </label>
                 <input
                   type="text"
-                  value={newEmployee.indentityCard}
+                  value={newEmployee.identityCard} // Corrected typo
                   onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, indentityCard: e.target.value })
+                    setNewEmployee({ ...newEmployee, identityCard: e.target.value }) // Corrected typo
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Ej: 1010101010"
@@ -746,6 +747,7 @@ const handleEditEmployee = () => {
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           >
+            <option value="">Seleccionar multiplex</option> {/* Added default option */}
             <option value="Titán">Titán</option>
             <option value="Unicentro">Unicentro</option>
             <option value="Gran Estación">Gran Estación</option>

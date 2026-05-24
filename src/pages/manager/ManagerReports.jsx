@@ -4,8 +4,10 @@ import { useApp } from '../../context/useApp'
 
 export default function ManagerReports() {
   // Obtener el nombre del multiplex del usuario logueado
-  const { user } = useApp()
-  const multiplexName = user?.multiplexId || 'Centro Comercial' // Default si no hay multiplexId
+  const { user } = useApp();
+  // En una implementación real, multiplexName se obtendría del multiplexId y se resolvería a un nombre legible.
+  // Por ahora, usamos un valor por defecto o el ID si está presente.
+  const multiplexName = user?.multiplexId || 'Tu Multiplex Asignado'; // Default si no hay multiplexId
 
   // Datos de prueba específicos para el multiplex actual
   // En producción, estos vendrían de la API filtrados por multiplexId

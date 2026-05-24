@@ -1,74 +1,75 @@
-import { useState, useEffect } from 'react'
-import { User, Star, ShoppingBag, Clock, Shield, Ticket, Gift, CalendarCheck } from 'lucide-react'
-import { useApp } from '../context/useApp'
-import { Navigate } from 'react-router-dom'
-import { useLanguage } from '../context/useLanguage'
-import { useToast } from '../context/useToast'
-import ReviewModal from '../components/ReviewModal'
+import { useState, useEffect, useCallback } from 'react';
+import { User, Star, ShoppingBag, Clock, Shield, Ticket, Gift, CalendarCheck } from 'lucide-react';
+import { useApp } from '../context/useApp';
+import { Navigate } from 'react-router-dom';
+import { useLanguage } from '../context/useLanguage';
+import { useToast } from '../context/useToast';
+import ReviewModal from '../components/ReviewModal';
 
 // Mock Data para el historial
 const mockHistory = [
   { id: 'ORD-1029', date: '12 May 2026', items: '2x Boleta General, Combo Mega', total: 67000, points: 10 },
   { id: 'ORD-0984', date: '05 May 2026', items: '1x Boleta Preferencial', total: 15000, points: 10 },
   { id: 'ORD-0850', date: '20 Abr 2026', items: 'Palomitas Grandes', total: 18000, points: 5 },
-]
+];
 
 export default function Profile() {
-  const { user, basePoints, setBasePoints } = useApp()
-  const { t } = useLanguage()
-  const toast = useToast()
+  const { user, basePoints, setBasePoints } = useApp();
+  const { t } = useLanguage();
+  const toast = useToast();
 
-  const [reviewOrder, setReviewOrder] = useState(null)
+  const [reviewOrder, setReviewOrder] = useState(null);
   const [coupons, setCoupons] = useState(() => {
-    const saved = localStorage.getItem('cinepacho_coupons')
-    return saved ? JSON.parse(saved) : []
-  })
+    const saved = localStorage.getItem('cinepacho_coupons');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
-    const saved = localStorage.getItem('cinepacho_points')
-    if (saved) setBasePoints(Number(saved) || 0)
-  }, [setBasePoints])
+    const saved = localStorage.getItem('cinepacho_points');
+    if (saved) setBasePoints(Number(saved) || 0);
+  }, [setBasePoints]);
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
-  const POINTS_FOR_REWARD = 100
-  const pointsProgress = Math.min((basePoints / POINTS_FOR_REWARD) * 100, 100)
-  const canRedeem = basePoints >= POINTS_FOR_REWARD
+  const POINTS_FOR_REWARD = 100;
+  const pointsProgress = Math.min((basePoints / POINTS_FOR_REWARD) * 100, 100);
+  const canRedeem = basePoints >= POINTS_FOR_REWARD;
 
   const handleRedeemPoints = () => {
-    if (!canRedeem) return
+    if (!canRedeem) return;
 
-    const expiryDate = new Date()
-    expiryDate.setMonth(expiryDate.getMonth() + 6)
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
 
     const coupon = {
       id: `CUP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       createdAt: new Date().toISOString(),
       expiresAt: expiryDate.toISOString(),
-      used: false,
-    }
+      used: false, // Cupones se marcarán como usados cuando se apliquen en el carrito.
+      description: t('profile.freeTicketCoupon') || 'Boleta Gratis',
+    };
 
-    const newPoints = basePoints - POINTS_FOR_REWARD
-    setBasePoints(newPoints)
-    localStorage.setItem('cinepacho_points', String(newPoints))
+    const newPoints = basePoints - POINTS_FOR_REWARD;
+    setBasePoints(newPoints);
+    localStorage.setItem('cinepacho_points', String(newPoints));
 
-    const updatedCoupons = [...coupons, coupon]
-    setCoupons(updatedCoupons)
-    localStorage.setItem('cinepacho_coupons', JSON.stringify(updatedCoupons))
+    const updatedCoupons = [...coupons, coupon];
+    setCoupons(updatedCoupons);
+    localStorage.setItem('cinepacho_coupons', JSON.stringify(updatedCoupons));
 
-    toast.success(t('profile.couponGenerated') || '¡Boleta gratis generada! Válida por 6 meses.')
-  }
+    toast.success(t('profile.couponGenerated') || '¡Boleta gratis generada! Válida por 6 meses.');
+  };
 
   // Revisar si ya fue evaluada una orden
-  const isReviewed = (orderId) => {
-    const reviews = JSON.parse(localStorage.getItem('cinepacho_reviews') || '[]')
-    return reviews.some((r) => r.orderId === orderId)
-  }
+  const isReviewed = useCallback((orderId) => {
+    const reviews = JSON.parse(localStorage.getItem('cinepacho_reviews') || '[]');
+    return reviews.some((r) => r.orderId === orderId);
+  }, []);
 
   // Filtrar cupones válidos (no usados, no expirados)
-  const validCoupons = coupons.filter((c) => !c.used && new Date(c.expiresAt) > new Date())
+  const validCoupons = coupons.filter((c) => !c.used && new Date(c.expiresAt) > new Date());
 
   // Render para Admin/Empleado/Gerente (Perfil Simplificado)
   if (user.userType !== 'BUYER') {
@@ -89,7 +90,7 @@ export default function Profile() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Render para Cliente (BUYER)
@@ -100,10 +101,8 @@ export default function Profile() {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         {/* Columna Izquierda: Tarjeta de Usuario y Puntos */}
         <div className="lg:col-span-1 space-y-6">
-          
           {/* Info del Usuario */}
           <div className="bg-surface/80 border border-border/50 rounded-3xl p-8 backdrop-blur-xl text-center">
             <div className="w-24 h-24 bg-carbon border-2 border-magenta rounded-full flex items-center justify-center mx-auto mb-4">
@@ -111,7 +110,7 @@ export default function Profile() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-1">{user.name}</h2>
             <p className="text-text-secondary text-sm mb-6">{t('profile.client')}</p>
-            
+
             <div className="inline-flex items-center gap-2 bg-magenta/10 border border-magenta/20 text-magenta px-4 py-2 rounded-full font-bold text-sm">
               <Star size={16} />
               {t('profile.bronzeLevel')}
@@ -123,7 +122,7 @@ export default function Profile() {
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
               <Star size={100} />
             </div>
-            
+
             <div className="relative z-10">
               <h3 className="text-gold font-bold uppercase tracking-widest text-sm mb-2">{t('profile.accumulatedPoints')}</h3>
               <div className="flex items-end gap-2 mb-6">
@@ -137,7 +136,7 @@ export default function Profile() {
                   <span className="text-gold">{basePoints} / {POINTS_FOR_REWARD}</span>
                 </div>
                 <div className="h-2 w-full bg-carbon rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-gold to-yellow-500 transition-all duration-1000 ease-out"
                     style={{ width: `${pointsProgress}%` }}
                   />
@@ -205,7 +204,7 @@ export default function Profile() {
 
             <div className="space-y-4">
               {mockHistory.map((order) => (
-                <div 
+                <div
                   key={order.id}
                   className="bg-carbon border border-border/40 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-magenta/30 transition-colors"
                 >
@@ -257,13 +256,12 @@ export default function Profile() {
             </button>
           </div>
         </div>
-
       </div>
 
       {/* Modal de Review */}
       <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} />
     </div>
-  )
+  );
 }
 
 
