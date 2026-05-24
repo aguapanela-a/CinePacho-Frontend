@@ -16,11 +16,12 @@ export default function MovieCard({ movie, onClick }) {
     <article
       className="group relative bg-surface rounded-2xl overflow-hidden border border-border/50 hover:border-magenta/50 transition-all duration-500 hover:shadow-2xl hover:shadow-magenta/20 cursor-pointer animate-[fadeUp_0.5s_ease-out_forwards]"
     >
-      <button
-        type="button"
+      <div // Changed from button to div
         onClick={handleCardClick}
         className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-magenta rounded-2xl"
         aria-label={`${title} — ${t('movieCard.viewTimes')}`}
+        role="button" // Added role for accessibility
+        tabIndex="0" // Added tabIndex for keyboard navigation
       >
         <div className="relative aspect-[2/3] overflow-hidden">
           <img
@@ -86,7 +87,7 @@ export default function MovieCard({ movie, onClick }) {
           </h3>
           <p className="text-xs text-text-secondary mt-0.5 truncate font-medium">{genre}</p>
         </div>
-      </button>
+      </div>
     </article>
   )
 }
