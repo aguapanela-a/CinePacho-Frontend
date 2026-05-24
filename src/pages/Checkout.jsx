@@ -84,6 +84,44 @@ import { createPaymentIntent } from '../services/paymentService'
 import { saveOrderSnapshot } from '../utils/orderSnapshot'
 
 /**
+ * Función auxiliar para mapear el carrito al formato requerido por el backend.
+ * Estructura los datos en formato { seats: [...], snacks: [...] }
+ */
+function mapCartToPaymentData(cart) {
+  const seats = []
+  const snacksMap = new Map()
+
+  cart.forEach((item) => {
+    if (item.type === 'ticket') {
+      if (Array.isArray(item.seatIds) && item.seatIds.length > 0) {
+        item.seatIds.forEach((seatId) => seats.push({ seatId }))
+      } else {
+        for (let i = 0; i < item.qty; i++) {
+          seats.push({
+            seatId: `seat-${item.id}-${i}`,
+          })
+        }
+      }
+    } else if (item.type === 'snack') {
+      if (snacksMap.has(item.id)) {
+        const existing = snacksMap.get(item.id)
+        existing.quantity += item.qty
+      } else {
+        snacksMap.set(item.id, {
+          snackId: item.id,
+          quantity: item.qty,
+        })
+      }
+    }
+  })
+
+  return {
+    seats,
+    snacks: Array.from(snacksMap.values()),
+  }
+}
+
+/**
  * Checkout — Página principal de pago.
  *
  * MODO SIN BACKEND (mientras el endpoint /api/payments/create-intent no exista):
@@ -129,8 +167,16 @@ export default function Checkout() {
       }
 
       try {
+        // Mapear carrito al formato requerido
+        const paymentData = mapCartToPaymentData(cart)
+        
         // cartTotal en pesos colombianos — Stripe maneja COP en unidades enteras
-        const result = await createPaymentIntent(cartTotal)
+        const result = await createPaymentIntent(
+          cartTotal,
+          'cop',
+          paymentData.seats,
+          paymentData.snacks
+        )
         setClientSecret(result.clientSecret)
       } catch (err) {
         setIntentError(err.message)
@@ -139,7 +185,7 @@ export default function Checkout() {
       }
     }
     initIntent()
-  }, [cartTotal, backendReady])
+  }, [cart, cartTotal, backendReady])
 
   return (
     <div className="min-h-screen bg-carbon text-text-primary relative overflow-hidden">

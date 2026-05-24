@@ -7,7 +7,7 @@ import {
   LogOut,
   Building2,
 } from 'lucide-react'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 import { getMultiplexById } from '../../data/mockMultiplexData'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -32,7 +32,7 @@ export default function ManagerSidebar() {
   }
 
   return (
-    <aside className="w-72 min-h-screen bg-surface/80 backdrop-blur-2xl border-r border-border/50 p-6 flex flex-col">
+    <aside className="w-[280px] max-w-[85vw] h-screen bg-surface/80 backdrop-blur-2xl border-r border-border/50 p-6 flex flex-col">
       
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
@@ -80,7 +80,7 @@ export default function ManagerSidebar() {
       </div>
 
       {/* Navegación */}
-      <nav className="flex flex-col gap-2 flex-1">
+      <nav className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
         {[
           { to: '/manager/dashboard',  label: t('admin.dashboard'),  icon: LayoutDashboard },
           { to: '/manager/empleados',  label: t('admin.employees'),  icon: Users },
@@ -106,6 +106,7 @@ export default function ManagerSidebar() {
 
       {/* Logout */}
       <button
+        type="button"
         onClick={handleLogout}
         className="mt-8 flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all duration-300 rounded-2xl py-3 font-bold cursor-pointer"
       >

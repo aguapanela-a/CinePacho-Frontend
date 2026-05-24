@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, ArrowLeft, Film, UserPlus } from 'lucide-react'
+import { Mail, Lock, ArrowLeft } from 'lucide-react'
 import Input from '../components/Input'
 import Button from '../components/Button'
-import { useApp } from '../context/AppContext'
-import { useLanguage } from '../context/LanguageContext'
+import { useApp } from '../context/useApp'
+import { useLanguage } from '../context/useLanguage'
 
 // Local: /api/auth/login (proxy de Vite lo redirige al backend)
 // Producción: https://backend.railway.app/api/auth/login
@@ -198,5 +198,3 @@ export default function Login() {
     </div>
   )
 }
-
-

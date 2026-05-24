@@ -244,9 +244,11 @@ const handleCreateItem = () => {
           >
             <option value="">Seleccionar</option>
             <option value="Titán">Titán</option>
+            <option value="Unicentro">Unicentro</option>
             <option value="Plaza Central">Plaza Central</option>
             <option value="Gran Estación">Gran Estación</option>
-            <option value="Unicentro">Unicentro</option>
+            <option value="Embajador">Embajador</option>
+            <option value="Las Américas">Las Américas</option>
           </select>
         </div>
       </div>

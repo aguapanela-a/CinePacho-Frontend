@@ -13,12 +13,19 @@ import { apiFetch } from './api'
 
 /**
  * Solicita al backend la creación de un PaymentIntent de Stripe.
- * @param {number} amount - Monto en centavos (ej: 5000 = $50.00 USD)
+ * @param {number} amount - Monto en pesos colombianos
  * @param {string} currency - Código de moneda ISO (default: 'cop')
+ * @param {Array} seats - Array de objetos con { seatId }
+ * @param {Array} snacks - Array de objetos con { snackId, quantity }
  * @returns {{ clientSecret: string }}
  */
-export const createPaymentIntent = (amount, currency = 'cop') =>
+export const createPaymentIntent = (amount, currency = 'cop', seats = [], snacks = []) =>
   apiFetch('/api/payments/create-intent', {
     method: 'POST',
-    body: JSON.stringify({ amount, currency }),
+    body: JSON.stringify({ 
+      amount, 
+      currency,
+      seats,
+      snacks,
+    }),
   })

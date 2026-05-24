@@ -3,7 +3,8 @@ import { formatCurrency, getUnitPrice } from './formatCurrency'
 export function normalizeCartItem(item) {
   const qty = item.qty || 1
   const unitPrice = getUnitPrice(item)
-  const points = item.points != null ? item.points : Math.floor(unitPrice / 5000)
+  // Business rule: 10 points per ticket, 5 points per snack
+  const points = item.points != null ? item.points : (item.type === 'ticket' || item.type === 'TICKET' ? 10 : 5)
 
   return {
     ...item,

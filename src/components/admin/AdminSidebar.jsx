@@ -9,8 +9,9 @@ import {
   ArrowLeft,
   Film,
   DoorOpen,
+  Boxes, // Se añade Boxes para el inventario general
 } from 'lucide-react'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function AdminSidebar() {
@@ -47,7 +48,7 @@ export default function AdminSidebar() {
       { to: '/admin/multiplex', label: t('admin.multiplex'), icon: Building2 },
       { to: '/admin/peliculas', label: t('admin.movies'), icon: Film },
       { to: '/admin/snacks', label: t('admin.snacks'), icon: Popcorn },
-      { to: '/admin/inventario', label: t('admin.inventory'), icon: Popcorn },
+      { to: '/admin/inventario', label: t('admin.inventory'), icon: Boxes }, // Corregido a Boxes
       { to: '/admin/reportes', label: t('admin.reports'), icon: FileBarChart2 },
     ]
   }
@@ -88,7 +89,7 @@ export default function AdminSidebar() {
       </div>
 
       {/* Navegación */}
-      <nav className="flex flex-col gap-2 flex-1">
+      <nav className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
         {linksToRender.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -121,6 +122,7 @@ export default function AdminSidebar() {
 
       {/* Logout */}
       <button
+        type="button"
         onClick={handleLogout}
         className="mt-8 flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all duration-300 rounded-2xl py-3 font-bold cursor-pointer"
       >

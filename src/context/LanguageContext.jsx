@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { LanguageContext } from './languageContextObject'
 import { translations } from '../i18n/translations'
 
+/* eslint-disable react-refresh/only-export-components */
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
     const saved = localStorage.getItem('cinepacho_language')
@@ -54,5 +55,10 @@ export function LanguageProvider({ children }) {
       {children}
     </LanguageContext.Provider>
   )
+}
+
+// Hook para usar el contexto de lenguaje
+export function useLanguage() {
+  return useContext(LanguageContext)
 }
 

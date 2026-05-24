@@ -586,7 +586,6 @@ const handleEditEmployee = () => {
                   <option value="Embajador">Embajador</option>
                   <option value="Plaza Central">Plaza Central</option>
                   <option value="Las Américas">Las Américas</option>
-                  <option value="Santafé">Santafé</option>
                 </select>
               </div>
             </div>
@@ -754,7 +753,6 @@ const handleEditEmployee = () => {
             <option value="Embajador">Embajador</option>
             <option value="Plaza Central">Plaza Central</option>
             <option value="Las Américas">Las Américas</option>
-            <option value="Santafé">Santafé</option>
           </select>
         </div>
       </div>

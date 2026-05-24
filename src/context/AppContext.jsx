@@ -1,12 +1,14 @@
-import { createContext, useContext, useState } from 'react'
+import { useState } from 'react'
+import { AppContext } from './appContextObject'
 import { formatCurrency, getUnitPrice } from '../utils/formatCurrency'
-
-export const AppContext = createContext()
 
 function normalizeCartItem(item) {
   const qty = item.qty || 1
-  const unitPrice = getUnitPrice(item)
-  const points = item.points != null ? item.points : Math.floor(unitPrice / 5000)
+  // If unitPrice is already provided (from SeatSelector), use it directly
+  // Otherwise, calculate it from the price field
+  const unitPrice = item.unitPrice || (item.price ? getUnitPrice(item) : 0)
+  // Business rule: 10 points per ticket, 5 points per snack
+  const points = item.points != null ? item.points : (item.type === 'ticket' || item.type === 'TICKET' ? 10 : 5)
 
   return {
     ...item,
@@ -29,15 +31,15 @@ export function AppProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
 
   const loginUser = (authResponse) => {
-    const { token: jwt, userType, name, multiplexId } = authResponse; // Destructure multiplexId
-    const userData = { name, userType, multiplexId }; // Include multiplexId in userData
+    const { token: jwt, userType, name, multiplexId } = authResponse
+    const userData = { name, userType, multiplexId }
 
-    localStorage.setItem('cinepacho_token', jwt);
-    localStorage.setItem('cinepacho_user', JSON.stringify(userData));
+    localStorage.setItem('cinepacho_token', jwt)
+    localStorage.setItem('cinepacho_user', JSON.stringify(userData))
 
-    setToken(jwt);
-    setUser(userData);
-  };
+    setToken(jwt)
+    setUser(userData)
+  }
 
   const logoutUser = () => {
     localStorage.removeItem('cinepacho_token')
@@ -111,6 +113,3 @@ export function AppProvider({ children }) {
     </AppContext.Provider>
   )
 }
-
-export const useApp = () => useContext(AppContext)
-

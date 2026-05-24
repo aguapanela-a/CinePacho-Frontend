@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import Toast from '../components/Toast'
 import { ToastContext } from './toastContextObject'
 
+/* eslint-disable react-refresh/only-export-components */
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
 
@@ -40,5 +41,14 @@ export function ToastProvider({ children }) {
       )}
     </ToastContext.Provider>
   )
+}
+
+// Hook para usar el contexto de toasts
+export function useToast() {
+  const context = useContext(ToastContext)
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider')
+  }
+  return context
 }
 

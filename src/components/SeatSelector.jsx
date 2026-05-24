@@ -3,14 +3,17 @@ import { Monitor, Armchair, ArrowLeft, Star, Loader2 } from 'lucide-react'
 import Button from './Button'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
+import { ticketFormats } from '../data/mockMoviesData'
 
-const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
+const ROWS = ['A', 'B', 'C', 'D', 'E', 'F'] // 6 rows: A-D (40 general seats), E-F (20 preferential seats)
 const COLS = 10
 
-export default function SeatSelector({ 
-  onBack, 
-  onConfirm, 
-  basePrice = 11000, 
+export default function SeatSelector({
+  onBack,
+  onConfirm,
+  basePrice = 11000, // Default to General seat price for 2D
+  preferentialPrice = 15000, // Default to Preferential seat price for 2D
+  selectedFormat = '2D', // Movie format (2D, 3D, IMAX)
   maxSeats = 6,
   isLoading = false
 }) {
@@ -43,9 +46,14 @@ export default function SeatSelector({
   }
 
   const isPreferential = (seatId) => {
-    // Filas E y F son Preferenciales (20 sillas), A-D son Generales (40 sillas) = 60 sillas total
+    // Rows E and F are Preferential (20 seats), A-D are General (40 seats) = 60 seats total per room
     return seatId.startsWith('E') || seatId.startsWith('F')
   }
+
+  // Get pricing based on selected format
+  const formatPricing = ticketFormats.find(f => f.fmt === selectedFormat) || ticketFormats[0]
+  const generalPrice = formatPricing.generalPrice
+  const prefPrice = formatPricing.preferentialPrice
 
   const getSeatClass = (seatId) => {
     const pref = isPreferential(seatId)
@@ -59,9 +67,9 @@ export default function SeatSelector({
     return 'bg-white/5 border-white/20 text-white/50 hover:bg-white/10 hover:border-white/50 hover:text-white transition-all cursor-pointer'
   }
 
-  // Sillas preferenciales tienen un recargo de $4.000
+  // Calculate total: General seats use generalPrice, Preferential seats use prefPrice (based on format)
   const total = selectedSeats.reduce((acc, seatId) => {
-    return acc + basePrice + (isPreferential(seatId) ? 4000 : 0)
+    return acc + (isPreferential(seatId) ? prefPrice : generalPrice)
   }, 0)
 
   return (

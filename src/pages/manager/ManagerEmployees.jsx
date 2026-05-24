@@ -1,6 +1,6 @@
 import ManagerLayout from '../../components/manager/ManagerLayout'
 import MultiplexEmployees from '../../components/multiplex/MultiplexEmployees'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 
 /**
  * ManagerEmployees: Página de gestión de empleados del gerente.

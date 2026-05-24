@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock
 } from 'lucide-react'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 import { useToast } from '../../context/ToastContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -61,7 +61,7 @@ export default function CashierDashboard() {
     const item = {
       id: `${selectedMovie.id}-${time}-${format}-${selectedRoom}`,
       name: `Boleta ${format} - ${selectedMovie.title} (${time}) - ${selectedRoom}`,
-      price: selectedFormat.price, // Usar el precio del formato
+      price: Number(selectedFormat.price) || 0, // Ensure price is numeric
       type: 'ticket',
       showtime: `${time} - ${selectedRoom}`, // Combinar para key única en AppContext
       qty: 1,
@@ -76,7 +76,7 @@ export default function CashierDashboard() {
     const item = {
       id: snack.id,
       name: snack.name,
-      price: snack.price,
+      price: Number(snack.price) || 0, // Ensure price is numeric
       type: 'snack',
       qty: 1,
       image: snack.imageUrl || null, // Asumiendo que snack tiene imageUrl

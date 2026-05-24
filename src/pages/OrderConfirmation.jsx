@@ -61,8 +61,8 @@ export default function OrderConfirmation() {
                 {t('confirmation.orderDetails')}
               </h2>
               <div className="space-y-3 mb-4">
-                {cart.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center text-sm border-b border-border/30 pb-2 last:border-0">
+                {cart.map((item) => (
+                  <div key={`${item.id}-${item.type}-${item.showtime || ''}`} className="flex justify-between items-center text-sm border-b border-border/30 pb-2 last:border-0">
                     <div>
                       <span className="text-text-secondary">{item.name}</span>
                       {item.type === 'ticket' && (

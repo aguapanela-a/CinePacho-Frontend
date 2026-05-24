@@ -18,7 +18,6 @@ const multiplexes = [
   'Gran Estación',
   'Embajador',
   'Las Américas',
-  'Santafé',
 ]
 
 export default function Home() {

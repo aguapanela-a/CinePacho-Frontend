@@ -88,7 +88,7 @@ export const moviesData = [
     posterUrl: 'https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
     backdropUrl: 'https://image.tmdb.org/t/p/original/9l1eZiJHmhr5jIlthMdJN5WYoff.jpg',
     synopsis: 'Un Wade Wilson apático se une a un Wolverine profundamente reacio para salvar su universo, cruzando caminos para cambiar por siempre el MCU de manera épica.',
-    multiplexes: ['Santafé', 'Plaza Central'],
+    multiplexes: ['Plaza Central', 'Las Américas'],
   },
   {
     id: 8,
@@ -116,7 +116,7 @@ export const showtimeDates = [
 export const showtimes = ['14:30', '16:45', '19:15', '21:00', '22:45']
 
 export const ticketFormats = [
-  { fmt: '2D', price: 15000 },
-  { fmt: '3D', price: 20000 },
-  { fmt: 'IMAX', price: 25000 },
+  { fmt: '2D', generalPrice: 11000, preferentialPrice: 15000 },
+  { fmt: '3D', generalPrice: 15000, preferentialPrice: 19000 },
+  { fmt: 'IMAX', generalPrice: 18000, preferentialPrice: 24000 },
 ]

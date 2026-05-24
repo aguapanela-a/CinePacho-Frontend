@@ -9,8 +9,9 @@ export function getUnitPrice(item) {
     return item.unitPrice
   }
   if (item?.price != null) {
-    const parsed = parseInt(String(item.price).replace(/\D/g, ''), 10)
-    return Number.isNaN(parsed) ? 0 : parsed
+    // Handle both numeric prices and formatted strings like "$11.000" or "11000"
+    const priceValue = typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace(/[^\d.,]/g, '').replace(',', '.'))
+    return Number.isNaN(priceValue) ? 0 : priceValue
   }
   return 0
 }

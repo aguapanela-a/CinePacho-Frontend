@@ -29,6 +29,11 @@ export default function Profile() {
     if (saved) setBasePoints(Number(saved) || 0);
   }, [setBasePoints]);
 
+  const isReviewed = useCallback((orderId) => {
+    const reviews = JSON.parse(localStorage.getItem('cinepacho_reviews') || '[]');
+    return reviews.some((r) => r.orderId === orderId);
+  }, []);
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -61,12 +66,6 @@ export default function Profile() {
 
     toast.success(t('profile.couponGenerated') || '¡Boleta gratis generada! Válida por 6 meses.');
   };
-
-  // Revisar si ya fue evaluada una orden
-  const isReviewed = useCallback((orderId) => {
-    const reviews = JSON.parse(localStorage.getItem('cinepacho_reviews') || '[]');
-    return reviews.some((r) => r.orderId === orderId);
-  }, []);
 
   // Filtrar cupones válidos (no usados, no expirados)
   const validCoupons = coupons.filter((c) => !c.used && new Date(c.expiresAt) > new Date());
@@ -263,5 +262,3 @@ export default function Profile() {
     </div>
   );
 }
-
-

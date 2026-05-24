@@ -1,6 +1,6 @@
-import { MapPin, Clock4, Armchair } from 'lucide-react'
+import { MapPin, Clock4 } from 'lucide-react'
 import Button from '../Button'
-import { useLanguage } from '../../context/LanguageContext'
+import { useLanguage } from '../../context/useLanguage'
 import { showtimeDates, showtimes, ticketFormats } from '../../data/mockMoviesData'
 
 const formatPriceLabel = (price) => {
@@ -16,111 +16,107 @@ export default function ShowtimePicker({
   setSelectedFormat,
   selectedTime,
   setSelectedTime,
-  selectedRoom, // Now received as a display prop
-  // setSelectedRoom is no longer needed here as room is not user-selectable
+  selectedRoom,
   canProceedToSeats,
   handleProceedToSeats,
-  getPrice,
 }) {
-  const { t } = useLanguage();
+  const { t } = useLanguage()
 
   return (
-    <>
-      <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
-        <div className="flex items-center gap-2">
-          <MapPin size={15} className="text-magenta" />
-          <span className="font-display text-base tracking-widest text-white">
-            {t('movie.showtimesIn')} {multiplexName}
-          </span>
-        </div>
+    <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
+      <div className="flex items-center gap-2">
+        <MapPin size={15} className="text-magenta" />
+        <span className="font-display text-base tracking-widest text-white">
+          {t('movie.showtimesIn') || 'Funciones en'} {multiplexName}
+        </span>
+      </div>
 
-        <div>
-          <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">{t('movie.dateLabel')}</p>
-          <div className="flex gap-1.5 overflow-x-auto custom-scrollbar pb-1">
-            {showtimeDates.map((d) => (
-              <button
-                key={d.date}
-                onClick={() => setSelectedDate(d.date)}
-                className={`flex flex-col items-center min-w-[65px] py-1.5 px-2.5 rounded-lg border text-center transition-all duration-150 cursor-pointer ${
-                  selectedDate === d.date
-                    ? 'border-magenta bg-magenta/10 text-magenta'
-                    : 'border-border/40 bg-carbon text-text-secondary hover:border-text-secondary hover:text-white'
-                }`}
-              >
-                <span className="text-[9px] font-bold uppercase leading-tight">{t(d.dayKey)}</span>
-                <span className="text-xs font-display tracking-wider">{d.date}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Room information is now display-only */}
-        <div>
-          <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">
-            {t('movie.roomLabel', 'Sala')}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {/* Display the selectedRoom here, but no interactive buttons */}
-            <div
-              className={`min-w-[60px] justify-center px-3 py-1.5 rounded-lg border text-xs text-cyan-400 border-cyan-400 bg-cyan-400/10`}
+      {/* 1. Selección de Fecha */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
+          {t('movie.dateLabel') || 'Selecciona el Día'}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {showtimeDates.map(({ dayKey, date }) => (
+            <button
+              key={dayKey}
+              type="button"
+              onClick={() => {
+                setSelectedDate(dayKey)
+                setSelectedTime('')
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                selectedDate === dayKey
+                  ? 'border-magenta bg-magenta/10 text-white'
+                  : 'border-border/45 bg-carbon/50 text-text-secondary hover:text-white'
+              }`}
             >
-              <span className="font-display text-sm tracking-wider">{selectedRoom}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3.5">
-          <div className="shrink-0">
-            <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">{t('movie.formatLabel')}</p>
-            <div className="flex gap-1.5">
-              {ticketFormats.map(({ fmt, price }) => (
-                <button
-                  key={fmt}
-                  onClick={() => setSelectedFormat(fmt)}
-                  className={`flex flex-col items-center px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-150 cursor-pointer ${
-                    selectedFormat === fmt
-                      ? 'bg-gradient-to-r from-magenta to-vinotinto text-white shadow-md shadow-magenta/20'
-                      : 'bg-surface-light text-text-secondary border border-border hover:text-white hover:border-magenta/40'
-                  }`}
-                >
-                  <span>{fmt}</span>
-                  <span className={`text-[9px] ${selectedFormat === fmt ? 'text-white/60' : 'text-text-secondary/40'}`}>
-                    {formatPriceLabel(price)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex-1">
-            <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">{t('movie.timeLabel')}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {showtimes.map((time) => (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`flex items-center gap-1 min-w-[60px] justify-center px-3 py-1.5 rounded-lg border text-xs transition-all duration-150 cursor-pointer ${
-                    selectedTime === time
-                      ? 'border-gold bg-gold/10 text-gold'
-                      : 'border-border/40 bg-carbon text-text-secondary hover:border-gold/40 hover:text-white'
-                  }`}
-                >
-                  <Clock4 size={11} />
-                  <span className="font-display text-sm tracking-wider">{time}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+              {date}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+      {/* 2. Selección de Formato */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
+          {t('movie.formatLabel') || 'Formato'}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {ticketFormats.map(({ fmt, generalPrice }) => (
+            <button
+              key={fmt}
+              type="button"
+              onClick={() => {
+                setSelectedFormat(fmt)
+                setSelectedTime('')
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                selectedFormat === fmt
+                  ? 'border-magenta bg-magenta/10 text-white'
+                  : 'border-border/45 bg-carbon/50 text-text-secondary hover:text-white'
+              }`}
+            >
+              {fmt} · {formatPriceLabel(generalPrice)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. Selección de Horario */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
+          {t('movie.timeLabel') || 'Horarios Disponibles'}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {showtimes.map((time) => (
+            <button
+              key={time}
+              type="button"
+              onClick={() => setSelectedTime(time)}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer ${
+                selectedTime === time
+                  ? 'bg-gradient-to-r from-magenta to-vinotinto border-transparent text-white shadow-md shadow-magenta/10'
+                  : 'border-border/40 bg-carbon/40 text-text-secondary hover:text-white hover:bg-carbon'
+              }`}
+            >
+              <Clock4 size={12} />
+              <span className="font-display text-xs tracking-wider">{time}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Banner Informativo y Botón de Continuar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
         {canProceedToSeats && (
           <div className="flex-1 bg-carbon/40 border border-border/30 rounded-xl px-4 py-2 animate-[fadeIn_0.2s_ease-out]">
-            <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">{t('movie.selectionLabel')}</p>
-            <p className="text-white text-sm font-medium">
-              {selectedDate} • {selectedTime} • {selectedFormat} • {selectedRoom} {/* Display selectedRoom */}
-              <span className="text-gold font-bold ml-2">${getPrice().toLocaleString('es-CO')}</span>
+            <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">
+              {t('movie.selectionLabel') || 'Tu selección'}
+            </p>
+            <p className="text-white text-xs font-medium leading-relaxed">
+              {typeof selectedDate === 'object' ? selectedDate.date : selectedDate} • {selectedTime} • {selectedFormat} •{' '}
+              <span className="text-magenta font-semibold">{selectedRoom}</span>
             </p>
           </div>
         )}
@@ -128,15 +124,14 @@ export default function ShowtimePicker({
           onClick={handleProceedToSeats}
           variant="primary"
           size="md"
+          disabled={!canProceedToSeats}
           className={`w-full sm:w-auto px-8 rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)] ${
             !canProceedToSeats ? 'opacity-40 cursor-not-allowed' : ''
           }`}
-          disabled={!canProceedToSeats}
         >
-          <Armchair size={16} />
-          {canProceedToSeats ? t('movie.selectSeatsBtn') : t('movie.selectShowtimeBtn')}
+          {t('movie.proceedToSeats') || 'Elegir Asientos'}
         </Button>
       </div>
-    </>
-  );
+    </div>
+  )
 }
