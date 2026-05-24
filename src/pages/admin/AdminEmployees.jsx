@@ -332,11 +332,23 @@ const handleEditEmployee = () => {
                       <span className="text-sm text-text-primary">
                         {employee.fechaContrato ? new Date(employee.fechaContrato).toLocaleDateString('es-CO') : '-'}
                       </span>
-                      {employee.fechaRotacion && new Date(employee.fechaRotacion) < new Date() && (
-                        <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
-                          ¡Rotación pendiente!
-                        </span>
-                      )}
+                      {/* Alerta: Sin rotar en 3+ meses */}
+                      {(() => {
+                        const referenceDate = employee.fechaRotacion
+                          ? new Date(employee.fechaRotacion)
+                          : (employee.fechaContrato ? new Date(employee.fechaContrato) : null);
+                        const threeMonthsAgo = new Date();
+                        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+                        if (referenceDate && referenceDate < threeMonthsAgo) {
+                          return (
+                            <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                              ¡Sin rotar en 3+ meses!
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </td>
 
@@ -492,7 +504,6 @@ const handleEditEmployee = () => {
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 >
-                  <option value="">Seleccionar</option>
                   <option value="Director">Director</option>
                   <option value="Cajero">Cajero</option>
                   <option value="Despachador de comida">Despachador de comida</option>

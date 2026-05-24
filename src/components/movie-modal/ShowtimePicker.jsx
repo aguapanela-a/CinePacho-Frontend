@@ -17,6 +17,11 @@ export default function ShowtimePicker({
   selectedTime,
   setSelectedTime,
   canProceedToSeats,
+  selectedTime,
+  setSelectedTime,
+  selectedRoom, // NEW PROP
+  setSelectedRoom, // NEW PROP
+  canProceedToSeats,
   handleProceedToSeats,
   getPrice,
 }) {
@@ -47,6 +52,28 @@ export default function ShowtimePicker({
               >
                 <span className="text-[9px] font-bold uppercase leading-tight">{t(d.dayKey)}</span>
                 <span className="text-xs font-display tracking-wider">{d.date}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* NEW: Room Selector */}
+        <div>
+          <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">
+            {t('movie.roomLabel', 'Sala')} {/* Default for movie.roomLabel if not in translations */}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: 15 }, (_, i) => `Sala ${i + 1}`).map((room) => (
+              <button
+                key={room}
+                onClick={() => setSelectedRoom(room)}
+                className={`min-w-[60px] justify-center px-3 py-1.5 rounded-lg border text-xs transition-all duration-150 cursor-pointer ${
+                  selectedRoom === room
+                    ? 'border-cyan-400 bg-cyan-400/10 text-cyan-400'
+                    : 'border-border/40 bg-carbon text-text-secondary hover:border-cyan-400/40 hover:text-white'
+                }`}
+              >
+                <span className="font-display text-sm tracking-wider">{room}</span>
               </button>
             ))}
           </div>
@@ -102,7 +129,7 @@ export default function ShowtimePicker({
           <div className="flex-1 bg-carbon/40 border border-border/30 rounded-xl px-4 py-2 animate-[fadeIn_0.2s_ease-out]">
             <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">{t('movie.selectionLabel')}</p>
             <p className="text-white text-sm font-medium">
-              {selectedDate} • {selectedTime} • {selectedFormat}
+              {selectedDate} • {selectedTime} • {selectedFormat} • {selectedRoom} {/* ADD selectedRoom */}
               <span className="text-gold font-bold ml-2">${getPrice().toLocaleString('es-CO')}</span>
             </p>
           </div>

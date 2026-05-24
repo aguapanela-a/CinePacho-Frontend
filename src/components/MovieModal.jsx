@@ -42,13 +42,15 @@ function MovieModalContent({ movie, onClose, multiplexName }) {
   const [selectedDate, setSelectedDate] = useState(showtimeDates[0].date)
   const [selectedTime, setSelectedTime] = useState(null)
   const [selectedFormat, setSelectedFormat] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(null) // NEW STATE: selectedRoom
   const [step, setStep] = useState(1)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const { addToCart } = useApp()
   const { t } = useLanguage()
   const toast = useToast()
 
-  const canProceedToSeats = selectedDate && selectedTime && selectedFormat
+  // Update canProceedToSeats to include selectedRoom
+  const canProceedToSeats = selectedDate && selectedTime && selectedFormat && selectedRoom
 
   const handleProceedToSeats = () => {
     if (!canProceedToSeats) return
@@ -62,10 +64,10 @@ function MovieModalContent({ movie, onClose, multiplexName }) {
     
     const unitPrice = Math.round(total / selectedSeats.length)
     addToCart({
-      id: `${movie.id}-${selectedDate}-${selectedTime}`,
+      id: `${movie.id}-${selectedDate}-${selectedTime}-${selectedRoom}`, // Include selectedRoom in ID
       name: movie.title,
       type: 'ticket',
-      showtime: `${selectedDate} - ${selectedTime} • ${t('movie.seats')}: ${selectedSeats.join(', ')}`,
+      showtime: `${selectedDate} - ${selectedTime} • ${selectedRoom} • ${t('movie.seats')}: ${selectedSeats.join(', ')}`, // Include selectedRoom in showtime string
       format: selectedFormat,
       unitPrice,
       price: formatCurrency(unitPrice),
@@ -166,6 +168,8 @@ function MovieModalContent({ movie, onClose, multiplexName }) {
                     setSelectedFormat={setSelectedFormat}
                     selectedTime={selectedTime}
                     setSelectedTime={setSelectedTime}
+                    selectedRoom={selectedRoom} // PASS NEW STATE
+                    setSelectedRoom={setSelectedRoom} // PASS NEW STATE
                     canProceedToSeats={canProceedToSeats}
                     handleProceedToSeats={handleProceedToSeats}
                     getPrice={getPrice}
