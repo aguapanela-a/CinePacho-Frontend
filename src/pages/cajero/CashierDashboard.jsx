@@ -8,6 +8,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { moviesData, showtimes, ticketFormats } from '../../data/mockMoviesData'
 import { snacksData } from '../../data/mockSnacksData'
+import { getUnitPrice } from '../../utils/formatCurrency'
 
 // Mock Clientes
 const mockCustomers = [
@@ -16,15 +17,14 @@ const mockCustomers = [
 ]
 
 export default function CashierDashboard() {
-  const { user, logoutUser } = useApp()
+  const { user, logoutUser, cart, addToCart, removeFromCart, setCart } = useApp() // Usar el carrito global
   const toast = useToast()
   const { t } = useLanguage()
   const navigate = useNavigate()
   
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
   
-  // Cart & Customer
-  const [cart, setCart] = useState([])
+  // Customer
   const [searchCustomer, setSearchCustomer] = useState('')
   const [activeCustomer, setActiveCustomer] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -36,47 +36,60 @@ export default function CashierDashboard() {
   const rooms = Array.from({ length: 15 }, (_, i) => `Sala ${i + 1}`)
   
   // Puntos fijos por compra
-  const POINTS_PER_PURCHASE = 10
+  const POINTS_PER_PURCHASE = 10 // Esto podría venir del backend o ser dinámico
 
   const handleLogout = () => {
     logoutUser()
     navigate('/login')
   }
 
-  const addToCart = (item) => {
-    const existing = cart.find(c => c.id === item.id)
-    if (existing) {
-      setCart(cart.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c))
-    } else {
-      setCart([...cart, { ...item, qty: 1 }])
-    }
-  }
-
   const handleSelectMovie = (movie) => {
     setSelectedMovie(movie)
   }
 
-  const handleAddTicket = (time, type, price) => {
+  const handleAddTicket = (time, format) => {
     if (!selectedRoom) {
       toast.error('Por favor selecciona una sala')
       return
     }
-    const ticketId = `${selectedMovie.id}-${time}-${type}-${selectedRoom}`
-    addToCart({
-      id: ticketId,
-      name: `Boleta ${type} - ${selectedMovie.title} (${time}) - ${selectedRoom}`,
-      price: price,
-      type: 'ticket'
-    })
+    const selectedFormat = ticketFormats.find(f => f.fmt === format)
+    if (!selectedFormat) {
+      toast.error('Formato de boleta inválido')
+      return
+    }
+
+    const item = {
+      id: `${selectedMovie.id}-${time}-${format}-${selectedRoom}`,
+      name: `Boleta ${format} - ${selectedMovie.title} (${time}) - ${selectedRoom}`,
+      price: selectedFormat.price, // Usar el precio del formato
+      type: 'ticket',
+      showtime: `${time} - ${selectedRoom}`, // Combinar para key única en AppContext
+      qty: 1,
+      image: selectedMovie.posterUrl,
+    }
+    addToCart(item)
     setSelectedMovie(null) // Cerrar modal
     setSelectedRoom(null) // Reset sala
   }
 
-  const removeFromCart = (itemId) => {
-    setCart(cart.filter(c => c.id !== itemId))
+  const handleAddSnackToCart = (snack) => {
+    const item = {
+      id: snack.id,
+      name: snack.name,
+      price: snack.price,
+      type: 'snack',
+      qty: 1,
+      image: snack.imageUrl || null, // Asumiendo que snack tiene imageUrl
+    }
+    addToCart(item)
   }
 
-  const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
+  const handleRemoveFromCart = (itemToRemove) => {
+    removeFromCart(itemToRemove.id, itemToRemove.type, itemToRemove.showtime)
+  }
+
+  // Usar cartTotal del AppContext si está disponible, sino calcular aquí
+  const total = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
 
   const handleSearchCustomer = () => {
     const found = mockCustomers.find(c => 
@@ -92,11 +105,15 @@ export default function CashierDashboard() {
 
   const handleCheckout = () => {
     if (cart.length === 0) return
+    // Aquí iría la lógica para procesar el pago y enviar la orden al backend.
+    // Una vez exitoso:
     setShowSuccess(true)
+    // También se podrían limpiar los puntos del cliente activo si se usaron
+    // Y se le añadirían los nuevos puntos si wantsPoints es true
   }
 
   const resetPOS = () => {
-    setCart([])
+    setCart([]) // Limpiar carrito global
     setActiveCustomer(null)
     setWantsPoints(false)
     setShowSuccess(false)
@@ -185,7 +202,7 @@ export default function CashierDashboard() {
                 {snacksData.map(snack => (
                   <button
                     key={snack.id}
-                    onClick={() => addToCart({ ...snack, type: 'snack' })}
+                    onClick={() => handleAddSnackToCart(snack)} // Usar la nueva función
                     className="bg-carbon border border-border/50 rounded-2xl p-5 text-left hover:border-gold/50 hover:bg-gold/5 transition-all group flex flex-col h-32 cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -259,15 +276,15 @@ export default function CashierDashboard() {
             ) : (
               <div className="space-y-3">
                 {cart.map(item => (
-                  <div key={item.id} className="bg-carbon rounded-xl p-3 flex items-center justify-between group">
+                  <div key={`${item.id}-${item.type}-${item.showtime}`} className="bg-carbon rounded-xl p-3 flex items-center justify-between group">
                     <div className="flex-1 pr-3 min-w-0">
                       <p className="text-xs font-bold text-white truncate">{item.name}</p>
-                      <p className="text-[10px] text-text-secondary mt-0.5">${item.price.toLocaleString('es-CO')} x {item.qty}</p>
+                      <p className="text-[10px] text-text-secondary mt-0.5">${getUnitPrice(item).toLocaleString('es-CO')} x {item.qty}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <p className="text-sm font-bold text-gold">${(item.price * item.qty).toLocaleString('es-CO')}</p>
+                      <p className="text-sm font-bold text-gold">${(getUnitPrice(item) * item.qty).toLocaleString('es-CO')}</p>
                       <button 
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => handleRemoveFromCart(item)}
                         className="text-text-secondary hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
                       >
                         <X size={16} />
@@ -393,13 +410,13 @@ export default function CashierDashboard() {
                     <div key={time} className="bg-carbon border border-border/50 rounded-xl p-3 text-center">
                       <p className="font-bold text-white mb-2">{time}</p>
                       <div className="flex flex-col gap-2">
-                        {ticketFormats.map(({ fmt, price }) => (
+                        {ticketFormats.map(({ fmt }) => ( // No se necesita 'price' aquí
                           <button
                             key={`${time}-${fmt}`}
-                            onClick={() => handleAddTicket(time, fmt, price)}
+                            onClick={() => handleAddTicket(time, fmt)} // Pasar solo el formato
                             className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-1.5 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
                           >
-                            {fmt}: ${(price/1000)}k
+                            {fmt}: ${ticketFormats.find(f => f.fmt === fmt)?.price / 1000}k {/* Obtener precio para mostrar */}
                           </button>
                         ))}
                       </div>
