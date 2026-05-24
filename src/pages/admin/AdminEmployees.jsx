@@ -167,7 +167,7 @@ const handleEditEmployee = () => {
         cargo: '',
         multiplex: '',
         password: '',
-        indentityCard: '',
+        identityCard: '', // Corrected typo
         salary: '',
         fechaContrato: '',
       })
