@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react'
 import { formatCurrency, getUnitPrice } from '../utils/formatCurrency'
 
-const AppContext = createContext()
+export const AppContext = createContext()
 
 function normalizeCartItem(item) {
   const qty = item.qty || 1
