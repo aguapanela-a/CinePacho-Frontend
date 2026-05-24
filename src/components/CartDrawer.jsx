@@ -31,11 +31,11 @@ export default function CartDrawer() {
     }
   }, [isCartOpen, handleEscape])
 
-  const getItemKey = (item, index) =>
-    `${item.id}-${item.type}-${item.showtime || 'snack'}-${index}`
+  const getItemKey = (item) =>
+    `${item.id}-${item.type}-${item.showtime || 'snack'}`
 
   const handleRemove = (item, index) => {
-    const itemKey = getItemKey(item, index)
+    const itemKey = getItemKey(item)
     setRemovingItems((prev) => new Set(prev).add(itemKey))
     setTimeout(() => {
       const removedItem = { ...item }

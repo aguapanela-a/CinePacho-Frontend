@@ -21,23 +21,23 @@ export function LanguageProvider({ children }) {
   const t = (key, params = {}) => {
     const keys = key.split('.')
     let value = translations[language]
-
     for (const k of keys) {
-      if (value && value[k]) {
-        value = value[k]
-      } else {
-        // Fallback a español si no encuentra la traducción, o devuelve la clave
-        let fallbackValue = translations['es']
-        for (const fbK of keys) {
-          if (fallbackValue && fallbackValue[fbK]) {
-            fallbackValue = fallbackValue[fbK]
-          } else {
-            return key
-          }
-        }
-        value = fallbackValue
-        break
+      value = value?.[k] // Intenta acceder a la propiedad
+      if (value === undefined) break // Si no se encuentra, sal del bucle
+    }
+
+    // Si no se encontró en el idioma actual, intenta con el español (fallback)
+    if (value === undefined) {
+      value = translations['es']
+      for (const k of keys) {
+        value = value?.[k]
+        if (value === undefined) break
       }
+    }
+
+    // Si aún no se encontró, devuelve la clave original
+    if (value === undefined) {
+      return key
     }
 
     // Reemplazar parámetros si los hay (ej. {count: 5})

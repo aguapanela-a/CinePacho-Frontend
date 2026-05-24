@@ -32,18 +32,15 @@ export default function Snacks() {
     fetchSnacks()
   }, [])
 
-  // Mapea los campos del backend al formato que espera el carrito
+  // Mapea los campos del backend al formato que espera el carrito para que AppContext lo normalice
   const toCartItem = (snack) => {
-    const unitPrice = Number(snack.priceSnack) || 0
     return {
       id: snack.idSnack,
       name: snack.nameSnack,
       description: snack.descriptionSnack,
-      unitPrice,
-      price: formatCurrency(unitPrice),
-      points: Math.floor(unitPrice / 5000),
+      price: snack.priceSnack, // Pasa el precio sin formato para que AppContext lo maneje
       type: 'snack',
-      showtime: null,
+      showtime: null, // Los snacks no tienen showtime
       image: snack.imageUrl || null,
     }
   }

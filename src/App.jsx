@@ -204,7 +204,7 @@ function AppLayout() {
             path="/admin/multiplex/:multiplexId/reportes"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
-                <AdminMultiplexDetail section="dashboard" />
+                <AdminMultiplexDetail section="reports" />
               </ProtectedRoute>
             }
           />

@@ -5,21 +5,15 @@ const AppContext = createContext()
 
 function normalizeCartItem(item) {
   const qty = item.qty || 1
-  let unitPrice = item.unitPrice
-  if (typeof unitPrice !== 'number' || Number.isNaN(unitPrice)) {
-    if (typeof item.price === 'number') {
-      unitPrice = item.price
-    } else if (item.price != null) {
-      unitPrice = parseInt(String(item.price).replace(/\D/g, ''), 10) || 0
-    } else {
-      unitPrice = 0
-    }
-  }
+  const unitPrice = getUnitPrice(item)
+  const points = item.points != null ? item.points : Math.floor(unitPrice / 5000)
+
   return {
     ...item,
     qty,
     unitPrice,
     price: formatCurrency(unitPrice),
+    points,
   }
 }
 
