@@ -70,7 +70,7 @@ export default function ManagerSidebar() {
         <h2 className="text-white font-bold text-xl font-display tracking-wider">
           {multiplex?.name || t('manager.unassigned')}
         </h2>
-        {multiplex?.city && ( // Usar multiplex.city que sí existe en el mock
+        {multiplex?.city && (
           <p className="text-xs text-text-secondary mt-1 truncate">
             {multiplex.city}
           </p>
