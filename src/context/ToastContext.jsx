@@ -1,8 +1,7 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import Toast from '../components/Toast'
-
-const ToastContext = createContext(null)
+import { ToastContext } from './toastContextObject'
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
@@ -43,10 +42,3 @@ export function ToastProvider({ children }) {
   )
 }
 
-export const useToast = () => {
-  const context = useContext(ToastContext)
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider')
-  }
-  return context
-}

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, ArrowLeft, Star, Gift, CheckCircle, AlertCircle } from 'lucide-react'
 import Input from '../components/Input'
 import Button from '../components/Button'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 import { register as registerService } from '../services/authService'
 
 export default function Register() {
@@ -203,3 +203,4 @@ export default function Register() {
     </div>
   )
 }
+

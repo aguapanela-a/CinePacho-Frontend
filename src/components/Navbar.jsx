@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Menu,
@@ -15,8 +15,8 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import LanguageToggle from './LanguageToggle'
-import { useApp } from '../context/AppContext'
-import { useLanguage } from '../context/LanguageContext'
+import { useApp } from '../context/useApp'
+import { useLanguage } from '../context/useLanguage'
 
 // Puntos necesarios para una entrada gratis (Efecto de Tendencia a la Meta)
 const POINTS_FOR_REWARD = 100
@@ -405,3 +405,5 @@ export default function Navbar() {
     </nav>
   )
 }
+
+

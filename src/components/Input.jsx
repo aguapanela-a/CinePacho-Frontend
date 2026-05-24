@@ -1,6 +1,6 @@
 import { useState, useId } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 export default function Input({
   label,
@@ -73,3 +73,4 @@ export default function Input({
     </div>
   )
 }
+

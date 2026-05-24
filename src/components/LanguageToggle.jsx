@@ -1,6 +1,5 @@
-import React from 'react'
 import { Languages } from 'lucide-react'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 export default function LanguageToggle({ className = '' }) {
   const { language, toggleLanguage } = useLanguage()
@@ -25,3 +24,4 @@ export default function LanguageToggle({ className = '' }) {
     </button>
   )
 }
+

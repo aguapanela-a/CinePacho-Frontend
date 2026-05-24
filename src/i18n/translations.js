@@ -230,9 +230,6 @@ export const translations = {
       backToLogin: 'Ir a Iniciar Sesión',
       backToHome: 'Volver al inicio',
     },
-    search: {
-      label: 'Buscar películas',
-    },
     movieCard: {
       buyBtn: 'Comprar',
       viewTimes: 'Ver horarios',
@@ -505,9 +502,6 @@ export const translations = {
       passwordMin: 'Minimum 8 characters',
       backToLogin: 'Go to Login',
       backToHome: 'Back to home',
-    },
-    search: {
-      label: 'Search movies',
     },
     movieCard: {
       buyBtn: 'Buy',

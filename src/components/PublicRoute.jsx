@@ -1,6 +1,5 @@
-import React from 'react'
 import { Navigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 
 /**
  * PublicRoute: Guarda para rutas destinadas únicamente a clientes (BUYER) o invitados.
@@ -19,3 +18,4 @@ export default function PublicRoute({ children }) {
   // Invitados y BUYER pueden ver la vista
   return children
 }
+

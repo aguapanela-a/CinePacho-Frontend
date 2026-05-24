@@ -16,11 +16,8 @@ export default function ShowtimePicker({
   setSelectedFormat,
   selectedTime,
   setSelectedTime,
-  canProceedToSeats,
-  selectedTime,
-  setSelectedTime,
-  selectedRoom, // NEW PROP
-  setSelectedRoom, // NEW PROP
+  selectedRoom,
+  setSelectedRoom,
   canProceedToSeats,
   handleProceedToSeats,
   getPrice,

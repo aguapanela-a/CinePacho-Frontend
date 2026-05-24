@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { ShieldCheck, Loader2, AlertCircle, ArrowLeft } from 'lucide-react'
-import { useApp } from '../context/AppContext'
-import { useLanguage } from '../context/LanguageContext'
+import { useApp } from '../context/useApp'
+import { useLanguage } from '../context/useLanguage'
 
 /**
  * CheckoutForm — Formulario interno que usa los hooks de Stripe.
@@ -81,7 +81,7 @@ function CheckoutForm({ total, onPaymentSuccess }) {
 
 import StripeProvider from '../components/StripeProvider'
 import { createPaymentIntent } from '../services/paymentService'
-import { saveOrderSnapshot } from '../components/CheckoutGuard'
+import { saveOrderSnapshot } from '../utils/orderSnapshot'
 
 /**
  * Checkout — Página principal de pago.
@@ -113,16 +113,6 @@ export default function Checkout() {
   const backendReady = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY &&
     import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY !== 'pk_test_REEMPLAZA_CON_TU_CLAVE_AQUI'
 
-  const validateShipping = () => {
-    const errors = {}
-    if (!shippingInfo.address.trim()) errors.address = t('checkout.addressRequired')
-    if (!shippingInfo.city.trim()) errors.city = t('checkout.cityRequired')
-    if (!shippingInfo.postalCode.trim()) errors.postalCode = t('checkout.postalCodeRequired')
-    if (!shippingInfo.phone.trim()) errors.phone = t('checkout.phoneRequired')
-    setShippingErrors(errors)
-    return Object.keys(errors).length === 0
-  }
-
   const handleShippingChange = (e) => {
     const { name, value } = e.target
     setShippingInfo(prev => ({ ...prev, [name]: value }))
@@ -132,9 +122,12 @@ export default function Checkout() {
   }
 
   useEffect(() => {
-    if (!backendReady) { setLoadingIntent(false); return }
-
     const initIntent = async () => {
+      if (!backendReady) {
+        setLoadingIntent(false)
+        return
+      }
+
       try {
         // cartTotal en pesos colombianos — Stripe maneja COP en unidades enteras
         const result = await createPaymentIntent(cartTotal)
@@ -349,3 +342,5 @@ export default function Checkout() {
     </div>
   )
 }
+
+

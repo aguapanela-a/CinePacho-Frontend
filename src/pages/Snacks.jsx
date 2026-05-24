@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Star, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Star, AlertCircle } from 'lucide-react'
 import Button from '../components/Button'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { getAllSnacks } from '../services/snackService'
-import { useLanguage } from '../context/LanguageContext'
-import { useToast } from '../context/ToastContext'
-import { formatCurrency } from '../utils/formatCurrency'
+import { useLanguage } from '../context/useLanguage'
+import { useToast } from '../context/useToast'
 
 export default function Snacks() {
   const { addToCart } = useApp()
@@ -153,3 +152,5 @@ export default function Snacks() {
     </div>
   )
 }
+
+

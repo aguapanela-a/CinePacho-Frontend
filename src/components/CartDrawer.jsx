@@ -1,11 +1,11 @@
 import { useEffect, useCallback, useState } from 'react'
 import { X, Trash2, ShoppingBag, Star, ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import Button from './Button'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 import { formatCurrency } from '../utils/formatCurrency'
-import { useToast } from '../context/ToastContext'
+import { useToast } from '../context/useToast'
 
 const REMOVE_ANIMATION_MS = 300
 
@@ -34,7 +34,7 @@ export default function CartDrawer() {
   const getItemKey = (item) =>
     `${item.id}-${item.type}-${item.showtime || 'snack'}`
 
-  const handleRemove = (item, index) => {
+  const handleRemove = (item) => {
     const itemKey = getItemKey(item)
     setRemovingItems((prev) => new Set(prev).add(itemKey))
     setTimeout(() => {
@@ -191,3 +191,4 @@ export default function CartDrawer() {
     </>
   )
 }
+

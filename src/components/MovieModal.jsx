@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Play, Gift, Loader2 } from 'lucide-react'
-import { useApp } from '../context/AppContext'
+import { X, Play, Gift } from 'lucide-react'
+import { useApp } from '../context/useApp'
 import SeatSelector from './SeatSelector'
 import MovieSummary from './movie-modal/MovieSummary'
 import ShowtimePicker from './movie-modal/ShowtimePicker'
-import { useLanguage } from '../context/LanguageContext'
-import { useToast } from '../context/ToastContext'
+import { useLanguage } from '../context/useLanguage'
+import { useToast } from '../context/useToast'
 import { showtimeDates, ticketFormats } from '../data/mockMoviesData'
 import { formatCurrency } from '../utils/formatCurrency'
 
@@ -185,3 +185,4 @@ function MovieModalContent({ movie, onClose, multiplexName }) {
     document.body
   )
 }
+

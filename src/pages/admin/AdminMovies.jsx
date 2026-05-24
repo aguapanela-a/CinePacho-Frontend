@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Search, Film, Calendar, DollarSign, Loader2, AlertCircle,
-  CheckCircle, XCircle, Clock, ChevronDown, Clapperboard, Star,
+  Search, Film, DollarSign, Loader2, AlertCircle,
+  CheckCircle, XCircle, Clock, ChevronDown, Clapperboard,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { searchMovies, selectMovie, createScreening, updateScreeningStatus } from '../../services/movieService'
@@ -14,8 +14,6 @@ const STATUS_CONFIG = {
   CANCELLED: { label: 'Cancelada',  icon: XCircle,     cls: 'bg-red-500/15 text-red-400 border-red-500/20' },
   COMPLETED: { label: 'Completada', icon: Clock,        cls: 'bg-text-secondary/15 text-text-secondary border-border/40' },
 }
-const TABS = ['buscar', 'crear', 'funciones']
-
 export default function AdminMovies() {
   const [tab, setTab] = useState('buscar')
 
@@ -482,3 +480,4 @@ export default function AdminMovies() {
     </AdminLayout>
   )
 }
+

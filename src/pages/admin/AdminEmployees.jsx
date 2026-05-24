@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Users,
@@ -86,14 +86,6 @@ export default function AdminEmployees() {
 
   )
 
-//Borrar empleados local
-
- const handleDeleteEmployee = (id) => {
-  setEmployees(
-    employees.filter((employee) => employee.id !== id)
-  )
-}
-
 //confirmar borrar empleados
 
 const confirmDeleteEmployee = () => {
@@ -158,7 +150,7 @@ const handleEditEmployee = () => {
         // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
       }
 
-      const res = await registerEmployee(payload)
+      await registerEmployee(payload)
       
       const employee = {
         id: employees.length + 1,
@@ -846,3 +838,4 @@ const handleEditEmployee = () => {
     
   )
 }
+

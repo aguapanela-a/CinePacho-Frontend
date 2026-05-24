@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Star, ShoppingBag, Clock, Shield, Ticket, Gift, CalendarCheck } from 'lucide-react'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { Navigate } from 'react-router-dom'
-import { useLanguage } from '../context/LanguageContext'
-import { useToast } from '../context/ToastContext'
+import { useLanguage } from '../context/useLanguage'
+import { useToast } from '../context/useToast'
 import ReviewModal from '../components/ReviewModal'
 
 // Mock Data para el historial
@@ -265,3 +265,5 @@ export default function Profile() {
     </div>
   )
 }
+
+

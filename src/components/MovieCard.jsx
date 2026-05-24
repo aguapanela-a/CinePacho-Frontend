@@ -1,5 +1,5 @@
 import { Star, Clock, Play, Ticket, Gift } from 'lucide-react'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 export default function MovieCard({ movie, onClick }) {
   const { title, genre, rating, duration, year, posterUrl } = movie
@@ -90,3 +90,4 @@ export default function MovieCard({ movie, onClick }) {
     </article>
   )
 }
+

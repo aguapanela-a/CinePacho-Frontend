@@ -4,7 +4,6 @@
  * La clave pública se lee desde las variables de entorno de Vite.
  */
 
-import React from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
 

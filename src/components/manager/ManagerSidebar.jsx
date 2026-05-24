@@ -1,4 +1,3 @@
-import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -11,13 +10,6 @@ import {
 import { useApp } from '../../context/AppContext'
 import { getMultiplexById } from '../../data/mockMultiplexData'
 import { useLanguage } from '../../context/LanguageContext'
-
-const links = [
-  { to: '/manager/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/manager/empleados',  label: 'Empleados',  icon: Users },
-  { to: '/manager/inventario', label: 'Inventario',  icon: Popcorn },
-  { to: '/manager/reportes',   label: 'Reportes',   icon: FileBarChart2 },
-]
 
 /**
  * ManagerSidebar: Barra lateral del panel de gerente.

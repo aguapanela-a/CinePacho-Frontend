@@ -1,4 +1,3 @@
-import React from 'react'
 import { Star, Clock, Calendar, Clapperboard } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 

@@ -1,4 +1,3 @@
-import React from 'react'
 import ManagerLayout from '../../components/manager/ManagerLayout'
 import MultiplexEmployees from '../../components/multiplex/MultiplexEmployees'
 import { useApp } from '../../context/AppContext'

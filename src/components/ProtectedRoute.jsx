@@ -1,6 +1,5 @@
-import React from 'react'
 import { Navigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 
 /**
  * ProtectedRoute: Guarda de rutas basada en autenticación y autorización.
@@ -28,3 +27,4 @@ export default function ProtectedRoute({ allowedRoles = [], children }) {
 
   return children
 }
+

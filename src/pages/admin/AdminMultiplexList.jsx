@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, MapPin, Plus, Pencil, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
@@ -42,7 +42,12 @@ export default function AdminMultiplexList() {
     }
   }, [])
 
-  useEffect(() => { fetchMultiplexes() }, [fetchMultiplexes])
+  useEffect(() => {
+    const loadMultiplexes = async () => {
+      await fetchMultiplexes()
+    }
+    loadMultiplexes()
+  }, [fetchMultiplexes])
 
   // ── Abrir modal para crear ─────────────────────────────────────────────
   const openCreate = () => {
@@ -332,3 +337,4 @@ export default function AdminMultiplexList() {
     </AdminLayout>
   )
 }
+

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Users,
   Ticket,
@@ -9,8 +8,6 @@ import {
 } from 'lucide-react'
 import {
   getMultiplexById,
-  getEmployeesByMultiplex,
-  getInventoryByMultiplex,
   getSalesByMultiplex,
   getLowStockItems,
   countActiveEmployees,

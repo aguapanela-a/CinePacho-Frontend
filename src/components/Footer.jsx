@@ -1,6 +1,5 @@
-import React from 'react'
 import { Film, Globe, MessageCircle, Share2 } from 'lucide-react'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -70,3 +69,4 @@ export default function Footer() {
     </footer>
   )
 }
+

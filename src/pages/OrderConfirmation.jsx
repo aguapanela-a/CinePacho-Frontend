@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle, Star, Popcorn, Home, Ticket, AlertCircle } from 'lucide-react'
-import { useApp } from '../context/AppContext'
-import { useLanguage } from '../context/LanguageContext'
-import { loadOrderSnapshot, clearOrderSnapshot } from '../components/CheckoutGuard'
+import { CheckCircle, Star, Popcorn, Home, Ticket } from 'lucide-react'
+import { useApp } from '../context/useApp'
+import { useLanguage } from '../context/useLanguage'
+import { loadOrderSnapshot, clearOrderSnapshot } from '../utils/orderSnapshot'
 import { formatCurrency } from '../utils/formatCurrency'
 
 export default function OrderConfirmation() {
@@ -138,3 +138,4 @@ export default function OrderConfirmation() {
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { getAllSnacks, createSnack, updateSnack } from '../../services/snackService'
@@ -32,7 +32,12 @@ export default function AdminSnacks() {
     }
   }, [])
 
-  useEffect(() => { fetchSnacks() }, [fetchSnacks])
+  useEffect(() => {
+    const loadSnacks = async () => {
+      await fetchSnacks()
+    }
+    loadSnacks()
+  }, [fetchSnacks])
 
   // ── Filtro local de búsqueda ───────────────────────────────────────────
   const filtered = snacks.filter(s =>
@@ -274,3 +279,4 @@ export default function AdminSnacks() {
     </AdminLayout>
   )
 }
+

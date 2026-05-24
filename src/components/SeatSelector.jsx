@@ -1,8 +1,8 @@
 import { useState, Fragment } from 'react'
 import { Monitor, Armchair, ArrowLeft, Star, Loader2 } from 'lucide-react'
 import Button from './Button'
-import { useLanguage } from '../context/LanguageContext'
-import { useToast } from '../context/ToastContext'
+import { useLanguage } from '../context/useLanguage'
+import { useToast } from '../context/useToast'
 
 const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
 const COLS = 10
@@ -194,3 +194,4 @@ export default function SeatSelector({
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock
 } from 'lucide-react'
@@ -458,3 +458,4 @@ export default function CashierDashboard() {
     </div>
   )
 }
+

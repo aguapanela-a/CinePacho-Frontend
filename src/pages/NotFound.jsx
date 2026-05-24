@@ -1,7 +1,6 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import { Home, AlertTriangle } from 'lucide-react'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 export default function NotFound() {
   const { t } = useLanguage()
@@ -36,3 +35,4 @@ export default function NotFound() {
     </div>
   )
 }
+

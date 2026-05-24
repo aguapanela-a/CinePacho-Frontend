@@ -1,4 +1,3 @@
-import React from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -13,44 +12,6 @@ import {
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { useLanguage } from '../../context/LanguageContext'
-
-const globalLinks = [
-  {
-    to: '/admin/dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    to: '/admin/empleados',
-    label: 'Empleados',
-    icon: Users,
-  },
-  {
-    to: '/admin/multiplex',
-    label: 'Multiplex',
-    icon: Building2,
-  },
-  {
-    to: '/admin/peliculas',
-    label: 'Películas',
-    icon: Film,
-  },
-  {
-    to: '/admin/snacks',
-    label: 'Snacks',
-    icon: Popcorn,
-  },
-  {
-    to: '/admin/inventario',
-    label: 'Inventario',
-    icon: Popcorn,
-  },
-  {
-    to: '/admin/reportes',
-    label: 'Reportes',
-    icon: FileBarChart2,
-  },
-]
 
 export default function AdminSidebar() {
   const navigate = useNavigate()

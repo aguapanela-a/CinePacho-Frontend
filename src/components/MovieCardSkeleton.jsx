@@ -1,5 +1,3 @@
-import React from 'react'
-
 export default function MovieCardSkeleton() {
   return (
     <div className="group relative bg-surface rounded-2xl overflow-hidden border border-border/50">

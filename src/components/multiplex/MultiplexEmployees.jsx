@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Users,
   Plus,
@@ -7,7 +7,6 @@ import {
   Phone,
   BadgeCheck,
   Trash2,
-  Pencil,
   ShieldAlert,
   ArrowUpDown,
   X,
@@ -367,3 +366,4 @@ export default function MultiplexEmployees({
     </div>
   )
 }
+

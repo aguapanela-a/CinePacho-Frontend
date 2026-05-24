@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { Popcorn, Plus, Search, Building2 } from 'lucide-react'
+import { Plus, Search, Building2 } from 'lucide-react'
 
 // Simular un inventario consolidado global
 const initialInventory = [
@@ -272,3 +272,4 @@ const handleCreateItem = () => {
     </AdminLayout>
   )
 }
+

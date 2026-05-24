@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Star, Film, Building2, Send } from 'lucide-react'
 import Button from './Button'
-import { useToast } from '../context/ToastContext'
-import { useLanguage } from '../context/LanguageContext'
+import { useToast } from '../context/useToast'
+import { useLanguage } from '../context/useLanguage'
 
 function StarRating({ value, onChange, label }) {
   const [hovered, setHovered] = useState(0)
@@ -152,3 +152,4 @@ export default function ReviewModal({ order, onClose }) {
     document.body
   )
 }
+

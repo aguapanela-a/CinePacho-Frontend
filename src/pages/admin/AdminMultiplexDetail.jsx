@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import AdminLayout from '../../components/admin/AdminLayout'
 import MultiplexBanner from '../../components/multiplex/MultiplexBanner'
@@ -32,7 +32,12 @@ export default function AdminMultiplexDetail({ section = 'dashboard' }) {
     }
   }, [multiplexId])
 
-  useEffect(() => { fetchMultiplex() }, [fetchMultiplex])
+  useEffect(() => {
+    const loadMultiplex = async () => {
+      await fetchMultiplex()
+    }
+    loadMultiplex()
+  }, [fetchMultiplex])
 
   if (loading) {
     return (
@@ -89,3 +94,4 @@ export default function AdminMultiplexDetail({ section = 'dashboard' }) {
     </AdminLayout>
   )
 }
+

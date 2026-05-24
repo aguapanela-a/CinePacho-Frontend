@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Play, TrendingUp, Star, Clock, Gift } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
@@ -6,7 +6,7 @@ import MovieCard from '../components/MovieCard'
 import MovieCardSkeleton from '../components/MovieCardSkeleton'
 import MovieModal from '../components/MovieModal'
 import Button from '../components/Button'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 import { moviesData } from '../data/mockMoviesData'
 
@@ -37,7 +37,7 @@ export default function Home() {
   }
 
   // Demo: simula carga inicial; reemplazar por estado de fetch cuando haya API real
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false)
     }, 1500)
@@ -222,3 +222,5 @@ export default function Home() {
     </div>
   )
 }
+
+

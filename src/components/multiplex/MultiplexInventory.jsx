@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Popcorn,
   Search,
   PackagePlus,
-  AlertTriangle,
   CheckCircle,
   X,
   Send,
@@ -357,3 +356,4 @@ const handleAddStock = () => {
     </div>
   )
 }
+

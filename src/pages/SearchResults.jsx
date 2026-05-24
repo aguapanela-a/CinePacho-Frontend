@@ -1,9 +1,9 @@
 import { useMemo, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, ArrowLeft, Film } from 'lucide-react'
+import { Search, ArrowLeft } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import MovieCard from '../components/MovieCard'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 import { moviesData } from '../data/mockMoviesData'
 
 function useQuery() {
@@ -12,16 +12,17 @@ function useQuery() {
 
 export default function SearchResults() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { t } = useLanguage()
   const query = useQuery()
   const initialQuery = query.get('q')?.trim() || ''
   const [search, setSearch] = useState(initialQuery)
   const [selectedGenre, setSelectedGenre] = useState('Todos')
-  const [selectedFormat, setSelectedFormat] = useState('Todos')
 
   useEffect(() => {
-    setSearch(initialQuery)
+    const updateQuery = () => {
+      setSearch(initialQuery)
+    }
+    updateQuery()
   }, [initialQuery])
 
   // Obtener géneros únicos para los filtros
@@ -146,3 +147,4 @@ export default function SearchResults() {
     </div>
   )
 }
+

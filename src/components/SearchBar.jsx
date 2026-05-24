@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { useLanguage } from '../context/LanguageContext'
+import { useLanguage } from '../context/useLanguage'
 
 export default function SearchBar({ value, onChange, placeholder }) {
   const { t } = useLanguage()
@@ -27,3 +27,4 @@ export default function SearchBar({ value, onChange, placeholder }) {
     </div>
   )
 }
+
