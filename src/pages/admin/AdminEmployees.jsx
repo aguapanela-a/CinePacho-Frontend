@@ -126,7 +126,7 @@ const handleEditEmployee = () => {
       !newEmployee.cargo ||
       !newEmployee.multiplex ||
       !newEmployee.password ||
-      !newEmployee.indentityCard ||
+      !newEmployee.identityCard || // Corrected typo here
       !newEmployee.salary ||
       !newEmployee.fechaContrato
     ) {
