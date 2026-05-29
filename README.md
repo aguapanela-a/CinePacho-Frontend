@@ -5,7 +5,7 @@ que permite la venta de boletería y snacks desde puntos ágiles
 ubicados en los diferentes multiplex.
 
 ## Tecnologías
-(Pendiente definir con el equipo)
+React
 
 ## Requisitos previos
 (Pendiente)
@@ -19,9 +19,9 @@ ubicados en los diferentes multiplex.
 ## Integrantes
 - Camilo Andres Martinez Duarte - 20231020019
 - Dilan Stive Arboleda Zambrano - 20212020105
-- (Nombre 3)
-- (Nombre 4)
-- (Nombre 5)
+- Erick Santiago Buitrago Peña - 20221020072
+- Juan Esteban Gonzalez Cardenas-20202020119
+- Dilan Stive Arboleda Zambrano - 2021020105
 
 ## Repositorio Backend
 https://camilomardu-admin@bitbucket.org/camilomardu/backcinepacho.git
