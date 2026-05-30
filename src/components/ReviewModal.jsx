@@ -4,6 +4,7 @@ import { X, Star, Film, Building2, Send } from 'lucide-react'
 import Button from './Button'
 import { useToast } from '../context/useToast'
 import { useLanguage } from '../context/useLanguage'
+import { submitMovieReview, submitServiceReview } from '../services/reviewService'
 
 function StarRating({ value, onChange, label }) {
   const [hovered, setHovered] = useState(0)
@@ -23,11 +24,10 @@ function StarRating({ value, onChange, label }) {
           >
             <Star
               size={28}
-              className={`transition-colors ${
-                star <= (hovered || value)
+              className={`transition-colors ${star <= (hovered || value)
                   ? 'text-gold fill-gold'
                   : 'text-border'
-              }`}
+                }`}
             />
           </button>
         ))}
@@ -45,26 +45,39 @@ export default function ReviewModal({ order, onClose }) {
 
   if (!order) return null
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (movieRating === 0 && serviceRating === 0) {
       toast.error(t('review.selectAtLeastOne') || 'Selecciona al menos una calificación')
       return
     }
 
-    // Guardar en localStorage hasta tener backend
-    const reviews = JSON.parse(localStorage.getItem('cinepacho_reviews') || '[]')
-    reviews.push({
-      orderId: order.id,
-      movieRating,
-      serviceRating,
-      comment: comment.trim(),
-      date: new Date().toISOString(),
-    })
-    localStorage.setItem('cinepacho_reviews', JSON.stringify(reviews))
+    // El buyerId real vendría del auth context, usando un fallback para testing
+    const buyerId = localStorage.getItem('cinepacho_buyer_id') || '450e8400-e29b-41d4-a716-446655440000'
 
-    toast.success(t('review.submitted') || '¡Evaluación enviada!')
-    onClose()
+    try {
+      // 1. Enviar reseña de película si hay calificación
+      if (movieRating > 0 && order?.movieId) {
+        await submitMovieReview(buyerId, {
+          movieId: order.movieId,
+          rating: movieRating,
+          comment: comment.trim()
+        })
+      }
+
+      // 2. Enviar reseña de servicio si hay calificación
+      if (serviceRating > 0) {
+        await submitServiceReview(buyerId, {
+          rating: serviceRating,
+          comment: comment.trim()
+        })
+      }
+
+      toast.success(t('review.submitted') || '¡Evaluación enviada con éxito!')
+      onClose()
+    } catch (err) {
+      toast.error(err.message || 'Hubo un error al enviar tu evaluación')
+    }
   }
 
   return createPortal(

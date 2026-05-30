@@ -6,9 +6,12 @@ import { useApp } from '../../context/useApp'
 import { useToast } from '../../context/ToastContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useNavigate } from 'react-router-dom'
-import { moviesData, showtimes, ticketFormats } from '../../data/mockMoviesData'
-import { snacksData } from '../../data/mockSnacksData'
+import { useEffect } from 'react'
+import { showtimes, ticketFormats } from '../../data/mockMoviesData'
 import { getUnitPrice } from '../../utils/formatCurrency'
+import { getMovieSelectorsByMultiplex } from '../../services/movieService'
+import { getAllSnacks } from '../../services/snackService'
+import { createCheckoutSession } from '../../services/paymentService'
 
 // Mock Clientes
 const mockCustomers = [
@@ -21,20 +24,78 @@ export default function CashierDashboard() {
   const toast = useToast()
   const { t } = useLanguage()
   const navigate = useNavigate()
-  
+
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
-  
+  const [movies, setMovies] = useState([])
+  const [snacks, setSnacks] = useState([])
+
+  // Cargar datos
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const titanId = '550e8400-e29b-41d4-a716-446655440000'
+        const moviesResp = await getMovieSelectorsByMultiplex(titanId)
+        if (Array.isArray(moviesResp)) {
+          setMovies(moviesResp.map(item => ({
+            id: item.movieInfo.id,
+            title: item.movieInfo.originalTitle,
+            posterUrl: item.movieInfo.posterPath,
+            screenings: item.screenings || [], // Guardar screenings reales
+          })))
+        } else {
+          setMovies([])
+        }
+      } catch {
+        setMovies([])
+      }
+      
+      try {
+        const snacksResp = await getAllSnacks()
+        if (Array.isArray(snacksResp) && snacksResp.length > 0) {
+          setSnacks(snacksResp.map(s => ({
+            id: s.idSnack, // UUID real del backend
+            name: s.nameSnack,
+            price: s.priceSnack,
+            imageUrl: s.imageUrl || 'https://via.placeholder.com/150' // Placeholder para imágenes si no vienen del backend
+          })))
+        } else {
+          setSnacks([])
+        }
+      } catch {
+        setSnacks([])
+      }
+    }
+    loadData()
+  }, [])
+
   // Customer
   const [searchCustomer, setSearchCustomer] = useState('')
   const [activeCustomer, setActiveCustomer] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
   const [wantsPoints, setWantsPoints] = useState(false)
-  
+
   // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null)
-  const [selectedRoom, setSelectedRoom] = useState(null)
-  const rooms = Array.from({ length: 15 }, (_, i) => `Sala ${i + 1}`)
   
+  // Extraer las funciones reales si existen, sino fallback
+  const movieScreenings = selectedMovie?.screenings?.filter(s => s.status === 'ACTIVE') || []
+  
+  // Agrupar screenings por hora (HH:mm)
+  const availableShowtimes = movieScreenings.length > 0
+    ? [...new Set(movieScreenings.map(s => s.screeningDate?.substring(11, 16)).filter(Boolean))].sort()
+    : showtimes
+
+  const [selectedTime, setSelectedTime] = useState(null)
+  
+  // Salas disponibles para la hora seleccionada
+  const availableRooms = movieScreenings.length > 0 && selectedTime
+    ? movieScreenings
+        .filter(s => s.screeningDate?.substring(11, 16) === selectedTime)
+        .map(s => ({ id: s.roomId, name: s.roomNumber, screeningId: s.screeningId }))
+    : rooms.map(name => ({ id: name, name, screeningId: 'fallback-screening' }))
+
+  const [selectedRoomObj, setSelectedRoomObj] = useState(null)
+
   // Puntos fijos por compra
   const POINTS_PER_PURCHASE = 10 // Esto podría venir del backend o ser dinámico
 
@@ -45,10 +106,12 @@ export default function CashierDashboard() {
 
   const handleSelectMovie = (movie) => {
     setSelectedMovie(movie)
+    setSelectedTime(null)
+    setSelectedRoomObj(null)
   }
 
   const handleAddTicket = (time, format) => {
-    if (!selectedRoom) {
+    if (!selectedRoomObj) {
       toast.error('Por favor selecciona una sala')
       return
     }
@@ -59,17 +122,19 @@ export default function CashierDashboard() {
     }
 
     const item = {
-      id: `${selectedMovie.id}-${time}-${format}-${selectedRoom}`,
-      name: `Boleta ${format} - ${selectedMovie.title} (${time}) - ${selectedRoom}`,
-      price: Number(selectedFormat.price) || 0, // Ensure price is numeric
+      id: `${selectedMovie.id}-${time}-${format}-${selectedRoomObj.name}`,
+      name: `Boleta ${format} - ${selectedMovie.title} (${time}) - ${selectedRoomObj.name}`,
+      price: Number(selectedFormat.generalPrice) || 0, // Ensure price is numeric
       type: 'ticket',
-      showtime: `${time} - ${selectedRoom}`, // Combinar para key única en AppContext
+      showtime: `${time} - ${selectedRoomObj.name}`, // Combinar para key única en AppContext
       qty: 1,
       image: selectedMovie.posterUrl,
+      screeningId: selectedRoomObj.screeningId, // UUID real del backend
     }
     addToCart(item)
     setSelectedMovie(null) // Cerrar modal
-    setSelectedRoom(null) // Reset sala
+    setSelectedTime(null)
+    setSelectedRoomObj(null)
   }
 
   const handleAddSnackToCart = (snack) => {
@@ -92,7 +157,7 @@ export default function CashierDashboard() {
   const total = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
 
   const handleSearchCustomer = () => {
-    const found = mockCustomers.find(c => 
+    const found = mockCustomers.find(c =>
       c.cc === searchCustomer || c.email.toLowerCase() === searchCustomer.toLowerCase()
     )
     if (found) {
@@ -103,13 +168,50 @@ export default function CashierDashboard() {
     }
   }
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return
-    // Aquí iría la lógica para procesar el pago y enviar la orden al backend.
-    // Una vez exitoso:
-    setShowSuccess(true)
-    // También se podrían limpiar los puntos del cliente activo si se usaron
-    // Y se le añadirían los nuevos puntos si wantsPoints es true
+    
+    try {
+      // Map cart to seats and snacks for API
+      const seats = []
+      const snacksPayloadMap = new Map()
+      
+      let screeningId = null
+      
+      cart.forEach(item => {
+        if (item.type === 'ticket') {
+          if (!screeningId && item.screeningId) {
+            screeningId = item.screeningId
+          }
+          // En modo cajero no escogemos sillas exactas en UI, mandamos UUIDs simulados para cumplir DTO
+          // o sillas genéricas si el backend lo permite
+          for(let i = 0; i < item.qty; i++) {
+            seats.push({ seatId: `cajero-seat-${Date.now()}-${i}` })
+          }
+        } else if (item.type === 'snack') {
+          if (snacksPayloadMap.has(item.id)) {
+            snacksPayloadMap.get(item.id).quantity += item.qty
+          } else {
+            snacksPayloadMap.set(item.id, { snackId: item.id, quantity: item.qty })
+          }
+        }
+      })
+      
+      const result = await createCheckoutSession(
+        screeningId || '850e8400-e29b-41d4-a716-446655440000',
+        seats,
+        Array.from(snacksPayloadMap.values())
+      )
+
+      if (result.sessionUrl) {
+        // Redirigir a Stripe Checkout en la misma pestaña para procesar el pago del cliente
+        window.location.href = result.sessionUrl
+      } else {
+        toast.error('Error al generar sesión de pago.')
+      }
+    } catch (err) {
+      toast.error('Error al procesar pago: ' + err.message)
+    }
   }
 
   const resetPOS = () => {
@@ -140,7 +242,7 @@ export default function CashierDashboard() {
             <p className="text-sm font-bold leading-none">{user?.name || 'Cajero'}</p>
             <p className="text-xs text-text-secondary mt-1">Sede: Titán</p>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-sm font-bold transition-colors cursor-pointer"
           >
@@ -152,25 +254,23 @@ export default function CashierDashboard() {
 
       {/* ── Main Layout ── */}
       <div className="flex-1 flex overflow-hidden relative z-10">
-        
+
         {/* Catálogo (Izquierda) */}
         <div className="flex-1 overflow-hidden flex flex-col bg-carbon/50">
-          
+
           {/* Tabs */}
           <div className="flex p-6 pb-0 gap-4">
-            <button 
+            <button
               onClick={() => setActiveTab('tickets')}
-              className={`flex-1 py-4 rounded-t-2xl font-display tracking-widest uppercase transition-colors flex justify-center items-center gap-2 cursor-pointer ${
-                activeTab === 'tickets' ? 'bg-surface border-t border-x border-border/50 text-magenta' : 'bg-transparent text-text-secondary border-b border-border/50 hover:text-white'
-              }`}
+              className={`flex-1 py-4 rounded-t-2xl font-display tracking-widest uppercase transition-colors flex justify-center items-center gap-2 cursor-pointer ${activeTab === 'tickets' ? 'bg-surface border-t border-x border-border/50 text-magenta' : 'bg-transparent text-text-secondary border-b border-border/50 hover:text-white'
+                }`}
             >
               <Film size={20} /> Películas
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('snacks')}
-              className={`flex-1 py-4 rounded-t-2xl font-display tracking-widest uppercase transition-colors flex justify-center items-center gap-2 cursor-pointer ${
-                activeTab === 'snacks' ? 'bg-surface border-t border-x border-border/50 text-gold' : 'bg-transparent text-text-secondary border-b border-border/50 hover:text-white'
-              }`}
+              className={`flex-1 py-4 rounded-t-2xl font-display tracking-widest uppercase transition-colors flex justify-center items-center gap-2 cursor-pointer ${activeTab === 'snacks' ? 'bg-surface border-t border-x border-border/50 text-gold' : 'bg-transparent text-text-secondary border-b border-border/50 hover:text-white'
+                }`}
             >
               <Popcorn size={20} /> Snacks
             </button>
@@ -179,7 +279,7 @@ export default function CashierDashboard() {
           <div className="flex-1 overflow-y-auto p-6 bg-surface border-t-0 border-border/50">
             {activeTab === 'tickets' && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                {moviesData.map(movie => (
+                {movies.map(movie => (
                   <button
                     key={movie.id}
                     onClick={() => handleSelectMovie(movie)}
@@ -199,7 +299,7 @@ export default function CashierDashboard() {
 
             {activeTab === 'snacks' && (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {snacksData.map(snack => (
+                {snacks.map(snack => (
                   <button
                     key={snack.id}
                     onClick={() => handleAddSnackToCart(snack)} // Usar la nueva función
@@ -222,10 +322,10 @@ export default function CashierDashboard() {
           {/* Módulo de Cliente */}
           <div className="p-5 border-b border-border/50">
             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-3">Cliente (Fidelización)</h3>
-            
+
             {activeCustomer ? (
               <div className="bg-carbon border border-green-500/30 rounded-xl p-4 relative">
-                <button 
+                <button
                   onClick={() => setActiveCustomer(null)}
                   className="absolute top-2 right-2 text-text-secondary hover:text-red-400 cursor-pointer"
                 >
@@ -254,7 +354,7 @@ export default function CashierDashboard() {
                     className="w-full bg-carbon border border-border/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-gold transition-colors"
                   />
                 </div>
-                <button 
+                <button
                   onClick={handleSearchCustomer}
                   className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer"
                 >
@@ -267,7 +367,7 @@ export default function CashierDashboard() {
           {/* Carrito de Compras POS */}
           <div className="flex-1 overflow-y-auto p-5">
             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-4">Orden Actual</h3>
-            
+
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-text-secondary">
                 <ShoppingCart size={32} className="mb-3 opacity-20" />
@@ -283,7 +383,7 @@ export default function CashierDashboard() {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <p className="text-sm font-bold text-gold">${(getUnitPrice(item) * item.qty).toLocaleString('es-CO')}</p>
-                      <button 
+                      <button
                         onClick={() => handleRemoveFromCart(item)}
                         className="text-text-secondary hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
                       >
@@ -302,10 +402,10 @@ export default function CashierDashboard() {
               <span className="text-text-secondary font-bold uppercase tracking-widest text-sm">Total a pagar</span>
               <span className="text-3xl font-display text-white">${total.toLocaleString('es-CO')}</span>
             </div>
-            
+
             {activeCustomer && cart.length > 0 && (
               <div className="mb-4 bg-gold/10 border border-gold/30 rounded-xl p-4">
-                
+
                 <p className="text-xs font-bold text-gold uppercase tracking-widest mb-3">
                   ¿Desea acumular puntos?
                 </p>
@@ -313,22 +413,20 @@ export default function CashierDashboard() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setWantsPoints(true)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-                      wantsPoints
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${wantsPoints
                         ? 'bg-gold text-carbon'
                         : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
-                    }`}
+                      }`}
                   >
                     Sí
                   </button>
 
                   <button
                     onClick={() => setWantsPoints(false)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-                      !wantsPoints
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${!wantsPoints
                         ? 'bg-red-500 text-white'
                         : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
-                    }`}
+                      }`}
                   >
                     No
                   </button>
@@ -348,11 +446,10 @@ export default function CashierDashboard() {
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0}
-              className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg ${
-                cart.length > 0 
+              className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg ${cart.length > 0
                   ? 'bg-gradient-to-r from-gold to-yellow-600 text-carbon shadow-gold/20 hover:opacity-90 cursor-pointer'
                   : 'bg-border/50 text-text-secondary cursor-not-allowed'
-              }`}
+                }`}
             >
               Cobrar e Imprimir
             </button>
@@ -364,13 +461,13 @@ export default function CashierDashboard() {
       {selectedMovie && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-xl bg-surface border border-border/50 rounded-3xl p-6 relative animate-[scaleIn_0.2s_ease-out_forwards]">
-            <button 
+            <button
               onClick={() => setSelectedMovie(null)}
               className="absolute top-4 right-4 text-text-secondary hover:text-white bg-carbon rounded-full p-1 cursor-pointer transition-colors"
             >
               <X size={20} />
             </button>
-            
+
             <div className="flex gap-6 mb-6">
               <img src={selectedMovie.posterUrl} alt={selectedMovie.title} className="w-24 h-auto rounded-xl object-cover shadow-lg" />
               <div>
@@ -382,48 +479,65 @@ export default function CashierDashboard() {
             <div className="space-y-6">
               <div>
                 <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                  Sala
+                  <Clock size={14} /> Horarios Disponibles
                 </h3>
-                <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
-                  {rooms.map(room => (
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {availableShowtimes.map(time => (
                     <button
-                      key={room}
-                      onClick={() => setSelectedRoom(room)}
-                      className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        selectedRoom === room
-                          ? 'bg-cyan-400 text-carbon'
-                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-cyan-400/50 hover:text-white'
-                      }`}
+                      key={time}
+                      onClick={() => {
+                        setSelectedTime(time)
+                        setSelectedRoomObj(null)
+                      }}
+                      className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${selectedTime === time
+                          ? 'bg-magenta text-white'
+                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-magenta/50 hover:text-white'
+                        }`}
                     >
-                      {room}
+                      {time}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Clock size={14} /> Horarios Disponibles
-                </h3>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                  {showtimes.map(time => (
-                    <div key={time} className="bg-carbon border border-border/50 rounded-xl p-3 text-center">
-                      <p className="font-bold text-white mb-2">{time}</p>
-                      <div className="flex flex-col gap-2">
-                        {ticketFormats.map(({ fmt }) => ( // No se necesita 'price' aquí
+              {selectedTime && availableRooms.length > 0 && (
+                <div>
+                  <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                    Sala
+                  </h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-4">
+                    {availableRooms.map(room => (
+                      <button
+                        key={room.id}
+                        onClick={() => setSelectedRoomObj(room)}
+                        className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer text-center ${selectedRoomObj?.id === room.id
+                            ? 'bg-cyan-400 text-carbon'
+                            : 'bg-carbon border border-border/50 text-text-secondary hover:border-cyan-400/50 hover:text-white'
+                          }`}
+                      >
+                        {room.name}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {selectedRoomObj && (
+                    <div className="bg-carbon border border-border/50 rounded-xl p-4 text-center mt-4">
+                      <p className="font-bold text-white mb-3 text-sm">Selecciona el Formato</p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        {ticketFormats.map(({ fmt, generalPrice }) => (
                           <button
-                            key={`${time}-${fmt}`}
-                            onClick={() => handleAddTicket(time, fmt)} // Pasar solo el formato
-                            className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-1.5 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
+                            key={fmt}
+                            onClick={() => handleAddTicket(selectedTime, fmt)}
+                            className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
                           >
-                            {fmt}: ${ticketFormats.find(f => f.fmt === fmt)?.price / 1000}k {/* Obtener precio para mostrar */}
+                            {fmt}: ${(generalPrice / 1000).toFixed(0)}k
                           </button>
                         ))}
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -438,7 +552,7 @@ export default function CashierDashboard() {
             </div>
             <h2 className="text-2xl font-display text-white tracking-widest uppercase mb-2">Venta Exitosa</h2>
             <p className="text-text-secondary mb-6">Total cobrado: <strong className="text-white">${total.toLocaleString('es-CO')}</strong></p>
-            
+
             {activeCustomer && wantsPoints && (
               <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 mb-6">
                 <p className="text-gold font-bold text-sm mb-1">¡Puntos Asignados!</p>
@@ -446,7 +560,7 @@ export default function CashierDashboard() {
               </div>
             )}
 
-            <button 
+            <button
               onClick={resetPOS}
               className="w-full bg-carbon border border-border/50 hover:border-gold/50 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer"
             >

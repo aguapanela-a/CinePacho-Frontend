@@ -1,8 +1,9 @@
-import { useState, Fragment } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Monitor, Armchair, ArrowLeft, Star, Loader2 } from 'lucide-react'
 import Button from './Button'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
+import { getSeatsByRoom, toggleSeatStatus } from '../services/seatService'
 import { ticketFormats } from '../data/mockMoviesData'
 
 const ROWS = ['A', 'B', 'C', 'D', 'E', 'F'] // 6 rows: A-D (40 general seats), E-F (20 preferential seats)
@@ -11,6 +12,7 @@ const COLS = 10
 export default function SeatSelector({
   onBack,
   onConfirm,
+  roomId = '650e8400-e29b-41d4-a716-446655440000', // Mock de room default
   basePrice = 11000, // Default to General seat price for 2D
   preferentialPrice = 15000, // Default to Preferential seat price for 2D
   selectedFormat = '2D', // Movie format (2D, 3D, IMAX)
@@ -21,27 +23,50 @@ export default function SeatSelector({
   const { t } = useLanguage()
   const toast = useToast()
 
-  const [occupiedSeats] = useState(() => {
-    const occupied = new Set()
-    for (let i = 0; i < 25; i++) {
-      const r = ROWS[Math.floor(Math.random() * ROWS.length)]
-      const c = Math.floor(Math.random() * COLS) + 1
-      occupied.add(`${r}${c}`)
-    }
-    return occupied
-  })
+  const [occupiedSeats, setOccupiedSeats] = useState(new Set())
+  const [backendSeats, setBackendSeats] = useState([])
 
-  const toggleSeat = (seatId) => {
+  useEffect(() => {
+    if (!roomId) return
+    getSeatsByRoom(roomId)
+      .then(data => {
+        setBackendSeats(data)
+        const occupied = new Set(
+          data.filter(s => s.status === 'BLOCKED' || s.status === 'SOLD').map(s => s.idSeat)
+        )
+        setOccupiedSeats(occupied)
+      })
+      .catch(err => console.error('Error loading seats:', err))
+  }, [roomId])
+
+  // Mapping A1...F10 to backend seat index (assuming sequential 1-60)
+  const getBackendSeat = (rowStr, colInt) => {
+    const rowIndex = ROWS.indexOf(rowStr)
+    const seatNumber = rowIndex * COLS + colInt
+    return backendSeats.find(s => s.seatNumber === seatNumber)
+  }
+
+  const toggleSeat = async (seatId) => {
     if (occupiedSeats.has(seatId)) return
 
     if (selectedSeats.includes(seatId)) {
+      // Deseleccionar → llamar backend para desbloquear
+      try {
+        await toggleSeatStatus(seatId)
+      } catch { /* si falla, igual quitamos local */ }
       setSelectedSeats(prev => prev.filter(s => s !== seatId))
     } else {
       if (selectedSeats.length >= maxSeats) {
         toast.error(t('seats.maxSeatsAlert', { max: maxSeats }))
         return
       }
-      setSelectedSeats(prev => [...prev, seatId])
+      // Seleccionar → llamar backend para bloquear (10 min)
+      try {
+        await toggleSeatStatus(seatId)
+        setSelectedSeats(prev => [...prev, seatId])
+      } catch (err) {
+        toast.error(err.message || 'No se pudo reservar la silla')
+      }
     }
   }
 
@@ -59,7 +84,7 @@ export default function SeatSelector({
     const pref = isPreferential(seatId)
     if (occupiedSeats.has(seatId)) return 'bg-red-500/10 border-red-500/20 text-transparent cursor-not-allowed opacity-50'
     if (selectedSeats.includes(seatId)) return 'bg-gradient-to-t from-magenta to-vinotinto border-magenta shadow-[0_0_15px_rgba(200,22,122,0.5)] text-white'
-    
+
     // Estilos distintos para Preferencial (borde dorado) vs General (borde blanco)
     if (pref) {
       return 'bg-gold/5 border-gold/40 text-gold/60 hover:bg-gold/20 hover:border-gold hover:text-gold transition-all cursor-pointer'
@@ -76,7 +101,7 @@ export default function SeatSelector({
     <div className="flex flex-col h-full animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <button 
+        <button
           onClick={onBack}
           className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors text-sm font-bold tracking-wide"
         >
@@ -107,23 +132,25 @@ export default function SeatSelector({
                 {Array.from({ length: COLS }).map((_, i) => {
                   const col = i + 1
                   const seatId = `${row}${col}`
-                  // Crear pasillo en el medio
-                  const isAisle = col === Math.floor(COLS / 2)
-                  
+                  const backendSeat = getBackendSeat(row, col)
+                  const actualSeatId = backendSeat ? backendSeat.idSeat : seatId
+                  const isOccupied = backendSeat ? (backendSeat.status === 'BLOCKED' || backendSeat.status === 'SOLD') : occupiedSeats.has(seatId)
+                  const isAisle = col === 3 || col === 7 // Pasillo después de columnas 3 y 7
+
                   return (
-                    <Fragment key={seatId}>
+                    <Fragment key={actualSeatId}>
                       <button
                         type="button"
-                        onClick={() => toggleSeat(seatId)}
-                        disabled={occupiedSeats.has(seatId)}
-                        aria-pressed={selectedSeats.includes(seatId)}
-                        aria-label={`${t('seats.title')} ${seatId}${isPreferential(seatId) ? `, ${t('seats.preferential')}` : `, ${t('seats.general')}`}${occupiedSeats.has(seatId) ? `, ${t('seats.occupied')}` : ''}`}
-                        className={`relative min-w-[44px] min-h-[44px] w-[44px] h-[44px] rounded-t-xl rounded-b-md border flex items-center justify-center text-xs font-bold transition-all overflow-hidden ${getSeatClass(seatId)}`}
+                        onClick={() => toggleSeat(actualSeatId)}
+                        disabled={isOccupied}
+                        aria-pressed={selectedSeats.includes(actualSeatId)}
+                        aria-label={`${t('seats.title')} ${seatId}${isPreferential(seatId) ? `, ${t('seats.preferential')}` : `, ${t('seats.general')}`}${isOccupied ? `, ${t('seats.occupied')}` : ''}`}
+                        className={`relative min-w-[44px] min-h-[44px] w-[44px] h-[44px] rounded-t-xl rounded-b-md border flex items-center justify-center text-xs font-bold transition-all overflow-hidden ${getSeatClass(actualSeatId)}`}
                       >
-                        {isPreferential(seatId) && !selectedSeats.includes(seatId) && !occupiedSeats.has(seatId) && (
+                        {isPreferential(seatId) && !selectedSeats.includes(actualSeatId) && !isOccupied && (
                           <Star size={8} className="absolute top-1 text-gold/40" />
                         )}
-                        {selectedSeats.includes(seatId) ? col : ''}
+                        {selectedSeats.includes(actualSeatId) ? col : ''}
                       </button>
                       {isAisle && <div className="w-4 sm:w-8" />}
                     </Fragment>
@@ -166,7 +193,7 @@ export default function SeatSelector({
             </span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4 w-full sm:w-auto">
           {selectedSeats.length > 0 && (
             <div className="text-right">
@@ -181,9 +208,8 @@ export default function SeatSelector({
             variant="primary"
             size="md"
             disabled={selectedSeats.length === 0 || isLoading}
-            className={`w-full sm:w-auto px-8 rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)] ${
-              selectedSeats.length === 0 || isLoading ? 'opacity-40 cursor-not-allowed' : ''
-            }`}
+            className={`w-full sm:w-auto px-8 rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)] ${selectedSeats.length === 0 || isLoading ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
           >
             {isLoading ? (
               <>

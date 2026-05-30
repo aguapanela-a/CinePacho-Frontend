@@ -6,7 +6,7 @@
  * que retorne { clientSecret: "pi_xxx_secret_xxx" }.
  *
  * Cuando el backend esté listo, este servicio se conecta sin
- * cambiar nada en los componentes de UI.
+ * cambiar nada en los componentes de UI.5
  */
 
 import { apiFetch } from './api'
@@ -19,12 +19,15 @@ import { apiFetch } from './api'
  * @param {Array} snacks - Array de objetos con { snackId, quantity }
  * @returns {{ clientSecret: string }}
  */
-export const createPaymentIntent = (amount, currency = 'cop', seats = [], snacks = []) =>
-  apiFetch('/api/payments/create-intent', {
+export const createCheckoutSession = (
+  screeningId,
+  seats = [],
+  snacks = []
+) =>
+  apiFetch('/api/checkout/stripe', {
     method: 'POST',
-    body: JSON.stringify({ 
-      amount, 
-      currency,
+    body: JSON.stringify({
+      screeningId,
       seats,
       snacks,
     }),

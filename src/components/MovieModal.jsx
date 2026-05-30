@@ -14,9 +14,8 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán' })
   const [selectedDate, setSelectedDate] = useState(showtimeDates[0] || '')
   const [selectedFormat, setSelectedFormat] = useState(ticketFormats[0]?.fmt || '2D')
   const [selectedTime, setSelectedTime] = useState('')
-  
-  // La sala ahora viene determinada automáticamente por el negocio o mock data
-  const selectedRoom = 'Sala 3' 
+  const [selectedScreening, setSelectedScreening] = useState(null)
+
   const { addToCart } = useApp()
   const { t } = useLanguage()
   const toast = useToast()
@@ -39,17 +38,36 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán' })
 
   if (!movie) return null
 
+  // Extraer screenings reales del backend (si existen) 
+  const backendScreenings = movie.screenings || []
+
   const canProceedToSeats = selectedDate && selectedFormat && selectedTime
 
   const handleProceedToSeats = () => {
-    if (canProceedToSeats) setStep(2)
+    if (canProceedToSeats) {
+      // Si hay screenings del backend, buscar el que coincida con la hora seleccionada
+      if (backendScreenings.length > 0) {
+        const screening = backendScreenings.find(s => {
+          const time = s.screeningDate?.substring(11, 16) // "HH:mm"
+          return time === selectedTime && s.status === 'ACTIVE'
+        })
+        setSelectedScreening(screening || null)
+      }
+      setStep(2)
+    }
   }
+
+  // Obtener roomId del screening seleccionado (o usar default)
+  const activeRoomId = selectedScreening?.roomId || '650e8400-e29b-41d4-a716-446655440000'
+  const activeRoomName = selectedScreening?.roomNumber || 'Sala 3'
+  const activeScreeningId = selectedScreening?.screeningId || null
 
   const handleConfirmSeats = async (seats, total) => {
     setIsAddingToCart(true)
     try {
       // Create a unique ID based on movie, date, time, format, and room to prevent duplicates
-      const uniqueId = `${movie.id}-${typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate}-${selectedTime}-${selectedFormat}-${selectedRoom}`
+      const dateStr = typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate
+      const uniqueId = `${movie.id}-${dateStr}-${selectedTime}-${selectedFormat}-${activeRoomName}`
 
       // Calculate unit price per seat
       const unitPrice = total / seats.length
@@ -59,9 +77,11 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán' })
         name: movie.title,
         type: 'ticket',
         showtime: `${typeof selectedDate === 'object' ? selectedDate.date : selectedDate} — ${selectedTime} (${selectedFormat})`,
-        room: selectedRoom,
+        room: activeRoomName,
         qty: seats.length,
         seats,
+        seatIds: seats, // UUIDs reales del backend para checkout
+        screeningId: activeScreeningId, // UUID del screening para POST /api/checkout/stripe
         unitPrice, // Pass unit price directly to prevent recalculation
         price: total,
       })
@@ -106,6 +126,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán' })
                 <SeatSelector
                   onBack={() => setStep(1)}
                   onConfirm={handleConfirmSeats}
+                  roomId={activeRoomId}
                   selectedFormat={selectedFormat}
                   isLoading={isAddingToCart}
                 />
@@ -123,9 +144,10 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán' })
                     setSelectedFormat={setSelectedFormat}
                     selectedTime={selectedTime}
                     setSelectedTime={setSelectedTime}
-                    selectedRoom={selectedRoom}
+                    selectedRoom={activeRoomName}
                     canProceedToSeats={canProceedToSeats}
                     handleProceedToSeats={handleProceedToSeats}
+                    backendScreenings={backendScreenings}
                   />
                 </>
               )}

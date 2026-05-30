@@ -7,12 +7,25 @@
 import { apiFetch } from './api'
 
 /**
+ * GET /api/movie/multiplex/{multiplexId}/selectors
+ * Retorna la cartelera de un multiplex.
+ * @param {string} multiplexId - UUID del multiplex
+ * @param {string} query - Opcional. Búsqueda por título.
+ */
+export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
+  const url = query 
+    ? `/api/movie/multiplex/${multiplexId}/selectors?query=${encodeURIComponent(query)}`
+    : `/api/movie/multiplex/${multiplexId}/selectors`
+  return apiFetch(url)
+}
+
+/**
  * GET /admin/search?query={text}
  * Búsqueda dinámica de películas vía TMDB desde el backend.
  * @param {string} query - Texto de búsqueda
  */
 export const searchMovies = (query) =>
-  apiFetch(`/api/admin/search?query=${encodeURIComponent(query)}`)
+  apiFetch(`/api/admin/movie/search?query=${encodeURIComponent(query)}`)
 
 /**
  * POST /admin/select/{movieId}

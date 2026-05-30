@@ -3,26 +3,15 @@
  */
 
 import { apiFetch } from './api'
-import { snacksData } from '../data/mockSnacksData'
 
-const mapLocalSnackToApi = (snack) => ({
-  idSnack: snack.id,
-  nameSnack: snack.name,
-  descriptionSnack: snack.description,
-  priceSnack: snack.price,
-  quantitySnack: 50,
-})
-
-const getLocalSnacksCatalog = () => snacksData.map(mapLocalSnackToApi)
-
-/** GET /api/admin/snacks — Lista todos los snacks (fallback a mock local) */
+/** GET /api/snacks — Lista snacks disponibles para compra (BUYER, EMPLOYEE) */
 export const getAllSnacks = async () => {
   try {
-    const data = await apiFetch('/api/admin/snacks')
+    const data = await apiFetch('/api/snacks')
     if (Array.isArray(data) && data.length > 0) return data
-    return getLocalSnacksCatalog()
+    return []
   } catch {
-    return getLocalSnacksCatalog()
+    return []
   }
 }
 

@@ -1,10 +1,10 @@
 import { useMemo, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, ArrowLeft } from 'lucide-react'
+import { Search, ArrowLeft, Loader2 } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import MovieCard from '../components/MovieCard'
 import { useLanguage } from '../context/useLanguage'
-import { moviesData } from '../data/mockMoviesData'
+import { searchMovies } from '../services/movieService'
 
 function useQuery() {
   return new URLSearchParams(useLocation().search)
@@ -16,51 +16,50 @@ export default function SearchResults() {
   const query = useQuery()
   const initialQuery = query.get('q')?.trim() || ''
   const [search, setSearch] = useState(initialQuery)
-  const [selectedGenre, setSelectedGenre] = useState('Todos')
+  const [results, setResults] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const updateQuery = () => {
-      setSearch(initialQuery)
-    }
-    updateQuery()
+    setSearch(initialQuery)
   }, [initialQuery])
 
-  // Obtener géneros únicos para los filtros
-  const uniqueGenres = useMemo(() => {
-    const genres = new Set()
-    moviesData.forEach(m => {
-      // Separar por / si hay múltiples géneros y limpiar
-      m.genre.split('/').forEach(g => genres.add(g.trim()))
-    })
-    return ['Todos', ...Array.from(genres).sort()]
-  }, [])
+  // Realizar búsqueda con el API real
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!initialQuery) {
+        setResults([])
+        setIsLoading(false)
+        return
+      }
 
-  const filteredMovies = useMemo(() => {
-    let results = moviesData
-
-    if (initialQuery) {
-      const normalized = initialQuery.toLowerCase()
-      results = results.filter((movie) => {
-        return (
-          movie.title.toLowerCase().includes(normalized) ||
-          movie.genre.toLowerCase().includes(normalized) ||
-          movie.synopsis.toLowerCase().includes(normalized)
-        )
-      })
+      setIsLoading(true)
+      try {
+        const data = await searchMovies(initialQuery)
+        // TMDB search via backend devuelve data.results
+        if (data && data.results) {
+          const mapped = data.results.map(item => ({
+            id: item.id,
+            title: item.title,
+            year: item.release_date?.substring(0, 4) || 'N/A',
+            genre: 'Película', // TMDB devuelve IDs de géneros, dejamos uno genérico por ahora
+            rating: item.vote_average,
+            synopsis: item.overview,
+            posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750',
+            backdropUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
+          }))
+          setResults(mapped)
+        } else {
+          setResults([])
+        }
+      } catch (err) {
+        setResults([])
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    if (selectedGenre !== 'Todos') {
-      results = results.filter(movie => movie.genre.includes(selectedGenre))
-    }
-
-    // Simplificado para 'precio/formato' usando una regla básica de mock
-    // Como no hay 'precio' directo, usamos 'Formato' como filtro, simulando
-    // 'Todos', 'IMAX', '3D', '2D'. (En este mock, asumimos formato basado en título o aleatorio si no existe,
-    // pero vamos a omitir el filtro de formato/precio por ahora si no hay datos, o lo dejamos como 'Todos' por defecto)
-    // Para simplificar según el requerimiento, implementamos género que sí existe.
-
-    return results
-  }, [initialQuery, selectedGenre])
+    performSearch()
+  }, [initialQuery])
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -108,37 +107,25 @@ export default function SearchResults() {
               <Search size={18} /> {t('search.button')}
             </button>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
-            <div className="w-full sm:w-auto">
-              <label className="block text-xs font-bold tracking-widest text-text-secondary mb-1 uppercase">
-                Género
-              </label>
-              <select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                className="w-full sm:w-48 bg-surface border border-border/50 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-magenta"
-              >
-                {uniqueGenres.map(genre => (
-                  <option key={genre} value={genre}>{genre}</option>
-                ))}
-              </select>
-            </div>
-          </div>
         </form>
 
-        {initialQuery === '' ? (
+        {isLoading ? (
+          <div className="rounded-3xl border border-border/50 bg-surface/80 p-20 flex flex-col items-center justify-center text-text-secondary">
+             <Loader2 size={40} className="animate-spin mb-4 text-magenta" />
+             <p className="font-bold tracking-widest uppercase">Buscando...</p>
+          </div>
+        ) : initialQuery === '' ? (
           <div className="rounded-3xl border border-border/50 bg-surface/80 p-10 text-center text-text-secondary">
             {t('search.emptyQuery')}
           </div>
-        ) : filteredMovies.length === 0 ? (
+        ) : results.length === 0 ? (
           <div className="rounded-3xl border border-border/50 bg-surface/80 p-10 text-center text-text-secondary">
             <p className="text-xl font-bold text-white mb-3">{t('search.noResults')}</p>
             <p>{t('search.noResultsHelp', { query: initialQuery })}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMovies.map((movie) => (
+            {results.map((movie) => (
               <MovieCard key={movie.id} movie={movie} onClick={() => setTimeout(() => navigate(`/?q=${encodeURIComponent(search)}`), 0)} />
             ))}
           </div>
@@ -147,4 +134,3 @@ export default function SearchResults() {
     </div>
   )
 }
-

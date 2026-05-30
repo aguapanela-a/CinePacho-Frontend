@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { useLanguage } from '../context/useLanguage';
 import { useToast } from '../context/useToast';
 import ReviewModal from '../components/ReviewModal';
+import { getUserReviews } from '../services/reviewService';
 
 // Mock Data para el historial
 const mockHistory = [
@@ -19,10 +20,27 @@ export default function Profile() {
   const toast = useToast();
 
   const [reviewOrder, setReviewOrder] = useState(null);
+  const [userReviews, setUserReviews] = useState([]);
   const [coupons, setCoupons] = useState(() => {
     const saved = localStorage.getItem('cinepacho_coupons');
     return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      // Usar un buyerId temporal si no está en auth, simulando un usuario logueado
+      const buyerId = localStorage.getItem('cinepacho_buyer_id') || '450e8400-e29b-41d4-a716-446655440000';
+      try {
+        const data = await getUserReviews(buyerId);
+        if (Array.isArray(data)) {
+          setUserReviews(data);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+      }
+    };
+    fetchReviews();
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('cinepacho_points');
@@ -253,6 +271,41 @@ export default function Profile() {
             <button className="w-full mt-6 py-4 rounded-xl border border-border/50 text-text-secondary font-bold hover:text-white hover:bg-carbon transition-colors">
               {t('profile.seeAllPurchases')}
             </button>
+          </div>
+
+          {/* Historial de Valoraciones Reales */}
+          <div className="bg-surface/80 border border-border/50 rounded-3xl p-8 backdrop-blur-xl mt-8">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/50">
+              <Star className="text-gold" size={24} />
+              <h2 className="text-2xl font-display text-white tracking-widest uppercase">
+                {t('profile.myReviews') || 'Mis Valoraciones'}
+              </h2>
+            </div>
+
+            {userReviews.length === 0 ? (
+              <p className="text-text-secondary text-sm text-center py-4">No has realizado ninguna valoración aún.</p>
+            ) : (
+              <div className="space-y-4">
+                {userReviews.map((review, idx) => (
+                  <div key={idx} className="bg-carbon border border-border/40 rounded-2xl p-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-widest text-magenta">
+                        {review.reviewType === 'MOVIE' ? 'Película' : 'Servicio'}
+                      </span>
+                      <span className="text-xs text-text-secondary">{new Date(review.reviewDate).toLocaleDateString('es-CO')}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-gold mb-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={14} fill={i < review.rating ? 'currentColor' : 'none'} className={i < review.rating ? 'text-gold' : 'text-border'} />
+                      ))}
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm text-white/90 italic">"{review.comment}"</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

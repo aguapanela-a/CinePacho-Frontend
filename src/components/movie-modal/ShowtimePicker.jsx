@@ -1,7 +1,7 @@
 import { MapPin, Clock4 } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
-import { showtimeDates, showtimes, ticketFormats } from '../../data/mockMoviesData'
+import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
 
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
@@ -19,8 +19,19 @@ export default function ShowtimePicker({
   selectedRoom,
   canProceedToSeats,
   handleProceedToSeats,
+  backendScreenings = [],
 }) {
   const { t } = useLanguage()
+
+  // Extraer horarios reales del backend si hay screenings, sino usar mocks
+  const showtimesList = backendScreenings.length > 0
+    ? [...new Set(
+        backendScreenings
+          .filter(s => s.status === 'ACTIVE')
+          .map(s => s.screeningDate?.substring(11, 16)) // "HH:mm"
+          .filter(Boolean)
+      )].sort()
+    : mockShowtimes
 
   return (
     <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
@@ -89,7 +100,7 @@ export default function ShowtimePicker({
           {t('movie.timeLabel') || 'Horarios Disponibles'}
         </p>
         <div className="flex flex-wrap gap-2">
-          {showtimes.map((time) => (
+          {showtimesList.map((time) => (
             <button
               key={time}
               type="button"

@@ -1,106 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { ShieldCheck, Loader2, AlertCircle, ArrowLeft } from 'lucide-react'
 import { useApp } from '../context/useApp'
 import { useLanguage } from '../context/useLanguage'
 
-/**
- * CheckoutForm — Formulario interno que usa los hooks de Stripe.
- * Debe estar dentro de un <Elements> provider (StripeProvider).
- */
-function CheckoutForm({ total, onPaymentSuccess }) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const navigate = useNavigate()
-  const { t } = useLanguage()
-  const [processing, setProcessing] = useState(false)
-  const [payError, setPayError] = useState(null)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!stripe || !elements) return
-
-    setProcessing(true)
-    setPayError(null)
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        // Stripe redirige aquí tras el pago 3DS si es necesario
-        return_url: `${window.location.origin}/confirmacion`,
-      },
-      redirect: 'if_required',
-    })
-
-    if (error) {
-      setPayError(error.message)
-      setProcessing(false)
-    } else {
-      onPaymentSuccess?.()
-      navigate('/confirmacion')
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement
-        options={{
-          layout: 'tabs',
-          wallets: { applePay: 'auto', googlePay: 'auto' },
-        }}
-      />
-
-      {payError && (
-        <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm">
-          <AlertCircle size={15} /> {payError}
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={!stripe || processing}
-        className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-magenta/25 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {processing ? (
-          <><Loader2 size={20} className="animate-spin" /> {t('common.processing')}</>
-        ) : (
-          <><ShieldCheck size={20} /> {t('checkout.pay')} ${total.toLocaleString('es-CO')}</>
-        )}
-      </button>
-
-      <p className="text-center text-xs text-text-secondary flex items-center justify-center gap-1.5">
-        <ShieldCheck size={13} className="text-green-400" />
-        {t('checkout.securePayment')}
-      </p>
-    </form>
-  )
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-
-import StripeProvider from '../components/StripeProvider'
-import { createPaymentIntent } from '../services/paymentService'
+import { createCheckoutSession } from '../services/paymentService'
 import { saveOrderSnapshot } from '../utils/orderSnapshot'
 
 /**
  * Función auxiliar para mapear el carrito al formato requerido por el backend.
- * Estructura los datos en formato { seats: [...], snacks: [...] }
+ * Extrae screeningId del primer ticket, y los seatIds y snacks reales.
  */
 function mapCartToPaymentData(cart) {
   const seats = []
   const snacksMap = new Map()
+  let screeningId = null
 
   cart.forEach((item) => {
     if (item.type === 'ticket') {
+      // Usar el screeningId real del backend almacenado en el item
+      if (!screeningId && item.screeningId) {
+        screeningId = item.screeningId
+      }
+      // Usar los seatIds reales (UUIDs del backend) si existen
       if (Array.isArray(item.seatIds) && item.seatIds.length > 0) {
         item.seatIds.forEach((seatId) => seats.push({ seatId }))
-      } else {
-        for (let i = 0; i < item.qty; i++) {
-          seats.push({
-            seatId: `seat-${item.id}-${i}`,
-          })
-        }
       }
     } else if (item.type === 'snack') {
       if (snacksMap.has(item.id)) {
@@ -116,6 +40,7 @@ function mapCartToPaymentData(cart) {
   })
 
   return {
+    screeningId: screeningId || '850e8400-e29b-41d4-a716-446655440000', // fallback
     seats,
     snacks: Array.from(snacksMap.values()),
   }
@@ -145,11 +70,8 @@ export default function Checkout() {
     saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo })
   }
 
-  const [clientSecret, setClientSecret] = useState(null)
-  const [loadingIntent, setLoadingIntent] = useState(true)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [intentError, setIntentError] = useState(null)
-  const backendReady = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY &&
-    import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY !== 'pk_test_REEMPLAZA_CON_TU_CLAVE_AQUI'
 
   const handleShippingChange = (e) => {
     const { name, value } = e.target
@@ -159,33 +81,32 @@ export default function Checkout() {
     }
   }
 
-  useEffect(() => {
-    const initIntent = async () => {
-      if (!backendReady) {
-        setLoadingIntent(false)
-        return
-      }
+  const handlePay = async () => {
+    if (cart.length === 0) return
+    setIsProcessing(true)
+    setIntentError(null)
 
-      try {
-        // Mapear carrito al formato requerido
-        const paymentData = mapCartToPaymentData(cart)
-        
-        // cartTotal en pesos colombianos — Stripe maneja COP en unidades enteras
-        const result = await createPaymentIntent(
-          cartTotal,
-          'cop',
-          paymentData.seats,
-          paymentData.snacks
-        )
-        setClientSecret(result.clientSecret)
-      } catch (err) {
-        setIntentError(err.message)
-      } finally {
-        setLoadingIntent(false)
+    try {
+      const paymentData = mapCartToPaymentData(cart)
+
+      const result = await createCheckoutSession(
+        paymentData.screeningId,
+        paymentData.seats,
+        paymentData.snacks
+      )
+
+      if (result.sessionUrl) {
+        saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo })
+        window.location.href = result.sessionUrl // Redirige al Hosted Checkout de Stripe
+      } else {
+        setIntentError('Error: No se recibió la URL de Stripe')
+        setIsProcessing(false)
       }
+    } catch (err) {
+      setIntentError(err.message)
+      setIsProcessing(false)
     }
-    initIntent()
-  }, [cart, cartTotal, backendReady])
+  }
 
   return (
     <div className="min-h-screen bg-carbon text-text-primary relative overflow-hidden">
@@ -262,9 +183,8 @@ export default function Checkout() {
                     value={shippingInfo.address}
                     onChange={handleShippingChange}
                     placeholder={t('checkout.addressPlaceholder')}
-                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
-                      shippingErrors.address ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                    }`}
+                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.address ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                      }`}
                   />
                   {shippingErrors.address && <p className="text-red-500 text-xs mt-1">{shippingErrors.address}</p>}
                 </div>
@@ -279,9 +199,8 @@ export default function Checkout() {
                       value={shippingInfo.city}
                       onChange={handleShippingChange}
                       placeholder={t('checkout.cityPlaceholder')}
-                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
-                        shippingErrors.city ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                      }`}
+                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.city ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                        }`}
                     />
                     {shippingErrors.city && <p className="text-red-500 text-xs mt-1">{shippingErrors.city}</p>}
                   </div>
@@ -295,9 +214,8 @@ export default function Checkout() {
                       value={shippingInfo.postalCode}
                       onChange={handleShippingChange}
                       placeholder="080001"
-                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
-                        shippingErrors.postalCode ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                      }`}
+                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.postalCode ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                        }`}
                     />
                     {shippingErrors.postalCode && <p className="text-red-500 text-xs mt-1">{shippingErrors.postalCode}</p>}
                   </div>
@@ -312,9 +230,8 @@ export default function Checkout() {
                     value={shippingInfo.phone}
                     onChange={handleShippingChange}
                     placeholder="+57 300 0000000"
-                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${
-                      shippingErrors.phone ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                    }`}
+                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.phone ? 'border-red-500' : 'border-border/80 focus:border-magenta'
+                      }`}
                   />
                   {shippingErrors.phone && <p className="text-red-500 text-xs mt-1">{shippingErrors.phone}</p>}
                 </div>
@@ -327,62 +244,30 @@ export default function Checkout() {
                 {t('checkout.paymentMethod')}
               </h2>
 
-              {/* Estado: sin API key / sin backend */}
-              {!backendReady && (
-                <div className="space-y-4">
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-2xl px-5 py-4 text-sm">
-                    <p className="font-bold flex items-center gap-2 mb-2">
-                      <AlertCircle size={16} /> {t('checkout.stripePending')}
-                    </p>
-
-                  </div>
-
-                  {/* Formulario de demostración visual */}
-                  <div className="space-y-4 opacity-50 pointer-events-none select-none">
-                    <div className="bg-carbon border border-border/50 rounded-2xl px-4 py-4">
-                      <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">{t('checkout.cardNumber')}</p>
-                      <p className="text-text-secondary font-mono tracking-widest">•••• •••• •••• ••••</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-carbon border border-border/50 rounded-2xl px-4 py-4">
-                        <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">{t('checkout.expiry')}</p>
-                        <p className="text-text-secondary font-mono">MM / AA</p>
-                      </div>
-                      <div className="bg-carbon border border-border/50 rounded-2xl px-4 py-4">
-                        <p className="text-xs text-text-secondary mb-2 uppercase tracking-widest">{t('checkout.cvc')}</p>
-                        <p className="text-text-secondary font-mono">•••</p>
-                      </div>
-                    </div>
-                    <button disabled className="w-full py-4 rounded-2xl bg-gradient-to-r from-magenta/50 to-vinotinto/50 text-white font-bold text-lg opacity-60">
-                      {t('checkout.pay')} ${cartTotal.toLocaleString('es-CO')}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Estado: cargando PaymentIntent */}
-              {backendReady && loadingIntent && (
-                <div className="flex items-center justify-center py-16 gap-3 text-text-secondary">
-                  <Loader2 size={24} className="animate-spin text-magenta" />
-                  <span>{t('checkout.preparingSecurePayment')}</span>
-                </div>
-              )}
-
-              {/* Estado: error al crear PaymentIntent */}
-              {backendReady && intentError && (
-                <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4">
+              {/* Estado: error al crear Checkout Session */}
+              {intentError && (
+                <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 mb-4">
                   <AlertCircle size={18} /> {intentError}
                 </div>
               )}
 
-              {/* Estado: listo para pagar */}
-              {backendReady && clientSecret && (
-                <StripeProvider clientSecret={clientSecret}>
-                  <CheckoutForm total={cartTotal} onPaymentSuccess={handlePaymentSuccess} />
-                </StripeProvider>
-              )}
+              <button
+                onClick={handlePay}
+                disabled={isProcessing || cart.length === 0}
+                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-magenta/25 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? (
+                  <><Loader2 size={20} className="animate-spin" /> {t('common.processing')}</>
+                ) : (
+                  <><ShieldCheck size={20} /> {t('checkout.pay')} ${cartTotal.toLocaleString('es-CO')}</>
+                )}
+              </button>
+              <p className="text-center text-xs text-text-secondary flex items-center justify-center gap-1.5 mt-4">
+                <ShieldCheck size={13} className="text-green-400" />
+                {t('checkout.securePayment')} (Stripe Checkout)
+              </p>
             </div>
-            </div>
+          </div>
         </div>
       </div>
     </div>
