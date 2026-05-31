@@ -150,29 +150,36 @@ const handleEditEmployee = () => {
         // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
       };
 
-      await registerEmployee(payload);
-      
-      const employee = {
-        id: employees.length + 1,
-        ...newEmployee,
-        estado: 'Activo',
-      };
+        const response = await registerEmployee(payload)
 
-      setEmployees([...employees, employee])
+        setEmployees((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            nombre: newEmployee.nombre,
+            correo: newEmployee.correo,
+            telefono: newEmployee.telefono,
+            cargo: newEmployee.cargo,
+            multiplex: newEmployee.multiplex,
+            estado: 'Activo',
+            fechaContrato: newEmployee.fechaContrato,
+          },
+        ])
 
-      setNewEmployee({
-        nombre: '',
-        correo: '',
-        telefono: '',
-        cargo: '',
-        multiplex: '',
-        password: '',
-        identityCard: '', // Corrected typo
-        salary: '',
-        fechaContrato: '',
-      })
+        setNewEmployee({
+          nombre: '',
+          correo: '',
+          telefono: '',
+          cargo: '',
+          multiplex: '',
+          password: '',
+          identityCard: '',
+          salary: '',
+          fechaContrato: '',
+        })
 
-      setIsModalOpen(false)
+        setIsModalOpen(false)
+
     } catch (err) {
       setErrorForm(err.message)
     } finally {

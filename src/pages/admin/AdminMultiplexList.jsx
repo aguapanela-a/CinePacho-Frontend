@@ -37,7 +37,7 @@ const fetchMultiplexes = useCallback(async () => {
 
    console.log(JSON.stringify(data, null, 2))
 
-    setMultiplexList(data)
+    setMultiplexList(Array.isArray(data) ? data : [])
   } catch (err) {
     setError(err.message)
   } finally {
@@ -87,10 +87,18 @@ const fetchMultiplexes = useCallback(async () => {
       if (editingId) {
         console.log('EDITANDO ID:', editingId)
         const updated = await updateMultiplex(editingId, form)
-        setMultiplexList(prev => prev.map(p => p.id === editingId? updated : p))
+          setMultiplexList((prev) =>
+            prev.map((p) =>
+              p.id === editingId ? { ...p, ...updated } : p
+            )
+          )
       } else {
-        const created = await createMultiplex(form)
-        setMultiplexList(prev => [...prev, created])
+      const created = await createMultiplex(form)
+
+      setMultiplexList((prev) => [
+        ...prev,
+        created?.id ? created : { ...form, id: Date.now() }
+      ])
       }
       setIsModalOpen(false)
     } catch (err) {

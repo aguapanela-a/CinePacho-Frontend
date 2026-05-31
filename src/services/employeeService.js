@@ -6,9 +6,8 @@
 import { apiFetch } from './api'
 
 /**
- * POST /admin/register_employee
- * Registra un nuevo empleado en el sistema
- * @param {Object} data - Datos del empleado
+ * POST registrar empleado o manager
+ * /api/admin/register_employee
  */
 export const registerEmployee = (data) =>
   apiFetch('/api/admin/register_employee', {
