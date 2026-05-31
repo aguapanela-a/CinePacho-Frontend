@@ -1,25 +1,24 @@
 /**
  * movieService.js
  * Servicios para búsqueda de películas (TMDB), selección y gestión de funciones.
- * Endpoints: /admin/search  /admin/movie/**
  */
 
 import { apiFetch } from './api'
 
 /**
- * GET /api/movie/multiplex/{multiplexId}/selectors
- * Retorna la cartelera de un multiplex.
- * @param {string} multiplexId - UUID del multiplex
- * @param {string} query - Opcional. Búsqueda por título.
+ * GET cartelera de un multiplex
+ * /api/movie/multiplex/{multiplexId}/selectors
  */
 export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
-  const url = query 
+  const url = query
     ? `/api/movie/multiplex/${multiplexId}/selectors?query=${encodeURIComponent(query)}`
     : `/api/movie/multiplex/${multiplexId}/selectors`
+
   return apiFetch(url)
 }
 
 /**
+<<<<<<< HEAD
  * GET /api/movie/multiplex/{multiplexId}/selectors/{movieId}
  * Obtiene las funciones de una película específica en un multiplex.
  */
@@ -44,40 +43,42 @@ export const getMovieTrailer = (movieId) =>
  * GET /admin/search?query={text}
  * Búsqueda dinámica de películas vía TMDB desde el backend.
  * @param {string} query - Texto de búsqueda
+=======
+ * GET búsqueda de películas (TMDB backend)
+ * /api/admin/movie/search
+>>>>>>> e78fb1fc8227ba85aea4ace98062b7bc17aa41c8
  */
-export const searchMovies = (query) =>
-  apiFetch(`/api/admin/movie/search?query=${encodeURIComponent(query)}`)
+export const searchMovies = (query, page = 1) =>
+  apiFetch(
+    `/api/admin/movie/search?query=${encodeURIComponent(query)}&page=${page}`
+  )
 
 /**
- * POST /admin/select/{movieId}
- * Registra la selección de una película en el sistema.
- * @param {number} movieId - ID de TMDB
+ * POST seleccionar película
+ * /api/admin/movie/select/{movieId}
  */
 export const selectMovie = (movieId) =>
-  apiFetch(`/api/admin/select/${movieId}`, { method: 'POST' })
+  apiFetch(`/api/admin/movie/select/${movieId}`, {
+    method: 'POST',
+  })
 
 /**
- * POST /admin/{multiplexName}/createScreening
- * Crea una función (screening) para la película seleccionada.
- * @param {string} multiplexName - Nombre exacto del multiplex
- * @param {{ movieId, roomId, dateTime, price }} data
+ * POST crear función (screening)
+ * /api/admin/movie/createScreening
  */
-export const createScreening = (multiplexName, data) =>
-  apiFetch(`/api/admin/${encodeURIComponent(multiplexName)}/createScreening`, {
+export const createScreening = (data) =>
+  apiFetch('/api/admin/movie/createScreening', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 
 /**
- * PUT /admin/{multiplexName}/{idScreening}/status
- * Actualiza el estado de una función.
- * @param {string} multiplexName
- * @param {string} screeningId - UUID de la función
- * @param {'ACTIVE' | 'CANCELLED' | 'COMPLETED'} status
+ * PUT cambiar estado de función
+ * /api/admin/movie/changeStatus/{idScreening}
  */
-export const updateScreeningStatus = (multiplexName, screeningId, status) =>
+export const updateScreeningStatus = (screeningId, status) =>
   apiFetch(
-    `/api/admin/${encodeURIComponent(multiplexName)}/${screeningId}/status?status=${status}`,
+    `/api/admin/movie/changeStatus/${screeningId}?status=${status}`,
     {
       method: 'PUT',
     }

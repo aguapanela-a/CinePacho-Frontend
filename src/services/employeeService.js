@@ -6,14 +6,14 @@
 import { apiFetch } from './api'
 
 /**
- * POST /admin/register_employee
- * Registra un nuevo empleado en el sistema
- * @param {Object} data - Datos del empleado
+ * POST registrar empleado o manager
+ * /api/admin/register_employee
  */
 export const registerEmployee = (data) =>
   apiFetch('/api/admin/register_employee', {
     method: 'POST',
     body: JSON.stringify(data),
+<<<<<<< HEAD
   })
 
 /**
@@ -25,3 +25,6 @@ export const scanTicket = (billingId) =>
   apiFetch(`/api/checkout/employee/billing/${billingId}/scan`, {
     method: 'PUT',
   })
+=======
+  })
+>>>>>>> e78fb1fc8227ba85aea4ace98062b7bc17aa41c8

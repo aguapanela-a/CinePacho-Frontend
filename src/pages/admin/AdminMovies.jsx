@@ -106,12 +106,12 @@ export default function AdminMovies() {
     setCreatingScreening(true)
     setScreeningError(null)
     try {
-      const result = await createScreening(multiplexName, {
-        movieId: selectedMovie.id,
-        roomId,
-        dateTime: dateTime.replace('T', ' ') + ':00',
-        price: parseFloat(price),
-      })
+        const result = await createScreening({
+          movieId: selectedMovie.id,
+          roomId,
+          dateTime: dateTime.replace('T', ' ') + ':00',
+          price: parseFloat(price),
+        })
       setCreatedScreening(result)
       // Añadir a la lista de funciones local
       setScreenings(prev => [...prev, { ...result, multiplexName }])
@@ -131,7 +131,7 @@ export default function AdminMovies() {
     setUpdatingId(screening.screeningId)
     setScreeningsError(null)
     try {
-      await updateScreeningStatus(screening.multiplexName, screening.screeningId, newStatus)
+      await updateScreeningStatus(screening.screeningId, newStatus)
       setScreenings(prev =>
         prev.map(s => s.screeningId === screening.screeningId ? { ...s, status: newStatus } : s)
       )
