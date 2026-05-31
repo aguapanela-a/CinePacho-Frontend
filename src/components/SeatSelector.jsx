@@ -13,6 +13,7 @@ export default function SeatSelector({
   onBack,
   onConfirm,
   roomId = '650e8400-e29b-41d4-a716-446655440000', // Mock de room default
+  screeningId, // Agregado para llamar endpoints específicos de la función
   basePrice = 11000, // Default to General seat price for 2D
   preferentialPrice = 15000, // Default to Preferential seat price for 2D
   selectedFormat = '2D', // Movie format (2D, 3D, IMAX)
@@ -27,8 +28,8 @@ export default function SeatSelector({
   const [backendSeats, setBackendSeats] = useState([])
 
   useEffect(() => {
-    if (!roomId) return
-    getSeatsByRoom(roomId)
+    if (!roomId || !screeningId) return
+    getSeatsByRoom(roomId, screeningId)
       .then(data => {
         setBackendSeats(data)
         const occupied = new Set(
@@ -52,7 +53,7 @@ export default function SeatSelector({
     if (selectedSeats.includes(seatId)) {
       // Deseleccionar → llamar backend para desbloquear
       try {
-        await toggleSeatStatus(seatId)
+        await toggleSeatStatus(seatId, screeningId)
       } catch { /* si falla, igual quitamos local */ }
       setSelectedSeats(prev => prev.filter(s => s !== seatId))
     } else {
@@ -62,7 +63,7 @@ export default function SeatSelector({
       }
       // Seleccionar → llamar backend para bloquear (10 min)
       try {
-        await toggleSeatStatus(seatId)
+        await toggleSeatStatus(seatId, screeningId)
         setSelectedSeats(prev => [...prev, seatId])
       } catch (err) {
         toast.error(err.message || 'No se pudo reservar la silla')

@@ -15,3 +15,13 @@ export const registerEmployee = (data) =>
     method: 'POST',
     body: JSON.stringify(data),
   })
+
+/**
+ * PUT /api/checkout/employee/billing/{billingId}/scan
+ * Escanea un código QR de una factura
+ * @param {string} billingId - ID de la factura
+ */
+export const scanTicket = (billingId) =>
+  apiFetch(`/api/checkout/employee/billing/${billingId}/scan`, {
+    method: 'PUT',
+  })

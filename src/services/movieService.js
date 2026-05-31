@@ -20,6 +20,27 @@ export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
 }
 
 /**
+ * GET /api/movie/multiplex/{multiplexId}/selectors/{movieId}
+ * Obtiene las funciones de una película específica en un multiplex.
+ */
+export const getMovieSelectorsById = (multiplexId, movieId) =>
+  apiFetch(`/api/movie/multiplex/${multiplexId}/selectors/${movieId}`)
+
+/**
+ * GET /topRatedMovies
+ * Obtiene las 10 mejores películas (Público)
+ */
+export const getTopRatedMovies = () =>
+  apiFetch('/topRatedMovies')
+
+/**
+ * GET /api/movie/trailer/{movieId}
+ * Obtiene el key de YouTube del tráiler de la película.
+ */
+export const getMovieTrailer = (movieId) =>
+  apiFetch(`/api/movie/trailer/${movieId}`)
+
+/**
  * GET /admin/search?query={text}
  * Búsqueda dinámica de películas vía TMDB desde el backend.
  * @param {string} query - Texto de búsqueda

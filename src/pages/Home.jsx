@@ -8,7 +8,7 @@ import MovieModal from '../components/MovieModal'
 import Button from '../components/Button'
 import { useLanguage } from '../context/useLanguage'
 
-import { getMovieSelectorsByMultiplex } from '../services/movieService'
+import { getMovieSelectorsByMultiplex, getTopRatedMovies } from '../services/movieService'
 
 const multiplexes = [
   'Todos',
@@ -27,6 +27,7 @@ export default function Home() {
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [movies, setMovies] = useState([])
+  const [topMovies, setTopMovies] = useState([])
   const { t } = useLanguage()
   const navigate = useNavigate()
 
@@ -37,21 +38,31 @@ export default function Home() {
     navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
-  // Cargar películas desde la API (simulando multiplex 'Titán' por defecto con el UUID del backend)
+  // Mapeo de nombre -> UUID real (debe coincidir con la BD)
+  const MULTIPLEX_IDS = {
+    'Todos':         '550e8400-e29b-41d4-a716-446655440000', // Default a Titán
+    'Titán':         '550e8400-e29b-41d4-a716-446655440000',
+    'Unicentro':     'uuid-unicentro',
+    'Plaza Central': 'uuid-plaza',
+    'Gran Estación': 'uuid-gran-estacion',
+    'Embajador':     'uuid-embajador',
+    'Las Américas':  'uuid-las-americas',
+  }
+
+  // Cargar películas desde la API (con multiplexId y search)
   useEffect(() => {
     const fetchMovies = async () => {
       setIsLoading(true)
       try {
-        // UUID hardcodeado para Titán basado en API_Docs_Backend_NEW.md
-        const titanId = '550e8400-e29b-41d4-a716-446655440000'
-        const data = await getMovieSelectorsByMultiplex(titanId)
+        const multiplexId = MULTIPLEX_IDS[activePlex] || MULTIPLEX_IDS['Titán']
+        const data = await getMovieSelectorsByMultiplex(multiplexId, search)
         
         // Mapeamos el DTO del backend a nuestro formato local
         const mappedMovies = Array.isArray(data) ? data.map(item => ({
           id: item.movieInfo.id,
           title: item.movieInfo.originalTitle,
           year: item.movieInfo.releaseDate?.substring(0, 4) || 'N/A',
-          duration: '120m', // Backend doesn't return duration directly in movieInfo
+          duration: '120m',
           genre: item.movieInfo.genreIds && item.movieInfo.genreIds.length > 0 
                   ? item.movieInfo.genreIds[0].name 
                   : 'N/A',
@@ -59,37 +70,61 @@ export default function Home() {
           synopsis: item.movieInfo.overview,
           posterUrl: item.movieInfo.posterPath,
           backdropUrl: item.movieInfo.backdropPath,
-          multiplexes: ['Todos', 'Titán'],
-          // Pasar los screenings reales del backend
+          multiplexes: ['Todos', activePlex],
           screenings: item.screenings || [],
         })) : []
         setMovies(mappedMovies)
       } catch {
-        setMovies([]) // fallback a array vacio si falla
+        setMovies([]) 
       } finally {
         setIsLoading(false)
       }
     }
     fetchMovies()
+  }, [activePlex, search])
+
+  // Cargar Top 10 películas (Público)
+  useEffect(() => {
+    const fetchTopMovies = async () => {
+      try {
+        const top = await getTopRatedMovies()
+        if (Array.isArray(top)) {
+          setTopMovies(top.map(item => ({
+            id: item.id,
+            title: item.originalTitle || item.title,
+            year: item.releaseDate?.substring(0, 4) || 'N/A',
+            duration: '120m',
+            genre: item.genreIds && item.genreIds.length > 0 ? item.genreIds[0].name : 'N/A',
+            rating: item.voteAverage || 0,
+            synopsis: item.overview,
+            posterUrl: item.posterPath,
+            backdropUrl: item.backdropPath,
+            multiplexes: ['Todos'],
+            screenings: [],
+          })))
+        }
+      } catch (error) {
+        console.error('Error loading top rated movies', error)
+      }
+    }
+    fetchTopMovies()
   }, [])
 
-  const featuredMovie = movies.length > 0 ? movies[0] : null
+  // El Hero mostrará el Top 1 de TopRated si está disponible, si no el primero de la cartelera
+  const featuredMovie = topMovies.length > 0 ? topMovies[0] : (movies.length > 0 ? movies[0] : null)
   const displayMultiplex = activePlex === 'Todos' ? 'Titán' : activePlex
 
   const filteredMovies = useMemo(() => {
-    let result = movies.filter((m) => {
-      const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase()) ||
-                            (m.genre || '').toLowerCase().includes(search.toLowerCase())
-      const matchesPlex = activePlex === 'Todos' || (m.multiplexes && m.multiplexes.includes(activePlex))
-      return matchesSearch && matchesPlex
-    })
+    // El filtro de texto y multiplex ya lo hace el backend.
+    // Solo clonamos el array para aplicar el ordenamiento local.
+    let result = [...movies]
 
     if (sortBy === 'rating') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     }
 
     return result
-  }, [movies, search, activePlex, sortBy])
+  }, [movies, sortBy])
 
   return (
     <div className="min-h-screen pb-12">
@@ -183,6 +218,34 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Sección Top 10 Horizontal */}
+      {topMovies.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-30 mb-16">
+          <div className="flex items-center gap-2 mb-6">
+            <Star size={24} className="text-gold" />
+            <h2 className="text-3xl font-display tracking-widest text-white uppercase">
+              Top 10 Películas
+            </h2>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x">
+            {topMovies.map((movie, idx) => (
+              <div key={movie.id} className="min-w-[200px] w-[200px] snap-start relative group cursor-pointer" onClick={() => setSelectedMovie(movie)}>
+                <div className="absolute top-2 left-2 z-10 w-8 h-8 bg-gold/90 text-carbon rounded-full flex items-center justify-center font-display font-bold text-lg shadow-lg">
+                  {idx + 1}
+                </div>
+                <div className="rounded-2xl overflow-hidden border border-border/50 group-hover:border-gold/50 transition-colors shadow-lg">
+                  <img src={movie.posterUrl} alt={movie.title} className="w-full aspect-[2/3] object-cover group-hover:scale-105 transition-transform duration-500" />
+                </div>
+                <h3 className="text-white font-bold text-sm mt-3 truncate group-hover:text-gold transition-colors">{movie.title}</h3>
+                <div className="flex items-center gap-1 text-gold text-xs mt-1">
+                  <Star size={12} fill="currentColor" /> {movie.rating?.toFixed(1) || '0.0'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Componentes de Filtrado de Inventario: Sistema de búsqueda bidireccional (Texto/Sedes) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-30 -mt-6">
@@ -284,6 +347,7 @@ export default function Home() {
       <MovieModal
         movie={selectedMovie}
         multiplexName={displayMultiplex}
+        multiplexId={MULTIPLEX_IDS[displayMultiplex]}
         onClose={() => setSelectedMovie(null)}
       />
     </div>

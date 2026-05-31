@@ -38,3 +38,10 @@ export const submitServiceReview = (buyerId, data) =>
  */
 export const getUserReviews = (buyerId) =>
   apiFetch(`/api/${buyerId}/review`)
+
+/**
+ * GET /api/review/movie/{movieId}
+ * Obtiene las reseñas públicas de una película
+ */
+export const getMovieReviews = (movieId) =>
+  apiFetch(`/api/review/movie/${movieId}`)

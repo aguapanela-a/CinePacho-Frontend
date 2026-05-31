@@ -22,13 +22,32 @@ import { apiFetch } from './api'
 export const createCheckoutSession = (
   screeningId,
   seats = [],
-  snacks = []
-) =>
-  apiFetch('/api/checkout/stripe', {
+  snacks = [],
+  buyerEmail = null
+) => {
+  const body = {
+    screeningId,
+    seats,
+    snacks,
+    ...(buyerEmail && { buyerEmail }),
+  }
+  return apiFetch('/api/checkout/stripe', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+/**
+ * POST /api/checkout/stripe/success
+ * Confirma el pago en el backend enviando el checkout original y el paymentId.
+ * @param {string} paymentId - ID de pago retornado por Stripe
+ * @param {Object} checkoutRequest - El objeto que se envió originalmente a createCheckoutSession
+ */
+export const confirmStripePayment = (paymentId, checkoutRequest) =>
+  apiFetch('/api/checkout/stripe/success', {
     method: 'POST',
     body: JSON.stringify({
-      screeningId,
-      seats,
-      snacks,
+      paymentId,
+      checkoutRequest
     }),
   })

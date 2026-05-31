@@ -10,16 +10,18 @@
 import { apiFetch } from './api'
 
 /**
- * Obtiene todas las sillas de una sala específica.
+ * Obtiene todas las sillas de una sala específica para una función.
  * @param {string} roomId - UUID de la sala
+ * @param {string} screeningId - UUID de la función
  * @returns {Promise<Array<{ idSeat: string, roomId: string, seatNumber: number, type: string, status: string }>>}
  */
-export const getSeatsByRoom = (roomId) =>
-  apiFetch(`/api/seats/${roomId}`)
+export const getSeatsByRoom = (roomId, screeningId) =>
+  apiFetch(`/api/seats/${roomId}/screening/${screeningId}`)
 
 /**
- * Cambia el estado de una silla (bloquea/desbloquea temporalmente).
+ * Cambia el estado de una silla (bloquea/desbloquea temporalmente) para una función.
  * @param {string} seatId - UUID de la silla
+ * @param {string} screeningId - UUID de la función
  */
-export const toggleSeatStatus = (seatId) =>
-  apiFetch(`/api/seats/${seatId}/changeStatus`, { method: 'PUT' })
+export const toggleSeatStatus = (seatId, screeningId) =>
+  apiFetch(`/api/seats/${seatId}/screening/${screeningId}/changeStatus`, { method: 'PUT' })

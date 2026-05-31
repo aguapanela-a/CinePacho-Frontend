@@ -96,6 +96,10 @@ export default function Checkout() {
       )
 
       if (result.sessionUrl) {
+        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify(paymentData))
+        if (result.paymentId) {
+          localStorage.setItem('cinepacho_payment_id', result.paymentId)
+        }
         saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo })
         window.location.href = result.sessionUrl // Redirige al Hosted Checkout de Stripe
       } else {

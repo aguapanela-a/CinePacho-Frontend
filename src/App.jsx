@@ -32,6 +32,8 @@ import OrderConfirmation from './pages/OrderConfirmation'
 import SearchResults from './pages/SearchResults'
 import CheckoutGuard from './components/CheckoutGuard'
 import ErrorBoundary from './components/ErrorBoundary'
+import StripeSuccess from './pages/StripeSuccess'
+import StripeCancel from './pages/StripeCancel'
 
 function AppLayout() {
   const location = useLocation()
@@ -232,6 +234,9 @@ function AppLayout() {
           {/* ── Rutas de Checkout y Confirmación ── */}
           <Route path="/checkout" element={<CheckoutGuard><Checkout /></CheckoutGuard>} />
           <Route path="/confirmacion" element={<CheckoutGuard requireSnapshot><OrderConfirmation /></CheckoutGuard>} />
+          
+          <Route path="/api/checkout/stripe/success" element={<StripeSuccess />} />
+          <Route path="/api/checkout/stripe/cancel" element={<StripeCancel />} />
 
           {/* ── 404 No Encontrado ── */}
           <Route path="*" element={<NotFound />} />

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import {
-  Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock
+  Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock, QrCode
 } from 'lucide-react'
+import { Scanner } from '@yudiel/react-qr-scanner'
 import { useApp } from '../../context/useApp'
 import { useToast } from '../../context/ToastContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -12,6 +13,8 @@ import { getUnitPrice } from '../../utils/formatCurrency'
 import { getMovieSelectorsByMultiplex } from '../../services/movieService'
 import { getAllSnacks } from '../../services/snackService'
 import { createCheckoutSession } from '../../services/paymentService'
+import { scanTicket } from '../../services/employeeService'
+import { validateVoucher } from '../../services/pointsService'
 
 // Mock Clientes
 const mockCustomers = [
@@ -28,6 +31,10 @@ export default function CashierDashboard() {
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
   const [movies, setMovies] = useState([])
   const [snacks, setSnacks] = useState([])
+
+  // QR Scanner
+  const [isScanning, setIsScanning] = useState(false)
+  const [isScanProcessing, setIsScanProcessing] = useState(false)
 
   // Cargar datos
   useEffect(() => {
@@ -71,8 +78,14 @@ export default function CashierDashboard() {
   // Customer
   const [searchCustomer, setSearchCustomer] = useState('')
   const [activeCustomer, setActiveCustomer] = useState(null)
+  const [manualEmail, setManualEmail] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
   const [wantsPoints, setWantsPoints] = useState(false)
+  
+  // Voucher / Cupón
+  const [voucherCode, setVoucherCode] = useState('')
+  const [validatingVoucher, setValidatingVoucher] = useState(false)
+  const [appliedVoucher, setAppliedVoucher] = useState(null)
 
   // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null)
@@ -153,8 +166,25 @@ export default function CashierDashboard() {
     removeFromCart(itemToRemove.id, itemToRemove.type, itemToRemove.showtime)
   }
 
-  // Usar cartTotal del AppContext si está disponible, sino calcular aquí
-  const total = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
+  // Calcular total sin descuento
+  const subtotal = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
+  
+  // Calcular descuento (la boleta más barata)
+  let discount = 0
+  if (appliedVoucher) {
+    let cheapestTicketPrice = Infinity
+    cart.forEach(item => {
+      if (item.type === 'ticket') {
+        const p = getUnitPrice(item)
+        if (p < cheapestTicketPrice) cheapestTicketPrice = p
+      }
+    })
+    if (cheapestTicketPrice !== Infinity) {
+      discount = cheapestTicketPrice
+    }
+  }
+  
+  const total = Math.max(0, subtotal - discount)
 
   const handleSearchCustomer = () => {
     const found = mockCustomers.find(c =>
@@ -197,13 +227,31 @@ export default function CashierDashboard() {
         }
       })
       
-      const result = await createCheckoutSession(
-        screeningId || '850e8400-e29b-41d4-a716-446655440000',
+      const buyerEmail = activeCustomer ? activeCustomer.email : manualEmail
+      if (!buyerEmail) {
+        toast.error('Debe seleccionar un cliente o ingresar un correo electrónico antes de cobrar.')
+        return
+      }
+
+      const payload = {
+        screeningId: screeningId || '850e8400-e29b-41d4-a716-446655440000',
         seats,
-        Array.from(snacksPayloadMap.values())
+        snacks: Array.from(snacksPayloadMap.values()),
+        buyerEmail
+      }
+
+      const result = await createCheckoutSession(
+        payload.screeningId,
+        payload.seats,
+        payload.snacks,
+        payload.buyerEmail
       )
 
       if (result.sessionUrl) {
+        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify(payload))
+        if (result.paymentId) {
+          localStorage.setItem('cinepacho_payment_id', result.paymentId)
+        }
         // Redirigir a Stripe Checkout en la misma pestaña para procesar el pago del cliente
         window.location.href = result.sessionUrl
       } else {
@@ -219,6 +267,45 @@ export default function CashierDashboard() {
     setActiveCustomer(null)
     setWantsPoints(false)
     setShowSuccess(false)
+    setAppliedVoucher(null)
+    setVoucherCode('')
+    setManualEmail('')
+  }
+
+  const [scanResultUI, setScanResultUI] = useState(null) // { type: 'success' | 'error', message: '' }
+
+  const handleScan = async (result) => {
+    if (!result || isScanProcessing) return
+    const rawValue = result[0]?.rawValue || result
+    if (rawValue) {
+      setIsScanProcessing(true)
+      try {
+        const response = await scanTicket(rawValue)
+        setScanResultUI({ type: 'success', message: response?.message || 'Entrada válida. Bienvenido a CinePacho' })
+      } catch (err) {
+        setScanResultUI({ type: 'error', message: err.message || 'Entrada Inválida' })
+      } finally {
+        setIsScanProcessing(false)
+        setTimeout(() => {
+          setScanResultUI(null)
+        }, 4000)
+      }
+    }
+  }
+
+  const handleValidateVoucher = async () => {
+    if (!voucherCode) return
+    setValidatingVoucher(true)
+    try {
+      const data = await validateVoucher(voucherCode)
+      toast.success('Cupón validado. Descuento aplicado.')
+      setAppliedVoucher(data || true) // Save voucher data
+    } catch (err) {
+      toast.error(err.message || 'Cupón inválido o expirado')
+      setVoucherCode('')
+    } finally {
+      setValidatingVoucher(false)
+    }
   }
 
   return (
@@ -242,6 +329,13 @@ export default function CashierDashboard() {
             <p className="text-sm font-bold leading-none">{user?.name || 'Cajero'}</p>
             <p className="text-xs text-text-secondary mt-1">Sede: Titán</p>
           </div>
+          <button
+            onClick={() => setIsScanning(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-magenta/10 text-magenta hover:bg-magenta/20 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+          >
+            <QrCode size={16} />
+            Escanear QR
+          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-sm font-bold transition-colors cursor-pointer"
@@ -342,24 +436,35 @@ export default function CashierDashboard() {
                 </div>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+                    <input
+                      type="text"
+                      placeholder="CC o Email..."
+                      value={searchCustomer}
+                      onChange={(e) => setSearchCustomer(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchCustomer()}
+                      className="w-full bg-carbon border border-border/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-gold transition-colors"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSearchCustomer}
+                    className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+                  >
+                    Buscar
+                  </button>
+                </div>
+                <div className="border-t border-border/50 pt-3">
                   <input
-                    type="text"
-                    placeholder="CC o Email..."
-                    value={searchCustomer}
-                    onChange={(e) => setSearchCustomer(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearchCustomer()}
-                    className="w-full bg-carbon border border-border/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-gold transition-colors"
+                    type="email"
+                    placeholder="Correo (Si no está registrado)"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    className="w-full bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-gold transition-colors placeholder-text-secondary"
                   />
                 </div>
-                <button
-                  onClick={handleSearchCustomer}
-                  className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer"
-                >
-                  Buscar
-                </button>
               </div>
             )}
           </div>
@@ -398,6 +503,43 @@ export default function CashierDashboard() {
 
           {/* Checkout Footer */}
           <div className="p-5 border-t border-border/50 bg-carbon/50 mt-auto">
+            {/* Voucher Section */}
+            {activeCustomer && cart.some(i => i.type === 'ticket') && (
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Código de cupón"
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    className="flex-1 bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-magenta disabled:opacity-50"
+                    disabled={appliedVoucher !== null || validatingVoucher}
+                  />
+                  {!appliedVoucher ? (
+                    <button
+                      onClick={handleValidateVoucher}
+                      disabled={!voucherCode || validatingVoucher}
+                      className="px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {validatingVoucher ? '...' : 'Aplicar'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setAppliedVoucher(null); setVoucherCode(''); }}
+                      className="px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-sm cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                {appliedVoucher && discount > 0 && (
+                  <p className="text-xs text-green-400 font-bold mt-2">
+                    ¡Cupón aplicado! Descuento: -${discount.toLocaleString('es-CO')}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-4">
               <span className="text-text-secondary font-bold uppercase tracking-widest text-sm">Total a pagar</span>
               <span className="text-3xl font-display text-white">${total.toLocaleString('es-CO')}</span>
@@ -566,6 +708,61 @@ export default function CashierDashboard() {
             >
               Nueva Venta
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Escáner QR ── */}
+      {isScanning && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 relative animate-[scaleIn_0.2s_ease-out_forwards]">
+            <button
+              onClick={() => setIsScanning(false)}
+              className="absolute top-4 right-4 text-text-secondary hover:text-white bg-carbon rounded-full p-1 cursor-pointer transition-colors z-10"
+            >
+              <X size={20} />
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-magenta/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <QrCode size={24} className="text-magenta" />
+              </div>
+              <h2 className="text-xl font-display text-white tracking-widest uppercase mb-1">Escanear Entrada</h2>
+              <p className="text-text-secondary text-sm">Ubique el código QR frente a la cámara</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-magenta/30 aspect-square relative">
+              {isScanProcessing && (
+                <div className="absolute inset-0 bg-black/60 z-10 flex items-center justify-center">
+                  <p className="text-white font-bold animate-pulse">Procesando...</p>
+                </div>
+              )}
+              <Scanner 
+                onScan={handleScan}
+                onError={(err) => console.error(err)}
+                styles={{ container: { width: '100%', height: '100%' } }}
+                components={{ audio: false, finder: false }}
+              />
+            </div>
+            
+            {/* Feedback visual gigante para el portero */}
+            {scanResultUI && (
+              <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center animate-[scaleIn_0.3s_ease-out_forwards] ${
+                scanResultUI.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+              }`}>
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  {scanResultUI.type === 'success' ? <CheckCircle size={48} /> : <X size={48} />}
+                </div>
+                <h2 className="text-3xl font-display uppercase tracking-widest mb-2 shadow-sm">
+                  {scanResultUI.type === 'success' ? '¡ACCESO PERMITIDO!' : 'ACCESO DENEGADO'}
+                </h2>
+                <p className="text-lg font-bold shadow-sm">{scanResultUI.message}</p>
+                <button 
+                  onClick={() => setScanResultUI(null)}
+                  className="mt-8 px-6 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-bold transition-colors cursor-pointer"
+                >
+                  Continuar Escaneando
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
