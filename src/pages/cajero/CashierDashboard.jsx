@@ -8,19 +8,13 @@ import { useToast } from '../../context/ToastContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
-import { showtimes, ticketFormats } from '../../data/mockMoviesData'
 import { getUnitPrice } from '../../utils/formatCurrency'
 import { getMovieSelectorsByMultiplex } from '../../services/movieService'
 import { getAllSnacks } from '../../services/snackService'
 import { createCheckoutSession } from '../../services/paymentService'
 import { scanTicket } from '../../services/employeeService'
 import { validateVoucher } from '../../services/pointsService'
-
-// Mock Clientes
-const mockCustomers = [
-  { id: 1, name: 'Juan Pérez', email: 'cliente@correo.com', cc: '12345678', points: 150 },
-  { id: 2, name: 'María Gómez', email: 'maria@correo.com', cc: '87654321', points: 40 },
-]
+import { searchCustomerByQuery } from '../../services/customerService'
 
 export default function CashierDashboard() {
   const { user, logoutUser, cart, addToCart, removeFromCart, setCart } = useApp() // Usar el carrito global
@@ -40,8 +34,12 @@ export default function CashierDashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const titanId = '550e8400-e29b-41d4-a716-446655440000'
-        const moviesResp = await getMovieSelectorsByMultiplex(titanId)
+        const multiplexId = user?.multiplexId
+        if (!multiplexId) {
+          setMovies([])
+          return
+        }
+        const moviesResp = await getMovieSelectorsByMultiplex(multiplexId)
         if (Array.isArray(moviesResp)) {
           setMovies(moviesResp.map(item => ({
             id: item.movieInfo.id,
@@ -55,7 +53,7 @@ export default function CashierDashboard() {
       } catch {
         setMovies([])
       }
-      
+
       try {
         const snacksResp = await getAllSnacks()
         if (Array.isArray(snacksResp) && snacksResp.length > 0) {
@@ -81,7 +79,7 @@ export default function CashierDashboard() {
   const [manualEmail, setManualEmail] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
   const [wantsPoints, setWantsPoints] = useState(false)
-  
+
   // Voucher / Cupón
   const [voucherCode, setVoucherCode] = useState('')
   const [validatingVoucher, setValidatingVoucher] = useState(false)
@@ -89,23 +87,23 @@ export default function CashierDashboard() {
 
   // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null)
-  
+
   // Extraer las funciones reales si existen, sino fallback
   const movieScreenings = selectedMovie?.screenings?.filter(s => s.status === 'ACTIVE') || []
-  
+
   // Agrupar screenings por hora (HH:mm)
   const availableShowtimes = movieScreenings.length > 0
     ? [...new Set(movieScreenings.map(s => s.screeningDate?.substring(11, 16)).filter(Boolean))].sort()
-    : showtimes
+    : []
 
   const [selectedTime, setSelectedTime] = useState(null)
-  
+
   // Salas disponibles para la hora seleccionada
   const availableRooms = movieScreenings.length > 0 && selectedTime
     ? movieScreenings
-        .filter(s => s.screeningDate?.substring(11, 16) === selectedTime)
-        .map(s => ({ id: s.roomId, name: s.roomNumber, screeningId: s.screeningId }))
-    : rooms.map(name => ({ id: name, name, screeningId: 'fallback-screening' }))
+      .filter(s => s.screeningDate?.substring(11, 16) === selectedTime)
+      .map(s => ({ id: s.roomId, name: s.roomNumber, screeningId: s.screeningId, price: s.price, formats: s.formats || [] }))
+    : []
 
   const [selectedRoomObj, setSelectedRoomObj] = useState(null)
 
@@ -123,29 +121,28 @@ export default function CashierDashboard() {
     setSelectedRoomObj(null)
   }
 
-  const handleAddTicket = (time, format) => {
+  const handleAddTicket = (time, format, price) => {
     if (!selectedRoomObj) {
       toast.error('Por favor selecciona una sala')
       return
     }
-    const selectedFormat = ticketFormats.find(f => f.fmt === format)
-    if (!selectedFormat) {
-      toast.error('Formato de boleta inválido')
+    if (!selectedRoomObj.screeningId) {
+      toast.error('No se encontró la función seleccionada')
       return
     }
 
     const item = {
       id: `${selectedMovie.id}-${time}-${format}-${selectedRoomObj.name}`,
       name: `Boleta ${format} - ${selectedMovie.title} (${time}) - ${selectedRoomObj.name}`,
-      price: Number(selectedFormat.generalPrice) || 0, // Ensure price is numeric
+      price: Number(price) || 0,
       type: 'ticket',
-      showtime: `${time} - ${selectedRoomObj.name}`, // Combinar para key única en AppContext
+      showtime: `${time} - ${selectedRoomObj.name}`,
       qty: 1,
       image: selectedMovie.posterUrl,
-      screeningId: selectedRoomObj.screeningId, // UUID real del backend
+      screeningId: selectedRoomObj.screeningId,
     }
     addToCart(item)
-    setSelectedMovie(null) // Cerrar modal
+    setSelectedMovie(null)
     setSelectedTime(null)
     setSelectedRoomObj(null)
   }
@@ -168,7 +165,7 @@ export default function CashierDashboard() {
 
   // Calcular total sin descuento
   const subtotal = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
-  
+
   // Calcular descuento (la boleta más barata)
   let discount = 0
   if (appliedVoucher) {
@@ -183,42 +180,55 @@ export default function CashierDashboard() {
       discount = cheapestTicketPrice
     }
   }
-  
+
   const total = Math.max(0, subtotal - discount)
 
-  const handleSearchCustomer = () => {
-    const found = mockCustomers.find(c =>
-      c.cc === searchCustomer || c.email.toLowerCase() === searchCustomer.toLowerCase()
-    )
-    if (found) {
-      setActiveCustomer(found)
-      setSearchCustomer('')
-    } else {
+  const handleSearchCustomer = async () => {
+    if (!searchCustomer.trim()) return
+    try {
+      const found = await searchCustomerByQuery(searchCustomer.trim())
+      if (found) {
+        setActiveCustomer(found)
+        setSearchCustomer('')
+      } else {
+        toast.error(t('cashier.customerNotFound'))
+      }
+    } catch {
       toast.error(t('cashier.customerNotFound'))
     }
   }
 
   const handleCheckout = async () => {
     if (cart.length === 0) return
-    
+
     try {
-      // Map cart to seats and snacks for API
-      const seats = []
       const snacksPayloadMap = new Map()
-      
-      let screeningId = null
-      
+
+      // Agrupar tickets por screeningId — el cajero debe tener todos los tickets de la misma función
+      const ticketItems = cart.filter(item => item.type === 'ticket')
+      const screeningIds = [...new Set(ticketItems.map(item => item.screeningId).filter(Boolean))]
+
+      if (ticketItems.length > 0 && screeningIds.length === 0) {
+        toast.error('Los tickets no tienen una función válida asociada.')
+        return
+      }
+      if (screeningIds.length > 1) {
+        toast.error('Solo se puede procesar una función por venta. Separa los tickets por función.')
+        return
+      }
+
+      const screeningId = screeningIds[0] || null
+
+      // Seats: el cajero opera sin mapa de sala, se envía lista vacía y el backend asigna asientos disponibles
+      // Si el backend requiere seatId explícito, este flujo debe redirigirse al selector de asientos
+      const seats = ticketItems.flatMap(item =>
+        item.seatIds
+          ? item.seatIds.map(seatId => ({ seatId }))
+          : []
+      )
+
       cart.forEach(item => {
-        if (item.type === 'ticket') {
-          if (!screeningId && item.screeningId) {
-            screeningId = item.screeningId
-          }
-          // En modo cajero no escogemos sillas exactas en UI, mandamos UUIDs simulados para cumplir DTO
-          // o sillas genéricas si el backend lo permite
-          for(let i = 0; i < item.qty; i++) {
-            seats.push({ seatId: `cajero-seat-${Date.now()}-${i}` })
-          }
-        } else if (item.type === 'snack') {
+        if (item.type === 'snack') {
           if (snacksPayloadMap.has(item.id)) {
             snacksPayloadMap.get(item.id).quantity += item.qty
           } else {
@@ -226,15 +236,20 @@ export default function CashierDashboard() {
           }
         }
       })
-      
+
       const buyerEmail = activeCustomer ? activeCustomer.email : manualEmail
       if (!buyerEmail) {
         toast.error('Debe seleccionar un cliente o ingresar un correo electrónico antes de cobrar.')
         return
       }
 
+      if (ticketItems.length > 0 && !screeningId) {
+        toast.error('No se encontró la función para los tickets seleccionados.')
+        return
+      }
+
       const payload = {
-        screeningId: screeningId || '850e8400-e29b-41d4-a716-446655440000',
+        screeningId,
         seats,
         snacks: Array.from(snacksPayloadMap.values()),
         buyerEmail
@@ -252,7 +267,6 @@ export default function CashierDashboard() {
         if (result.paymentId) {
           localStorage.setItem('cinepacho_payment_id', result.paymentId)
         }
-        // Redirigir a Stripe Checkout en la misma pestaña para procesar el pago del cliente
         window.location.href = result.sessionUrl
       } else {
         toast.error('Error al generar sesión de pago.')
@@ -276,19 +290,26 @@ export default function CashierDashboard() {
 
   const handleScan = async (result) => {
     if (!result || isScanProcessing) return
-    const rawValue = result[0]?.rawValue || result
-    if (rawValue) {
+    const billingId = result[0]?.rawValue || result // Asegúrate de que extraiga el UUID del QR
+
+    if (billingId) {
       setIsScanProcessing(true)
       try {
-        const response = await scanTicket(rawValue)
-        setScanResultUI({ type: 'success', message: response?.message || 'Entrada válida. Bienvenido a CinePacho' })
+        // LLAMADA EXACTA: PUT /api/checkout/employee/billing/{billingId}/scan
+        // Pasa el token del empleado en los headers dentro de tu servicio
+        const response = await scanTicket(billingId)
+        setScanResultUI({
+          type: 'success',
+          message: response?.message || 'Entrada válida. Bienvenido a CinePacho'
+        })
       } catch (err) {
-        setScanResultUI({ type: 'error', message: err.message || 'Entrada Inválida' })
+        setScanResultUI({
+          type: 'error',
+          message: err.message || 'Entrada Inválida o ya escaneada'
+        })
       } finally {
         setIsScanProcessing(false)
-        setTimeout(() => {
-          setScanResultUI(null)
-        }, 4000)
+        setTimeout(() => setScanResultUI(null), 4000)
       }
     }
   }
@@ -556,8 +577,8 @@ export default function CashierDashboard() {
                   <button
                     onClick={() => setWantsPoints(true)}
                     className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${wantsPoints
-                        ? 'bg-gold text-carbon'
-                        : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
+                      ? 'bg-gold text-carbon'
+                      : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
                       }`}
                   >
                     Sí
@@ -566,8 +587,8 @@ export default function CashierDashboard() {
                   <button
                     onClick={() => setWantsPoints(false)}
                     className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${!wantsPoints
-                        ? 'bg-red-500 text-white'
-                        : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
                       }`}
                   >
                     No
@@ -589,8 +610,8 @@ export default function CashierDashboard() {
               onClick={handleCheckout}
               disabled={cart.length === 0}
               className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg ${cart.length > 0
-                  ? 'bg-gradient-to-r from-gold to-yellow-600 text-carbon shadow-gold/20 hover:opacity-90 cursor-pointer'
-                  : 'bg-border/50 text-text-secondary cursor-not-allowed'
+                ? 'bg-gradient-to-r from-gold to-yellow-600 text-carbon shadow-gold/20 hover:opacity-90 cursor-pointer'
+                : 'bg-border/50 text-text-secondary cursor-not-allowed'
                 }`}
             >
               Cobrar e Imprimir
@@ -632,8 +653,8 @@ export default function CashierDashboard() {
                         setSelectedRoomObj(null)
                       }}
                       className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${selectedTime === time
-                          ? 'bg-magenta text-white'
-                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-magenta/50 hover:text-white'
+                        ? 'bg-magenta text-white'
+                        : 'bg-carbon border border-border/50 text-text-secondary hover:border-magenta/50 hover:text-white'
                         }`}
                     >
                       {time}
@@ -653,28 +674,38 @@ export default function CashierDashboard() {
                         key={room.id}
                         onClick={() => setSelectedRoomObj(room)}
                         className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer text-center ${selectedRoomObj?.id === room.id
-                            ? 'bg-cyan-400 text-carbon'
-                            : 'bg-carbon border border-border/50 text-text-secondary hover:border-cyan-400/50 hover:text-white'
+                          ? 'bg-cyan-400 text-carbon'
+                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-cyan-400/50 hover:text-white'
                           }`}
                       >
                         {room.name}
                       </button>
                     ))}
                   </div>
-                  
+
                   {selectedRoomObj && (
                     <div className="bg-carbon border border-border/50 rounded-xl p-4 text-center mt-4">
                       <p className="font-bold text-white mb-3 text-sm">Selecciona el Formato</p>
                       <div className="flex flex-wrap justify-center gap-3">
-                        {ticketFormats.map(({ fmt, generalPrice }) => (
+                        {(selectedRoomObj.formats || []).length > 0 ? (
+                          selectedRoomObj.formats.map(({ fmt, generalPrice }) => (
+                            <button
+                              key={fmt}
+                              onClick={() => handleAddTicket(selectedTime, fmt, generalPrice)}
+                              className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
+                            >
+                              {fmt}: ${(generalPrice / 1000).toFixed(0)}k
+                            </button>
+                          ))
+                        ) : (
+                          // Si el backend no devuelve formatos en el screening, ofrecer entrada general con el precio del screening
                           <button
-                            key={fmt}
-                            onClick={() => handleAddTicket(selectedTime, fmt)}
+                            onClick={() => handleAddTicket(selectedTime, 'General', selectedRoomObj.price || 0)}
                             className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
                           >
-                            {fmt}: ${(generalPrice / 1000).toFixed(0)}k
+                            General{selectedRoomObj.price ? `: $${(selectedRoomObj.price / 1000).toFixed(0)}k` : ''}
                           </button>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}
@@ -735,19 +766,18 @@ export default function CashierDashboard() {
                   <p className="text-white font-bold animate-pulse">Procesando...</p>
                 </div>
               )}
-              <Scanner 
+              <Scanner
                 onScan={handleScan}
                 onError={(err) => console.error(err)}
                 styles={{ container: { width: '100%', height: '100%' } }}
                 components={{ audio: false, finder: false }}
               />
             </div>
-            
+
             {/* Feedback visual gigante para el portero */}
             {scanResultUI && (
-              <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center animate-[scaleIn_0.3s_ease-out_forwards] ${
-                scanResultUI.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-              }`}>
+              <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center animate-[scaleIn_0.3s_ease-out_forwards] ${scanResultUI.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}>
                 <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   {scanResultUI.type === 'success' ? <CheckCircle size={48} /> : <X size={48} />}
                 </div>
@@ -755,7 +785,7 @@ export default function CashierDashboard() {
                   {scanResultUI.type === 'success' ? '¡ACCESO PERMITIDO!' : 'ACCESO DENEGADO'}
                 </h2>
                 <p className="text-lg font-bold shadow-sm">{scanResultUI.message}</p>
-                <button 
+                <button
                   onClick={() => setScanResultUI(null)}
                   className="mt-8 px-6 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-bold transition-colors cursor-pointer"
                 >
@@ -769,4 +799,3 @@ export default function CashierDashboard() {
     </div>
   )
 }
-

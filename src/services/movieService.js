@@ -18,7 +18,6 @@ export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
 }
 
 /**
-<<<<<<< HEAD
  * GET /api/movie/multiplex/{multiplexId}/selectors/{movieId}
  * Obtiene las funciones de una película específica en un multiplex.
  */
@@ -40,13 +39,10 @@ export const getMovieTrailer = (movieId) =>
   apiFetch(`/api/movie/trailer/${movieId}`)
 
 /**
- * GET /admin/search?query={text}
- * Búsqueda dinámica de películas vía TMDB desde el backend.
- * @param {string} query - Texto de búsqueda
-=======
  * GET búsqueda de películas (TMDB backend)
  * /api/admin/movie/search
->>>>>>> e78fb1fc8227ba85aea4ace98062b7bc17aa41c8
+ * @param {string} query - Texto de búsqueda
+ * @param {number} page - Número de página para la paginación
  */
 export const searchMovies = (query, page = 1) =>
   apiFetch(
