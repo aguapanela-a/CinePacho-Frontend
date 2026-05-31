@@ -143,7 +143,7 @@ const handleEditEmployee = () => {
         email: newEmployee.correo,
         password: newEmployee.password,
         userType: 'EMPLOYEE',
-        identityCard: newEmployee.identityCard, // Corrected typo
+        indentityCard: newEmployee.identityCard, 
         phoneNumber: newEmployee.telefono,
         salary: parseFloat(newEmployee.salary),
         position: newEmployee.cargo,

@@ -24,25 +24,27 @@ export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
  * Búsqueda dinámica de películas vía TMDB desde el backend.
  * @param {string} query - Texto de búsqueda
  */
-export const searchMovies = (query) =>
-  apiFetch(`/api/admin/movie/search?query=${encodeURIComponent(query)}`)
-
+export const searchMovies = (query, page = 1) =>
+  apiFetch(
+    `/api/admin/movie/search?query=${encodeURIComponent(query)}&page=${page}`
+  )
 /**
  * POST /admin/select/{movieId}
  * Registra la selección de una película en el sistema.
  * @param {number} movieId - ID de TMDB
  */
 export const selectMovie = (movieId) =>
-  apiFetch(`/api/admin/select/${movieId}`, { method: 'POST' })
-
+  apiFetch(`/api/admin/movie/select/${movieId}`, {
+    method: 'POST',
+  })
 /**
  * POST /admin/{multiplexName}/createScreening
  * Crea una función (screening) para la película seleccionada.
  * @param {string} multiplexName - Nombre exacto del multiplex
  * @param {{ movieId, roomId, dateTime, price }} data
  */
-export const createScreening = (multiplexName, data) =>
-  apiFetch(`/api/admin/${encodeURIComponent(multiplexName)}/createScreening`, {
+export const createScreening = (data) =>
+  apiFetch('/api/admin/movie/createScreening', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -54,9 +56,9 @@ export const createScreening = (multiplexName, data) =>
  * @param {string} screeningId - UUID de la función
  * @param {'ACTIVE' | 'CANCELLED' | 'COMPLETED'} status
  */
-export const updateScreeningStatus = (multiplexName, screeningId, status) =>
+export const updateScreeningStatus = (screeningId, status) =>
   apiFetch(
-    `/api/admin/${encodeURIComponent(multiplexName)}/${screeningId}/status?status=${status}`,
+    `/api/admin/movie/changeStatus/${screeningId}?status=${status}`,
     {
       method: 'PUT',
     }

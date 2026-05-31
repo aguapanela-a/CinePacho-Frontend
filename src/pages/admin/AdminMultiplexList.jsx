@@ -29,18 +29,21 @@ export default function AdminMultiplexList() {
   const [deletingId, setDeletingId] = useState(null)
 
   // ── Carga inicial desde el backend ────────────────────────────────────
-  const fetchMultiplexes = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getAllMultiplexes()
-      setMultiplexList(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+const fetchMultiplexes = useCallback(async () => {
+  setLoading(true)
+  setError(null)
+  try {
+    const data = await getAllMultiplexes()
+
+   console.log(JSON.stringify(data, null, 2))
+
+    setMultiplexList(data)
+  } catch (err) {
+    setError(err.message)
+  } finally {
+    setLoading(false)
+  }
+}, [])
 
   useEffect(() => {
     const loadMultiplexes = async () => {
@@ -61,7 +64,7 @@ export default function AdminMultiplexList() {
   const openEdit = (plex, e) => {
     e.preventDefault()           // evita navegar al detalle
     e.stopPropagation()
-    setEditingId(plex.idMultiplex)
+    setEditingId(plex.id)
     setForm({
       nameMultiplex:    plex.nameMultiplex,
       addressMultiplex: plex.addressMultiplex || '',
@@ -82,8 +85,9 @@ export default function AdminMultiplexList() {
     setFormError(null)
     try {
       if (editingId) {
+        console.log('EDITANDO ID:', editingId)
         const updated = await updateMultiplex(editingId, form)
-        setMultiplexList(prev => prev.map(p => p.idMultiplex === editingId ? updated : p))
+        setMultiplexList(prev => prev.map(p => p.id === editingId? updated : p))
       } else {
         const created = await createMultiplex(form)
         setMultiplexList(prev => [...prev, created])
@@ -104,7 +108,7 @@ export default function AdminMultiplexList() {
       // Segunda pulsación: confirmar borrado
       try {
         await deleteMultiplex(id)
-        setMultiplexList(prev => prev.filter(p => p.idMultiplex !== id))
+        setMultiplexList(prev => prev.filter(p => p.id !== id))
       } catch (err) {
         setError(err.message)
       } finally {
@@ -172,8 +176,8 @@ export default function AdminMultiplexList() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {multiplexList.map((plex, index) => (
                 <Link
-                  key={plex.idMultiplex}
-                  to={`/admin/multiplex/${plex.idMultiplex}/dashboard`}
+                  key={plex.id}
+                  to={`/admin/multiplex/${plex.id}/dashboard`}
                   style={{ animationDelay: `${index * 0.08}s` }}
                   className="group block bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl hover:border-magenta/40 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 animate-[fadeUp_0.5s_ease-out_forwards]"
                 >
@@ -196,15 +200,15 @@ export default function AdminMultiplexList() {
 
                       {/* Botón Eliminar (doble click para confirmar) */}
                       <button
-                        onClick={(e) => handleDelete(plex.idMultiplex, e)}
+                        onClick={(e) => handleDelete(plex.id, e)}
                         className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all text-xs font-bold ${
-                          deletingId === plex.idMultiplex
+                          deletingId === plex.id
                             ? 'bg-red-500/20 border-red-500/60 text-red-400 animate-pulse'
                             : 'border-border/50 bg-carbon/50 text-text-secondary hover:text-red-400 hover:border-red-500/40'
                         }`}
-                        title={deletingId === plex.idMultiplex ? 'Confirmar eliminación' : 'Eliminar multiplex'}
+                        title={deletingId === plex.id ? 'Confirmar eliminación' : 'Eliminar multiplex'}
                       >
-                        {deletingId === plex.idMultiplex ? '!' : <Trash2 size={14} />}
+                        {deletingId === plex.id ? '!' : <Trash2 size={14} />}
                       </button>
                     </div>
                   </div>
