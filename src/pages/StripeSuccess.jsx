@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { confirmStripePayment } from '../services/paymentService'
 
 export default function StripeSuccess() {
@@ -9,9 +9,6 @@ export default function StripeSuccess() {
   const [status, setStatus] = useState('pending')
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Esta es la ruta frontend de retorno de Stripe.
-  // Stripe debe redirigir aquí con success_url = /stripe/success.
-  // El pago se confirma usando el paymentId que el backend retornó y guardó antes de ir a Stripe.
   useEffect(() => {
     const confirmPayment = async () => {
       const urlPaymentId = searchParams.get('paymentId')
@@ -21,21 +18,36 @@ export default function StripeSuccess() {
 
       if (!paymentIdToUse || !savedPayload) {
         setStatus('error')
-        setErrorMessage('No se encontró la información de pago para completar la confirmación. Por favor regresa al checkout e intenta de nuevo.')
+        setErrorMessage(
+          'No se encontró la información de pago para completar la confirmación. Por favor regresa al checkout e intenta de nuevo.'
+        )
         return
       }
 
       try {
         const checkoutRequest = JSON.parse(savedPayload)
-        await confirmStripePayment(paymentIdToUse, checkoutRequest)
+
+        await confirmStripePayment(
+          paymentIdToUse,
+          checkoutRequest
+        )
+
         localStorage.removeItem('cinepacho_checkout_payload')
         localStorage.removeItem('cinepacho_payment_id')
+
         setStatus('success')
-        navigate('/confirmacion', { replace: true })
+
+        setTimeout(() => {
+          navigate('/confirmacion', { replace: true })
+        }, 2500)
       } catch (err) {
         console.error('Error confirming payment:', err)
+
         setStatus('error')
-        setErrorMessage(err?.message || 'Error al confirmar el pago. Intenta nuevamente más tarde.')
+        setErrorMessage(
+          err?.message ||
+            'Error al confirmar el pago. Intenta nuevamente más tarde.'
+        )
       }
     }
 
@@ -45,31 +57,64 @@ export default function StripeSuccess() {
   if (status === 'pending') {
     return (
       <div className="min-h-screen bg-carbon flex flex-col items-center justify-center text-white">
-        <Loader2 size={48} className="animate-spin text-green-400 mb-4" />
-        <h2 className="text-2xl font-display uppercase tracking-widest">Confirmando Pago...</h2>
-        <p className="text-text-secondary mt-2">Por favor espere mientras validamos su pago.</p>
+        <Loader2
+          size={48}
+          className="animate-spin text-green-400 mb-4"
+        />
+        <h2 className="text-2xl font-display uppercase tracking-widest">
+          Confirmando Pago...
+        </h2>
+        <p className="text-text-secondary mt-2">
+          Por favor espere mientras validamos su pago.
+        </p>
+      </div>
+    )
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="min-h-screen bg-carbon flex flex-col items-center justify-center text-white px-4">
+        <CheckCircle
+          size={64}
+          className="text-green-400 mb-4"
+        />
+
+        <h2 className="text-2xl font-display uppercase tracking-widest text-center">
+          ¡Pago confirmado!
+        </h2>
+
+        <p className="text-text-secondary mt-2 text-center">
+          Tu compra fue procesada correctamente.
+        </p>
+
+        <p className="text-text-secondary text-sm mt-2">
+          Redirigiendo...
+        </p>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-carbon flex flex-col items-center justify-center text-white px-4">
-      <AlertCircle size={48} className="text-red-400 mb-4" />
-      <h2 className="text-2xl font-display uppercase tracking-widest">No se pudo confirmar el pago</h2>
-      <p className="text-text-secondary mt-2 text-center max-w-md">{errorMessage}</p>
+      <AlertCircle
+        size={48}
+        className="text-red-400 mb-4"
+      />
+
+      <h2 className="text-2xl font-display uppercase tracking-widest text-center">
+        No se pudo confirmar el pago
+      </h2>
+
+      <p className="text-text-secondary mt-2 text-center max-w-md">
+        {errorMessage}
+      </p>
+
       <button
         onClick={() => navigate('/checkout', { replace: true })}
         className="mt-6 px-6 py-3 bg-magenta rounded-2xl text-white font-bold hover:opacity-90 transition-all"
       >
         Regresar al checkout
       </button>
-    </div>
-  )
-}
-    <div className="min-h-screen bg-carbon flex flex-col items-center justify-center text-white">
-      <Loader2 size={48} className="animate-spin text-green-400 mb-4" />
-      <h2 className="text-2xl font-display uppercase tracking-widest">Confirmando Pago...</h2>
-      <p className="text-text-secondary mt-2">Por favor espere mientras validamos su pago.</p>
     </div>
   )
 }
