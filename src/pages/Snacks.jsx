@@ -50,6 +50,7 @@ export default function Snacks() {
       type: 'snack',
       showtime: null, // Los snacks no tienen showtime
       image: snack.imageUrl || null,
+      points: snack.pointsSnack != null ? Number(snack.pointsSnack) : undefined,
       multiplexId: user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
   }
@@ -117,7 +118,7 @@ export default function Snacks() {
                 {/* Badge de puntos */}
                 <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
                   <Star size={14} fill="currentColor" />
-                  <span>+5 {t('common.points')}</span>
+                  <span>+{snack.pointsSnack != null ? snack.pointsSnack : 5} {t('common.points')}</span>
                 </div>
 
                 {/* Badge stock bajo */}

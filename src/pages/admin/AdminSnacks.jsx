@@ -36,7 +36,17 @@ export default function AdminSnacks() {
     setError(null)
     try {
       const data = await getAdminSnacks()
-      setSnacks(Array.isArray(data) ? data : [])
+      if (Array.isArray(data)) {
+        const snacks = data.flatMap(group => {
+          if (group?.snacks && Array.isArray(group.snacks)) {
+            return group.snacks.map(snack => ({ ...snack, multiplexName: group.multiplexName }))
+          }
+          return [group]
+        })
+        setSnacks(snacks)
+      } else {
+        setSnacks([])
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -105,8 +115,8 @@ export default function AdminSnacks() {
     const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
     const finalMultiplexId = lockedMultiplexId || multiplexId
 
-    if (!nameSnack || !priceSnack || !quantitySnack || !finalMultiplexId) {
-      setFormError('Nombre, precio, cantidad y multiplex son obligatorios.')
+    if (!nameSnack || !priceSnack || !quantitySnack || !finalMultiplexId || pointsSnack === '') {
+      setFormError('Nombre, precio, cantidad, multiplex y puntos son obligatorios.')
       return
     }
     setSaving(true)
@@ -115,18 +125,17 @@ export default function AdminSnacks() {
       nameSnack,
       descriptionSnack,
       priceSnack:    parseFloat(priceSnack),
-      quantitySnack: parseInt(quantitySnack),
+      quantitySnack: parseInt(quantitySnack, 10),
       multiplexId: finalMultiplexId,
-      ...(pointsSnack !== '' && { pointsSnack: parseInt(pointsSnack) }),
+      pointsSnack:   parseInt(pointsSnack, 10),
     }
     try {
       if (editingId) {
-        const updated = await updateSnack(editingId, payload)
-        setSnacks(prev => prev.map(s => s.idSnack === editingId ? updated : s))
+        await updateSnack(editingId, payload)
       } else {
-        const created = await createSnack(payload)
-        setSnacks(prev => [...prev, created])
+        await createSnack(payload)
       }
+      await fetchSnacks()
       setIsModalOpen(false)
     } catch (err) {
       setFormError(err.message)
@@ -204,7 +213,7 @@ export default function AdminSnacks() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  {['Nombre', 'Descripción', 'Precio', 'Stock', 'Estado', 'Acción'].map(h => (
+                  {['Nombre', 'Multiplex', 'Descripción', 'Precio', 'Stock', 'Puntos', 'Estado', 'Acción'].map(h => (
                     <th key={h} className="py-4 px-4 text-xs font-bold text-text-secondary uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
@@ -226,11 +235,17 @@ export default function AdminSnacks() {
                     <td className="py-4 px-4 font-bold text-gold">
                       ${Number(snack.priceSnack).toLocaleString('es-CO')}
                     </td>
+                    <td className="py-4 px-4 text-sm text-text-secondary max-w-xs truncate">
+                      {snack.multiplexName || '—'}
+                    </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
                         <Package size={14} className="text-text-secondary" />
                         <span className="text-white font-bold">{snack.quantitySnack}</span>
                       </div>
+                    </td>
+                    <td className="py-4 px-4 font-bold text-white">
+                      {snack.pointsSnack != null ? snack.pointsSnack : '—'}
                     </td>
                     <td className="py-4 px-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${stockBadge(snack.quantitySnack)}`}>
