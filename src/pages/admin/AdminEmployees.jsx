@@ -169,7 +169,7 @@ const handleEditEmployee = () => {
       phoneNumber: newEmployee.phoneNumber,
       salary: Number(newEmployee.salary),
       rol: newEmployee.rol,
-      startDate: `${newEmployee.startDate}T00:00:00`, // Convertir a formato ISO
+      startDate: `${newEmployee.startDate} 00:00:00`, // Convertir a formato ISO
       multiplexId: finalMultiplexId
     }
 
@@ -688,11 +688,11 @@ const handleEditEmployee = () => {
 
           <input
             type="text"
-            value={employeeToEdit?.nombre || ''}
+            value={employeeToEdit?.name || ''}
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
-                nombre: e.target.value,
+                name: e.target.value,
               })
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -706,11 +706,11 @@ const handleEditEmployee = () => {
 
           <input
             type="email"
-            value={employeeToEdit?.correo || ''}
+            value={employeeToEdit?.email || ''}
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
-                correo: e.target.value,
+                email: e.target.value,
               })
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -724,11 +724,11 @@ const handleEditEmployee = () => {
 
           <input
             type="text"
-            value={employeeToEdit?.telefono || ''}
+            value={employeeToEdit?.phoneNumber || ''}
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
-                telefono: e.target.value,
+                phoneNumber: e.target.value,
               })
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -741,20 +741,19 @@ const handleEditEmployee = () => {
           </label>
 
           <select
-            value={employeeToEdit?.rol || ''}
+            value={employeeToEdit?.role || ''}
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
-                rol: e.target.value,
+                role: e.target.value,
               })
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           >
-            <option value="Director">Director</option>
-            <option value="Cajero">Cajero</option>
-            <option value="Despachador de comida">Despachador de comida</option>
-            <option value="Encargado de sala">Encargado de sala</option>
-            <option value="Aseador">Aseador</option>
+            <option value="CASHIER">Cajero</option>
+            <option value="DISPATCHER">Despachador de comida</option>
+            <option value="MANAGER">Encargado de sala</option>
+            <option value="CLEANER">Aseador</option>
           </select>
         </div>
 
@@ -774,12 +773,11 @@ const handleEditEmployee = () => {
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           >
             <option value="">Seleccionar multiplex</option> {/* Added default option */}
-            <option value="Titán">Titán</option>
-            <option value="Unicentro">Unicentro</option>
-            <option value="Gran Estación">Gran Estación</option>
-            <option value="Embajador">Embajador</option>
-            <option value="Plaza Central">Plaza Central</option>
-            <option value="Las Américas">Las Américas</option>
+            {multiplexes.map((m) => (
+              <option key={m.idMultiplex || m.id} value={m.nameMultiplex}>
+                {m.nameMultiplex}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -834,7 +832,7 @@ const handleEditEmployee = () => {
         </p>
 
         <p className="text-white font-bold text-lg mt-2">
-          {employeeToDelete?.nombre}
+          {employeeToDelete?.name}
         </p>
       </div>
 

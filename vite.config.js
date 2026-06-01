@@ -12,12 +12,15 @@ export default defineConfig({
         target: 'http://localhost:8010',
         changeOrigin: true,
         bypass: (req) => {
+          // Si es la redirección especial de Stripe, sirve el index.html en el cliente
           if (req.method === 'GET' && req.url?.startsWith('/api/checkout/stripe/')) {
             return '/index.html'
           }
+          // CRÍTICO: Indica a Vite que continúe enviando la petición al backend de Spring Boot
+          return false 
         },
       },
-      // Proxy para los endpoints de administración del backend
+      // Proxy para los endpoints de administración del backend (si es que no usan prefijo /api)
       '/admin': {
         target: 'http://localhost:8010',
         changeOrigin: true,
