@@ -19,6 +19,7 @@ export default function Snacks() {
     const fetchSnacks = async () => {
       setLoading(true)
       setError(null)
+      // Si el usuario no se ha logueado, se expone el multiplex por defecto para el catálogo público
       const multiplexId = user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
 
       if (!multiplexId) {
@@ -29,6 +30,7 @@ export default function Snacks() {
       }
 
       try {
+        // Llama al endpoint libre /api/snacks/{multiplexId}
         const data = await getAllSnacks(multiplexId)
         setSnacks(Array.isArray(data) ? data : [])
       } catch (err) {
@@ -40,17 +42,17 @@ export default function Snacks() {
     fetchSnacks()
   }, [user])
 
-  // Mapea los campos del backend al formato que espera el carrito para que AppContext lo normalice
+  // Normaliza el DTO del backend (SnackResponse) al formato esperado por el AppContext de tu carrito
   const toCartItem = (snack) => {
     return {
       id: snack.idSnack,
       name: snack.nameSnack,
       description: snack.descriptionSnack,
-      price: Number(snack.priceSnack) || 0, // Garantiza valor numérico
+      price: Number(snack.priceSnack) || 0, 
       type: 'snack',
-      showtime: null, // Los snacks no tienen showtime
+      showtime: null, 
       image: snack.imageUrl || null,
-      points: Number(snack.pointsSnack), // Llamado normal seguro; nunca será undefined ni null
+      points: Number(snack.pointsSnack) || 0, 
       multiplexId: user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
   }
@@ -115,10 +117,10 @@ export default function Snacks() {
                 <div className="absolute inset-0 bg-carbon/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
                 <div className="text-6xl select-none z-0">🍿</div>
 
-                {/* Badge de puntos (Llamado directo e impecable) */}
+                {/* Badge de puntos acumulables */}
                 <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
                   <Star size={14} fill="currentColor" />
-                  <span>+{snack.pointsSnack} {t('common.points')}</span>
+                  <span>+{snack.pointsSnack || 0} {t('common.points')}</span>
                 </div>
 
                 {/* Badge stock bajo */}

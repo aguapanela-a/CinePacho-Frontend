@@ -7,6 +7,8 @@ if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
 
 /**
  * Retorna los headers estándar incluyendo el JWT si existe en localStorage.
+ * @param {Object} extra - Headers adicionales para fusionar
+ * @returns {Object} Headers listos para la petición fetch
  */
 function getHeaders(extra = {}) {
   const token = localStorage.getItem('cinepacho_token')
@@ -18,38 +20,59 @@ function getHeaders(extra = {}) {
 }
 
 /**
- * Función auxiliar para normalizar recursivamente las propiedades de los snacks,
- * subsanando la falta de mapeo del campo 'pointsSnack' en el backend.
- * @param {any} obj - Objeto o arreglo proveniente de la API
- * @returns {any} - Objeto con los datos de snacks normalizados
+ * Normaliza de forma segura propiedades de snacks si es necesario.
+ * Resuelve la falta de mapeo del backend sin generar mutaciones peligrosas ni bucles infinitos.
+ * @param {any} data - Datos crudos provenientes de la respuesta JSON
+ * @returns {any} Datos procesados y normalizados
  */
-function normalizeSnacks(obj) {
-  if (obj === null || typeof obj !== 'object') {
-    return obj
+function normalizeData(data) {
+  if (!data) return data
+
+  // Caso 1: Es un arreglo directo de snacks (Ej: GET /api/snacks/{multiplexId})
+  if (Array.isArray(data) && data.length > 0 && 'idSnack' in data[0]) {
+    return data.map(item => normalizeItem(item))
   }
 
-  // Si el objeto actual representa un DTO de Snack (identificado por su idSnack)
-  if (Object.prototype.hasOwnProperty.call(obj, 'idSnack')) {
-    if (obj.pointsSnack === null || obj.pointsSnack === undefined) {
-      obj.pointsSnack = 5 // Valor por defecto seguro para el flujo del frontend
+  // Caso 2: Objeto agrupado que contiene una lista de snacks (Ej: SnackByMultiplex structure)
+  if (data.snacks && Array.isArray(data.snacks)) {
+    return {
+      ...data,
+      snacks: data.snacks.map(item => normalizeItem(item))
     }
   }
 
-  // Recorremos de manera recursiva en caso de estructuras anidadas o arreglos
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      obj[key] = normalizeSnacks(obj[key])
-    }
+  // Caso 3: Es una lista de objetos agrupadores (Ej: GET /api/admin/snacks agrupados por Multiplex)
+  if (Array.isArray(data) && data.length > 0 && data[0].snacks) {
+    return data.map(group => ({
+      ...group,
+      snacks: Array.isArray(group.snacks) ? group.snacks.map(item => normalizeItem(item)) : []
+    }))
   }
 
-  return obj
+  // Caso 4: Es un único snack (Ej: GET /api/admin/snacks/{id} o respuestas de PUT)
+  return normalizeItem(data)
 }
 
 /**
- * Función central de fetch.
- * @param {string} endpoint - Ruta relativa, ej: '/api/admin/multiplexes'
- * @param {RequestInit} options - Opciones de fetch (method, body, etc.)
- * @returns {Promise<any>} - JSON parseado de la respuesta
+ * Aplica el fallback de puntos de forma segura usando desestructuración.
+ * @param {Object} item - Objeto individual a verificar
+ */
+function normalizeItem(item) {
+  if (item && typeof item === 'object' && 'idSnack' in item) {
+    return {
+      ...item,
+      // Si pointsSnack llega nulo o no definido desde el backend, asegura un valor por defecto (5)
+      pointsSnack: item.pointsSnack ?? 5 
+    }
+  }
+  return item
+}
+
+/**
+ * Función centralizada para realizar peticiones HTTP (fetch).
+ * @param {string} endpoint - Ruta relativa del recurso, ej: '/api/snacks/1'
+ * @param {RequestInit} options - Opciones nativas de fetch (method, body, etc.)
+ * @returns {Promise<any>} JSON parseado y sanitizado de la respuesta
  */
 export async function apiFetch(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
@@ -61,31 +84,34 @@ export async function apiFetch(endpoint, options = {}) {
       headers: getHeaders(options.headers),
     })
 
-    // Respuestas 204 No Content (DELETE exitoso) no tienen body
+    // Las respuestas 204 No Content (como un DELETE exitoso) no poseen cuerpo
     if (response.status === 204) return null
 
+    // Intentamos parsear a JSON. Si el cuerpo está vacío o falla, retorna null de forma segura
     const data = await response.json().catch(() => null)
 
     if (!response.ok) {
       let message =
         data?.message || data?.error || `Error ${response.status}: ${response.statusText}`
+        
       if (response.status === 403) {
         message = data?.message || 'Forbidden: no tienes permiso para acceder a este recurso'
       } else if (response.status === 404) {
         message = data?.message || 'No encontrado: el recurso solicitado no existe'
       }
+      
       const error = new Error(message)
       error.status = response.status
       console.error(`[apiFetch] Error en ${url}:`, message)
       throw error
     }
 
-    // Normalizamos la respuesta antes de retornarla para limpiar los DTOs de snacks
-    return normalizeSnacks(data)
+    // Intercepta e inyecta las correcciones de datos antes de entregar la respuesta al servicio
+    return normalizeData(data)
   } catch (error) {
     if (error instanceof TypeError) {
       const networkError = new Error(
-        `Network error: no se pudo conectar con ${url}`
+        `Network error: no se pudo establecer conexión con el servidor en ${url}`
       )
       networkError.status = 0
       throw networkError
