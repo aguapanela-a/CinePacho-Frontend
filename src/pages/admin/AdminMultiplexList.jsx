@@ -10,7 +10,14 @@ import {
 } from '../../services/multiplexService'
 
 // ── Formulario vacío reutilizable ──────────────────────────────────────────
-const EMPTY_FORM = { nameMultiplex: '', addressMultiplex: '', cityMultiplex: '' }
+const EMPTY_FORM = {
+  nameMultiplex: '',
+  addressMultiplex: '',
+  cityMultiplex: '',
+  numberOfRooms: '',
+  generalSeatPrice: '',
+  preferentialSeatPrice: '',
+}
 
 export default function AdminMultiplexList() {
   // ── Estado principal ───────────────────────────────────────────────────
@@ -66,9 +73,12 @@ const fetchMultiplexes = useCallback(async () => {
     e.stopPropagation()
     setEditingId(plex.id)
     setForm({
-      nameMultiplex:    plex.nameMultiplex,
-      addressMultiplex: plex.addressMultiplex || '',
-      cityMultiplex:    plex.cityMultiplex,
+      nameMultiplex:        plex.nameMultiplex,
+      addressMultiplex:     plex.addressMultiplex || '',
+      cityMultiplex:        plex.cityMultiplex,
+      numberOfRooms:        plex.numberOfRooms ?? '',
+      generalSeatPrice:     plex.generalSeatPrice ?? '',
+      preferentialSeatPrice: plex.preferentialSeatPrice ?? '',
     })
     setFormError(null)
     setIsModalOpen(true)
@@ -76,8 +86,8 @@ const fetchMultiplexes = useCallback(async () => {
 
   // ── Guardar (crear o editar) ───────────────────────────────────────────
   const handleSave = async () => {
-    const { nameMultiplex, addressMultiplex, cityMultiplex } = form
-    if (!nameMultiplex || !addressMultiplex || !cityMultiplex) {
+    const { nameMultiplex, addressMultiplex, cityMultiplex,numberOfRooms, generalSeatPrice, preferentialSeatPrice  } = form
+    if (!nameMultiplex || !addressMultiplex || !cityMultiplex || !numberOfRooms || !generalSeatPrice || !preferentialSeatPrice) {
       setFormError('Todos los campos son obligatorios.')
       return
     }
@@ -314,6 +324,50 @@ const fetchMultiplexes = useCallback(async () => {
                   onChange={(e) => setForm({ ...form, cityMultiplex: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
                   placeholder="Bogotá"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Número de salas
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.numberOfRooms}
+                  onChange={(e) => setForm({ ...form, numberOfRooms: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                  placeholder="1"
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Precio general
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.generalSeatPrice}
+                  onChange={(e) => setForm({ ...form, generalSeatPrice: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                  placeholder="1"
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Precio preferencial
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.preferentialSeatPrice}
+                  onChange={(e) => setForm({ ...form, preferentialSeatPrice: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                  placeholder="1"
                 />
               </div>
             </div>
