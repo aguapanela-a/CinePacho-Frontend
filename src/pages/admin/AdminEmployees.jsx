@@ -82,24 +82,26 @@ export default function AdminEmployees() {
   const [errorForm, setErrorForm] = useState(null);
 
   const openCreateEmployee = () => {
-    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
-    // const lockedMultiplex = multiplexes.find((m) => (m.idMultiplex || m.id) === lockedMultiplexId)
+  const lockedMultiplexId =
+    user?.userType === 'MANAGER'
+      ? user?.multiplexId
+      : ''
 
-    setNewEmployee((prev) => ({
-      ...prev,
-      email: '',
-      name: '',
-      password: '',
-      userType: '',
-      indentityCard: '',
-      phoneNumber: '',
-      salary: '',
-      rol: '',
-      lockedMultiplexId: ''
-    }))
-    setErrorForm(null)
-    setIsModalOpen(true)
-  }
+  setNewEmployee({
+    email: '',
+    name: '',
+    password: '',
+    userType: 'EMPLOYEE',
+    indentityCard: '',
+    phoneNumber: '',
+    salary: '',
+    rol: '',
+    multiplexId: lockedMultiplexId || ''
+  })
+
+  setErrorForm(null)
+  setIsModalOpen(true)
+}
 
   useEffect(() => {
     const loadMultiplexes = async () => {
@@ -160,28 +162,30 @@ const handleEditEmployee = () => {
 //Crear empleados local
   const handleCreateEmployee = async () => {
   const lockedMultiplexId =
-    user?.userType === 'MANAGER' ? user?.multiplexId : '';
+    user?.userType === 'MANAGER'
+      ? user?.multiplexId
+      : ''
 
   const finalMultiplexId =
-    lockedMultiplexId || newEmployee.multiplexId;
+    lockedMultiplexId || newEmployee.multiplexId
 
   if (
     !newEmployee.email ||
     !newEmployee.name ||
-    !newEmployee.phoneNumber ||
-    !newEmployee.rol ||
     !newEmployee.password ||
-    !newEmployee.indentityCard ||
-    !newEmployee.salary ||
     !newEmployee.userType ||
+    !newEmployee.indentityCard ||
+    !newEmployee.phoneNumber ||
+    !newEmployee.salary ||
+    !newEmployee.rol ||
     !finalMultiplexId
   ) {
-    setErrorForm('Todos los campos son obligatorios');
-    return;
+    setErrorForm('Todos los campos son obligatorios')
+    return
   }
 
-  setCreating(true);
-  setErrorForm(null);
+  setCreating(true)
+  setErrorForm(null)
 
   try {
     const payload = {
@@ -192,11 +196,13 @@ const handleEditEmployee = () => {
       indentityCard: newEmployee.indentityCard,
       phoneNumber: newEmployee.phoneNumber,
       salary: Number(newEmployee.salary),
-      position: newEmployee.rol,
-      multiplexId: finalMultiplexId,
-    };
+      rol: newEmployee.rol,
+      multiplexId: finalMultiplexId
+    }
 
-    await registerEmployee(payload);
+    console.log('Payload enviado:', payload)
+
+    await registerEmployee(payload)
 
     setNewEmployee({
       email: '',
@@ -207,16 +213,19 @@ const handleEditEmployee = () => {
       phoneNumber: '',
       salary: '',
       rol: '',
-      multiplexId: lockedMultiplexId || '',
-    });
+      multiplexId: lockedMultiplexId || ''
+    })
 
-    setIsModalOpen(false);
+    initialEmployees.push(payload)
+
+    setIsModalOpen(false)
   } catch (err) {
-    setErrorForm(err.message);
+    console.error(err)
+    setErrorForm(err.message || 'Error al crear empleado')
   } finally {
-    setCreating(false);
+    setCreating(false)
   }
-};
+}
 
   return (
      <AdminLayout>
@@ -469,11 +478,11 @@ const handleEditEmployee = () => {
 
                 <input
                   type="text"
-                  value={newEmployee.nombre}
+                  value={newEmployee.name}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      nombre: e.target.value,
+                      name: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -488,11 +497,11 @@ const handleEditEmployee = () => {
 
                 <input
                   type="email"
-                  value={newEmployee.correo}
+                  value={newEmployee.email}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      correo: e.target.value,
+                      email: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -507,11 +516,11 @@ const handleEditEmployee = () => {
 
                 <input
                   type="text"
-                  value={newEmployee.telefono}
+                  value={newEmployee.phoneNumber}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      telefono: e.target.value,
+                      phoneNumber: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -525,21 +534,20 @@ const handleEditEmployee = () => {
                 </label>
 
                 <select
-                  value={newEmployee.cargo}
+                  value={newEmployee.rol}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      cargo: e.target.value,
+                      rol: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 >
                   <option value=""></option>
-                  <option value="Director">Director</option>
-                  <option value="Cajero">Cajero</option>
-                  <option value="Despachador de comida">Despachador de comida</option>
-                  <option value="Encargado de sala">Encargado de sala</option>
-                  <option value="Aseador">Aseador</option>
+                  <option value="CASHIER">Cajero</option>
+                  <option value="DISPATCHER">Despachador de comida</option>
+                  <option value="ROOM_ATTENDANT">Encargado de sala</option>
+                  <option value="CLEANER">Aseador</option>
                 </select>
               </div>
 
@@ -583,9 +591,9 @@ const handleEditEmployee = () => {
                 </label>
                 <input
                   type="text"
-                  value={newEmployee.identityCard} // Corrected typo
+                  value={newEmployee.indentityCard} // Corrected typo
                   onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, identityCard: e.target.value }) // Corrected typo
+                    setNewEmployee({ ...newEmployee, indentityCard: e.target.value }) // Corrected typo
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Ej: 1010101010"
