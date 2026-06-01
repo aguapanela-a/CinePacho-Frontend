@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Users,
@@ -14,6 +14,8 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { registerEmployee } from '../../services/employeeService'
+import { getAllMultiplexes } from '../../services/multiplexService'
+import { useApp } from '../../context/useApp'
 
 
 
@@ -54,6 +56,7 @@ const initialEmployees = [
 ]
 
 export default function AdminEmployees() {
+  const { user } = useApp()
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [employees, setEmployees] = useState(initialEmployees)
@@ -61,21 +64,59 @@ export default function AdminEmployees() {
   const [employeeToDelete, setEmployeeToDelete] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [employeeToEdit, setEmployeeToEdit] = useState(null)
+  const [multiplexes, setMultiplexes] = useState([])
+  const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
 
   const [newEmployee, setNewEmployee] = useState({
-    nombre: '',
-    correo: '',
-    telefono: '',
-    cargo: '',
-    multiplex: '',
+    email: '',
+    name: '',
     password: '',
-    identityCard: '', // Corrected typo
+    userType: '',
+    indentityCard: '',
+    phoneNumber: '',
     salary: '',
-    fechaContrato: '',
-    rol:'',
-  });
+    rol: '',
+    multiplexId: ''
+  })
   const [creating, setCreating] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
+
+  const openCreateEmployee = () => {
+  const lockedMultiplexId =
+    user?.userType === 'MANAGER'
+      ? user?.multiplexId
+      : ''
+
+  setNewEmployee({
+    email: '',
+    name: '',
+    password: '',
+    userType: 'EMPLOYEE',
+    indentityCard: '',
+    phoneNumber: '',
+    salary: '',
+    rol: '',
+    multiplexId: lockedMultiplexId || ''
+  })
+
+  setErrorForm(null)
+  setIsModalOpen(true)
+}
+
+  useEffect(() => {
+    const loadMultiplexes = async () => {
+      setLoadingMultiplexes(true)
+      try {
+        const data = await getAllMultiplexes()
+        setMultiplexes(Array.isArray(data) ? data : [])
+      } catch {
+        setMultiplexes([])
+      } finally {
+        setLoadingMultiplexes(false)
+      }
+    }
+    loadMultiplexes()
+  }, [])
 
   const filteredEmployees = employees.filter((employee) =>
     employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -120,74 +161,71 @@ const handleEditEmployee = () => {
 
 //Crear empleados local
   const handleCreateEmployee = async () => {
-    if (
-      !newEmployee.nombre ||
-      !newEmployee.correo ||
-      !newEmployee.telefono ||
-      !newEmployee.cargo ||
-      !newEmployee.multiplex ||
-      !newEmployee.password ||
-      !newEmployee.identityCard || // Corrected typo here
-      !newEmployee.salary ||
-      !newEmployee.fechaContrato
-    ) {
-      setErrorForm('Todos los campos son obligatorios')
-      return
-    }
+  const lockedMultiplexId =
+    user?.userType === 'MANAGER'
+      ? user?.multiplexId
+      : ''
 
-    setCreating(true)
-    setErrorForm(null)
+  const finalMultiplexId =
+    lockedMultiplexId || newEmployee.multiplexId
 
-    try {
-      const payload = {
-        name: newEmployee.nombre,
-        email: newEmployee.correo,
-        password: newEmployee.password,
-        userType: 'EMPLOYEE',
-        indentityCard: newEmployee.identityCard, 
-        phoneNumber: newEmployee.telefono,
-        salary: parseFloat(newEmployee.salary),
-        position: newEmployee.cargo,
-        rol: newEmployee.rol,
-        // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
-      };
-
-        const response = await registerEmployee(payload)
-
-        setEmployees((prev) => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            nombre: newEmployee.nombre,
-            correo: newEmployee.correo,
-            telefono: newEmployee.telefono,
-            cargo: newEmployee.cargo,
-            multiplex: newEmployee.multiplex,
-            estado: 'Activo',
-            fechaContrato: newEmployee.fechaContrato,
-          },
-        ])
-
-        setNewEmployee({
-          nombre: '',
-          correo: '',
-          telefono: '',
-          cargo: '',
-          multiplex: '',
-          password: '',
-          identityCard: '',
-          salary: '',
-          fechaContrato: '',
-        })
-
-        setIsModalOpen(false)
-
-    } catch (err) {
-      setErrorForm(err.message)
-    } finally {
-      setCreating(false)
-    }
+  if (
+    !newEmployee.email ||
+    !newEmployee.name ||
+    !newEmployee.password ||
+    !newEmployee.userType ||
+    !newEmployee.indentityCard ||
+    !newEmployee.phoneNumber ||
+    !newEmployee.salary ||
+    !newEmployee.rol ||
+    !finalMultiplexId
+  ) {
+    setErrorForm('Todos los campos son obligatorios')
+    return
   }
+
+  setCreating(true)
+  setErrorForm(null)
+
+  try {
+    const payload = {
+      email: newEmployee.email,
+      name: newEmployee.name,
+      password: newEmployee.password,
+      userType: newEmployee.userType,
+      indentityCard: newEmployee.indentityCard,
+      phoneNumber: newEmployee.phoneNumber,
+      salary: Number(newEmployee.salary),
+      rol: newEmployee.rol,
+      multiplexId: finalMultiplexId
+    }
+
+    console.log('Payload enviado:', payload)
+
+    await registerEmployee(payload)
+
+    setNewEmployee({
+      email: '',
+      name: '',
+      password: '',
+      userType: 'EMPLOYEE',
+      indentityCard: '',
+      phoneNumber: '',
+      salary: '',
+      rol: '',
+      multiplexId: lockedMultiplexId || ''
+    })
+
+    initialEmployees.push(payload)
+
+    setIsModalOpen(false)
+  } catch (err) {
+    console.error(err)
+    setErrorForm(err.message || 'Error al crear empleado')
+  } finally {
+    setCreating(false)
+  }
+}
 
   return (
      <AdminLayout>
@@ -212,8 +250,8 @@ const handleEditEmployee = () => {
           </div>
         </div>
 
-     <button
-        onClick={() => setIsModalOpen(true)}
+    <button
+      onClick={openCreateEmployee}
         className="flex items-center justify-center gap-2 bg-gradient-to-r from-magenta to-vinotinto hover:opacity-90 transition-all text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 cursor-pointer"
         >
         <Plus size={18} />
@@ -440,11 +478,11 @@ const handleEditEmployee = () => {
 
                 <input
                   type="text"
-                  value={newEmployee.nombre}
+                  value={newEmployee.name}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      nombre: e.target.value,
+                      name: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -459,11 +497,11 @@ const handleEditEmployee = () => {
 
                 <input
                   type="email"
-                  value={newEmployee.correo}
+                  value={newEmployee.email}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      correo: e.target.value,
+                      email: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -478,11 +516,11 @@ const handleEditEmployee = () => {
 
                 <input
                   type="text"
-                  value={newEmployee.telefono}
+                  value={newEmployee.phoneNumber}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      telefono: e.target.value,
+                      phoneNumber: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -496,21 +534,39 @@ const handleEditEmployee = () => {
                 </label>
 
                 <select
-                  value={newEmployee.cargo}
+                  value={newEmployee.rol}
                   onChange={(e) =>
                     setNewEmployee({
                       ...newEmployee,
-                      cargo: e.target.value,
+                      rol: e.target.value,
                     })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 >
                   <option value=""></option>
-                  <option value="Director">Director</option>
-                  <option value="Cajero">Cajero</option>
-                  <option value="Despachador de comida">Despachador de comida</option>
-                  <option value="Encargado de sala">Encargado de sala</option>
-                  <option value="Aseador">Aseador</option>
+                  <option value="CASHIER">Cajero</option>
+                  <option value="DISPATCHER">Despachador de comida</option>
+                  <option value="ROOM_ATTENDANT">Encargado de sala</option>
+                  <option value="CLEANER">Aseador</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Tipo de usuario
+                </label>
+                <select
+                  value={newEmployee.userType}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      userType: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                >
+                  <option value="EMPLOYEE">EMPLOYEE</option>
+                  <option value="MANAGER">MANAGER</option>
                 </select>
               </div>
 
@@ -535,9 +591,9 @@ const handleEditEmployee = () => {
                 </label>
                 <input
                   type="text"
-                  value={newEmployee.identityCard} // Corrected typo
+                  value={newEmployee.indentityCard} // Corrected typo
                   onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, identityCard: e.target.value }) // Corrected typo
+                    setNewEmployee({ ...newEmployee, indentityCard: e.target.value }) // Corrected typo
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Ej: 1010101010"
@@ -579,22 +635,27 @@ const handleEditEmployee = () => {
                 </label>
 
                 <select
-                  value={newEmployee.multiplex}
-                  onChange={(e) =>
+                  value={newEmployee.multiplexId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value
+                    const selected = multiplexes.find((m) => (m.idMultiplex || m.id) === selectedId)
                     setNewEmployee({
                       ...newEmployee,
-                      multiplex: e.target.value,
+                      multiplexId: selectedId,
+                      multiplexName: selected?.nameMultiplex || '',
                     })
-                  }
+                  }}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  disabled={user?.userType === 'MANAGER'}
                 >
-                  <option value="">Seleccionar multiplex</option>
-                  <option value="Titán">Titán</option>
-                  <option value="Unicentro">Unicentro</option>
-                  <option value="Gran Estación">Gran Estación</option>
-                  <option value="Embajador">Embajador</option>
-                  <option value="Plaza Central">Plaza Central</option>
-                  <option value="Las Américas">Las Américas</option>
+                  <option value="">
+                    {loadingMultiplexes ? 'Cargando...' : 'Seleccionar multiplex'}
+                  </option>
+                  {multiplexes.map((m) => (
+                    <option key={m.idMultiplex || m.id} value={m.idMultiplex || m.id}>
+                      {m.nameMultiplex}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -2,14 +2,26 @@ import { useState, useEffect, useCallback } from 'react'
 import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { getAdminSnacks, createSnack, updateSnack } from '../../services/snackService'
+import { getAllMultiplexes } from '../../services/multiplexService'
+import { useApp } from '../../context/useApp'
 
-const EMPTY_FORM = { nameSnack: '', descriptionSnack: '', priceSnack: '', quantitySnack: '' }
+const EMPTY_FORM = {
+  nameSnack: '',
+  descriptionSnack: '',
+  priceSnack: '',
+  quantitySnack: '',
+  pointsSnack: '',
+  multiplexId: '',
+}
 
 export default function AdminSnacks() {
+  const { user } = useApp()
   const [snacks, setSnacks]       = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
   const [search, setSearch]       = useState('')
+  const [multiplexes, setMultiplexes] = useState([])
+  const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
 
   // ── Modal ──────────────────────────────────────────────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -39,6 +51,21 @@ export default function AdminSnacks() {
     loadSnacks()
   }, [fetchSnacks])
 
+  useEffect(() => {
+    const loadMultiplexes = async () => {
+      setLoadingMultiplexes(true)
+      try {
+        const data = await getAllMultiplexes()
+        setMultiplexes(Array.isArray(data) ? data : [])
+      } catch {
+        setMultiplexes([])
+      } finally {
+        setLoadingMultiplexes(false)
+      }
+    }
+    loadMultiplexes()
+  }, [])
+
   // ── Filtro local de búsqueda ───────────────────────────────────────────
   const filtered = snacks.filter(s =>
     s.nameSnack?.toLowerCase().includes(search.toLowerCase()) ||
@@ -48,18 +75,25 @@ export default function AdminSnacks() {
   // ── Abrir modales ──────────────────────────────────────────────────────
   const openCreate = () => {
     setEditingId(null)
-    setForm(EMPTY_FORM)
+    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
+    setForm({
+      ...EMPTY_FORM,
+      multiplexId: lockedMultiplexId || '',
+    })
     setFormError(null)
     setIsModalOpen(true)
   }
 
   const openEdit = (snack) => {
+    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
     setEditingId(snack.idSnack)
     setForm({
       nameSnack:        snack.nameSnack,
       descriptionSnack: snack.descriptionSnack,
       priceSnack:       snack.priceSnack,
       quantitySnack:    snack.quantitySnack,
+      pointsSnack:      snack.pointsSnack ?? '',
+      multiplexId:      snack.multiplexId || lockedMultiplexId || '',
     })
     setFormError(null)
     setIsModalOpen(true)
@@ -67,9 +101,12 @@ export default function AdminSnacks() {
 
   // ── Guardar ────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    const { nameSnack, descriptionSnack, priceSnack, quantitySnack } = form
-    if (!nameSnack || !priceSnack || !quantitySnack) {
-      setFormError('Nombre, precio y cantidad son obligatorios.')
+    const { nameSnack, descriptionSnack, priceSnack, quantitySnack, pointsSnack, multiplexId } = form
+    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
+    const finalMultiplexId = lockedMultiplexId || multiplexId
+
+    if (!nameSnack || !priceSnack || !quantitySnack || !finalMultiplexId) {
+      setFormError('Nombre, precio, cantidad y multiplex son obligatorios.')
       return
     }
     setSaving(true)
@@ -79,6 +116,8 @@ export default function AdminSnacks() {
       descriptionSnack,
       priceSnack:    parseFloat(priceSnack),
       quantitySnack: parseInt(quantitySnack),
+      multiplexId: finalMultiplexId,
+      ...(pointsSnack !== '' && { pointsSnack: parseInt(pointsSnack) }),
     }
     try {
       if (editingId) {
@@ -239,6 +278,7 @@ export default function AdminSnacks() {
                 { key: 'descriptionSnack', label: 'Descripción', placeholder: 'Palomitas + 2 refrescos', type: 'text' },
                 { key: 'priceSnack', label: 'Precio ($)', placeholder: '45000', type: 'number' },
                 { key: 'quantitySnack', label: 'Cantidad en stock', placeholder: '50', type: 'number' },
+                { key: 'pointsSnack', label: 'Puntos por snack', placeholder: '5', type: 'number' },
               ].map(({ key, label, placeholder, type }) => (
                 <div key={key}>
                   <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">{label}</label>
@@ -251,6 +291,27 @@ export default function AdminSnacks() {
                   />
                 </div>
               ))}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                Multiplex
+              </label>
+              <select
+                value={form.multiplexId}
+                onChange={(e) => setForm({ ...form, multiplexId: e.target.value })}
+                className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                disabled={user?.userType === 'MANAGER'}
+              >
+                <option value="">
+                  {loadingMultiplexes ? 'Cargando...' : 'Seleccionar multiplex'}
+                </option>
+                {multiplexes.map((m) => (
+                  <option key={m.idMultiplex || m.id} value={m.idMultiplex || m.id}>
+                    {m.nameMultiplex}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {formError && (

@@ -1,10 +1,10 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Search, ArrowLeft, Loader2 } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import MovieCard from '../components/MovieCard'
 import { useLanguage } from '../context/useLanguage'
-import { searchMovies } from '../services/movieService'
+import { getMovieSelectorsByMultiplex } from '../services/movieService'
 
 function useQuery() {
   return new URLSearchParams(useLocation().search)
@@ -18,6 +18,8 @@ export default function SearchResults() {
   const [search, setSearch] = useState(initialQuery)
   const [results, setResults] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+
+  const DEFAULT_MULTIPLEX_ID = '550e8400-e29b-41d4-a716-446655440000'
 
   useEffect(() => {
     setSearch(initialQuery)
@@ -34,24 +36,24 @@ export default function SearchResults() {
 
       setIsLoading(true)
       try {
-        const data = await searchMovies(initialQuery)
-        // TMDB search via backend devuelve data.results
-        if (data && data.results) {
-          const mapped = data.results.map(item => ({
-            id: item.id,
-            title: item.title,
-            year: item.release_date?.substring(0, 4) || 'N/A',
-            genre: 'Película', // TMDB devuelve IDs de géneros, dejamos uno genérico por ahora
-            rating: item.vote_average,
-            synopsis: item.overview,
-            posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750',
-            backdropUrl: item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : null,
-          }))
-          setResults(mapped)
-        } else {
-          setResults([])
-        }
-      } catch (err) {
+        const data = await getMovieSelectorsByMultiplex(DEFAULT_MULTIPLEX_ID, initialQuery)
+        const mapped = Array.isArray(data)
+          ? data.map(item => ({
+              id: item.movieInfo.id,
+              title: item.movieInfo.originalTitle,
+              year: item.movieInfo.releaseDate?.substring(0, 4) || 'N/A',
+              genre: item.movieInfo.genreIds && item.movieInfo.genreIds.length > 0
+                ? item.movieInfo.genreIds[0].name
+                : 'N/A',
+              rating: item.rating || 0,
+              synopsis: item.movieInfo.overview,
+              posterUrl: item.movieInfo.posterPath,
+              backdropUrl: item.movieInfo.backdropPath,
+              screenings: item.screenings || [],
+            }))
+          : []
+        setResults(mapped)
+      } catch {
         setResults([])
       } finally {
         setIsLoading(false)

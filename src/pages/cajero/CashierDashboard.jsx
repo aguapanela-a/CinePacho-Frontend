@@ -23,6 +23,7 @@ export default function CashierDashboard() {
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
+    const CUSTOMER_SEARCH_ENABLED = false
   const [movies, setMovies] = useState([])
   const [snacks, setSnacks] = useState([])
 
