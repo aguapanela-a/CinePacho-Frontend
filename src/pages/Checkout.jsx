@@ -11,7 +11,7 @@ import { saveOrderSnapshot } from '../utils/orderSnapshot'
  * Función auxiliar para mapear el carrito al formato requerido por el backend.
  * Extrae screeningId del primer ticket, y los seatIds y snacks reales.
  */
-function mapCartToPaymentData(cart) {
+function mapCartToPaymentData(cart, defaultMultiplexId = null) {
   const seats = []
   const snacksMap = new Map()
   let screeningId = null
@@ -27,6 +27,7 @@ function mapCartToPaymentData(cart) {
         item.seatIds.forEach((seatId) => seats.push({ seatId }))
       }
     } else if (item.type === 'snack') {
+      const snackMultiplexId = item.multiplexId || defaultMultiplexId
       if (snacksMap.has(item.id)) {
         const existing = snacksMap.get(item.id)
         existing.quantity += item.qty
@@ -34,6 +35,7 @@ function mapCartToPaymentData(cart) {
         snacksMap.set(item.id, {
           snackId: item.id,
           quantity: item.qty,
+          ...(snackMultiplexId ? { multiplexId: snackMultiplexId } : {}),
         })
       }
     }
@@ -68,10 +70,6 @@ export default function Checkout() {
   const [buyerEmail, setBuyerEmail] = useState('')
   const [shippingErrors, setShippingErrors] = useState({})
 
-  const handlePaymentSuccess = () => {
-    saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo, buyerEmail: isEmployee ? buyerEmail : undefined })
-  }
-
   const [isProcessing, setIsProcessing] = useState(false)
   const [intentError, setIntentError] = useState(null)
 
@@ -89,11 +87,21 @@ export default function Checkout() {
     setIntentError(null)
 
     try {
-      const paymentData = mapCartToPaymentData(cart)
+      const defaultMultiplexId = user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
+      const paymentData = mapCartToPaymentData(cart, defaultMultiplexId)
       const buyerEmailToSend = isEmployeeOrManager ? buyerEmail.trim() : null
 
       if (!paymentData.screeningId) {
         setIntentError('No se encontró la función de la compra. Por favor revisa el carrito.')
+        setIsProcessing(false)
+        return
+      }
+
+      const ticketQuantity = cart
+        .filter(item => item.type === 'ticket')
+        .reduce((count, item) => count + (item.qty || 0), 0)
+      if (ticketQuantity > 0 && paymentData.seats.length !== ticketQuantity) {
+        setIntentError('Debes seleccionar asientos para todas las boletas antes de pagar.')
         setIsProcessing(false)
         return
       }

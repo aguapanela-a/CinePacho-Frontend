@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { getAllSnacks, createSnack, updateSnack } from '../../services/snackService'
+import { getAdminSnacks, createSnack, updateSnack } from '../../services/snackService'
 
 const EMPTY_FORM = { nameSnack: '', descriptionSnack: '', priceSnack: '', quantitySnack: '' }
 
@@ -23,7 +23,7 @@ export default function AdminSnacks() {
     setLoading(true)
     setError(null)
     try {
-      const data = await getAllSnacks()
+      const data = await getAdminSnacks()
       setSnacks(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message)

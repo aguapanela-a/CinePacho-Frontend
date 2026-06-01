@@ -15,6 +15,12 @@ export const registerEmployee = (data) =>
     body: JSON.stringify(data),
   })
 
+export const updateEmployee = (data) =>
+  apiFetch('/api/admin/update_employee', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+
 /**
  * PUT /api/checkout/employee/billing/{billingId}/scan
  * Escanea el código QR de una factura para validar la entrada.

@@ -11,6 +11,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8010',
         changeOrigin: true,
+        bypass: (req) => {
+          if (req.method === 'GET' && req.url?.startsWith('/api/checkout/stripe/')) {
+            return '/index.html'
+          }
+        },
       },
       // Proxy para los endpoints de administración del backend
       '/admin': {

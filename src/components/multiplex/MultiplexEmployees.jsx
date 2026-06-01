@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Users,
   Plus,
@@ -9,7 +9,8 @@ import {
   ShieldAlert,
   X,
 } from 'lucide-react'
-import { getEmployeesByMultiplex, getMultiplexById } from '../../data/mockMultiplexData'
+import { getEmployeesByMultiplex } from '../../data/mockMultiplexData'
+import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
 
 const ALL_ROLES = ['Cajero', 'Supervisor', 'Proyeccionista', 'Encargado de Snacks']
@@ -23,9 +24,15 @@ export default function MultiplexEmployees({
   canAddEmployee = true,
 }) {
   const { t } = useLanguage()
-  const multiplex = getMultiplexById(multiplexId)
-  
+  const [multiplex, setMultiplex] = useState(null)
   const [employees, setEmployees] = useState(() => getEmployeesByMultiplex(multiplexId))
+
+  useEffect(() => {
+    if (!multiplexId) return
+    getMultiplexById(multiplexId)
+      .then(data => setMultiplex(data))
+      .catch(() => setMultiplex(null))
+  }, [multiplexId])
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('Todos')
   const [statusFilter, setStatusFilter] = useState('Activos')

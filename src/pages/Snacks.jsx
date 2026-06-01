@@ -7,7 +7,7 @@ import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
 export default function Snacks() {
-  const { addToCart } = useApp()
+  const { addToCart, user } = useApp()
   const { t } = useLanguage()
   const toast = useToast()
 
@@ -19,8 +19,17 @@ export default function Snacks() {
     const fetchSnacks = async () => {
       setLoading(true)
       setError(null)
+      const multiplexId = user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
+
+      if (!multiplexId) {
+        setSnacks([])
+        setError('Multiplex no definido. Inicia sesión o configura VITE_DEFAULT_MULTIPLEX_ID en el entorno.')
+        setLoading(false)
+        return
+      }
+
       try {
-        const data = await getAllSnacks()
+        const data = await getAllSnacks(multiplexId)
         setSnacks(Array.isArray(data) ? data : [])
       } catch (err) {
         setError(err.message)
@@ -29,7 +38,7 @@ export default function Snacks() {
       }
     }
     fetchSnacks()
-  }, [])
+  }, [user])
 
   // Mapea los campos del backend al formato que espera el carrito para que AppContext lo normalice
   const toCartItem = (snack) => {
@@ -41,6 +50,7 @@ export default function Snacks() {
       type: 'snack',
       showtime: null, // Los snacks no tienen showtime
       image: snack.imageUrl || null,
+      multiplexId: user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
   }
 

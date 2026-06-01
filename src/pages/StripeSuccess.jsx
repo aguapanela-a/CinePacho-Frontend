@@ -11,7 +11,8 @@ export default function StripeSuccess() {
 
   // Esta es la ruta frontend de retorno de Stripe.
   // Stripe debe redirigir aquí con success_url = /stripe/success.
-  // El pago se confirma usando el paymentId que el backend retornó y guardó antes de ir a Stripe.
+  // El pago se confirma llamando al backend exacto: POST /api/checkout/stripe/success.
+  // El pagoId se obtiene de la URL o de localStorage, y el checkoutRequest se guarda en localStorage.
   useEffect(() => {
     const confirmPayment = async () => {
       const urlPaymentId = searchParams.get('paymentId')
@@ -63,13 +64,6 @@ export default function StripeSuccess() {
       >
         Regresar al checkout
       </button>
-    </div>
-  )
-}
-    <div className="min-h-screen bg-carbon flex flex-col items-center justify-center text-white">
-      <Loader2 size={48} className="animate-spin text-green-400 mb-4" />
-      <h2 className="text-2xl font-display uppercase tracking-widest">Confirmando Pago...</h2>
-      <p className="text-text-secondary mt-2">Por favor espere mientras validamos su pago.</p>
     </div>
   )
 }
