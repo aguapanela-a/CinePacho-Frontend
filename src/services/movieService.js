@@ -28,9 +28,7 @@ export const getMovieSelectorsById = (multiplexId, movieId) =>
  * GET /topRatedMovies
  * Obtiene las 10 mejores películas (Público)
  */
-export const getTopRatedMovies = () =>
-  apiFetch('/topRatedMovies')
-
+export const getTopRatedMovies = () => apiFetch('/api/topRatedMovies')
 /**
  * GET /api/movie/trailer/{movieId}
  * Obtiene el key de YouTube del tráiler de la película.
