@@ -97,15 +97,7 @@ export default function AdminEmployees() {
     loadMultiplexes()
   }, [])
 
-  const filteredEmployees = employees.filter((employee) =>
-    employee.name.toLowerCase().includes(search.toLowerCase()) ||
-    employee.email.toLowerCase().includes(search.toLowerCase()) ||
-    employee.multiplex.toLowerCase().includes(search.toLowerCase())
-
-
-
-
-  )
+  
 
 //confirmar borrar empleados
 
@@ -199,21 +191,6 @@ const handleEditEmployee = () => {
       multiplexId: lockedMultiplexId || ''
     })
 
-
-    // initialEmployees.push(
-    //   {
-    //     id: Math.floor(Math.random() * 10000) + 4, // ID aleatorio para demo
-    //     nombre: newEmployee.name,
-    //     correo: newEmployee.email,
-    //     telefono: newEmployee.phoneNumber,
-    //     cargo: newEmployee.rol,
-    //     multiplex: finalMultiplexId,
-    //     fechaContrato: newEmployee.fechaContrato,
-    //     fechaRotacion: Date.now(),
-    //     estado: 'Activo'
-    //   }
-    // )
-
     setIsModalOpen(false)
   } catch (err) {
     console.error(err)
@@ -300,10 +277,6 @@ const handleEditEmployee = () => {
                   Fecha Contrato
                 </th>
 
-                <th className="text-left px-6 py-4 text-xs font-bold tracking-widest text-text-secondary uppercase">
-                  Estado
-                </th>
-
                 <th className="text-center px-6 py-4 text-xs font-bold tracking-widest text-text-secondary uppercase">
                   Acciones
                 </th>
@@ -311,9 +284,9 @@ const handleEditEmployee = () => {
             </thead>
 
             <tbody>
-              {filteredEmployees.map((employee) => (
+              {employees.map((employee) => (
                 <tr
-                  key={employee.id}
+                  key={employee.uniqueCode}
                   className="border-b border-border/30 hover:bg-carbon/40 transition-colors"
                 >
                   <td className="px-6 py-5">
@@ -328,7 +301,7 @@ const handleEditEmployee = () => {
                         </p>
 
                         <p className="text-xs text-text-secondary">
-                          ID #{employee.id}
+                          ID #{employee.uniqueCode}
                         </p>
                       </div>
                     </div>
@@ -351,14 +324,14 @@ const handleEditEmployee = () => {
                   <td className="px-6 py-5">
                     <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 text-gold px-3 py-1.5 rounded-full text-sm font-bold">
                       <BadgeCheck size={14} />
-                      {employee.rol}
+                      {employee.role}
                     </div>
                   </td>
 
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2 text-sm">
                       <Building2 size={15} className="text-magenta" />
-                      {employee.multiplex}
+                      {employee.nameMultiplex}
                     </div>
                   </td>
 
@@ -385,18 +358,6 @@ const handleEditEmployee = () => {
                         return null;
                       })()}
                     </div>
-                  </td>
-
-                  <td className="px-6 py-5">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        employee.estado === 'Activo'
-                          ? 'bg-green-500/15 text-green-400 border border-green-500/20'
-                          : 'bg-red-500/15 text-red-400 border border-red-500/20'
-                      }`}
-                    >
-                      {employee.estado}
-                    </span>
                   </td>
 
                   <td className="px-6 py-5">
@@ -430,7 +391,7 @@ const handleEditEmployee = () => {
           </table>
         </div>
 
-         {filteredEmployees.length === 0 && (
+         {employees.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-text-secondary">
               No se encontraron empleados.
@@ -780,11 +741,11 @@ const handleEditEmployee = () => {
           </label>
 
           <select
-            value={employeeToEdit?.cargo || ''}
+            value={employeeToEdit?.rol || ''}
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
-                cargo: e.target.value,
+                rol: e.target.value,
               })
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
