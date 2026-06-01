@@ -51,10 +51,13 @@ export const getMovieListingByMultiplex = (multiplexId) =>
  * @param {string} query - Texto de búsqueda
  * @param {number} page - Número de página para la paginación
  */
-export const searchMovies = (query, page = 1) =>
-  apiFetch(
-    `/api/admin/movie/search?query=${encodeURIComponent(query)}&page=${page}`
-  )
+export const searchMovies = (query, page = 1) => {
+  const params = new URLSearchParams({
+    query: query?.trim() || '',
+    page: String(page),
+  })
+  return apiFetch(`/api/admin/movie/search?${params.toString()}`)
+}
 
 /**
  * POST seleccionar película
