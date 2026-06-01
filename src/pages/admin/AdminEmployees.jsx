@@ -13,59 +13,36 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
-import { registerEmployee } from '../../services/employeeService'
+import { registerEmployee, getEmployees } from '../../services/employeeService'
 import { getAllMultiplexes } from '../../services/multiplexService'
 import { useApp } from '../../context/useApp'
 
 
 
-const initialEmployees = [
-  // {
-  //   id: 1,
-  //   nombre: 'Laura González',
-  //   correo: 'laura@cinepacho.com',
-  //   telefono: '3001234567',
-  //   cargo: 'Cajero',
-  //   multiplex: 'Titán',
-  //   estado: 'Activo',
-  //   fechaContrato: '2024-01-15',
-  //   fechaRotacion: '2024-04-15',
-  // },
-  // {
-  //   id: 2,
-  //   nombre: 'Carlos Ramírez',
-  //   correo: 'carlos@cinepacho.com',
-  //   telefono: '3119876543',
-  //   cargo: 'Director',
-  //   multiplex: 'Unicentro',
-  //   estado: 'Activo',
-  //   fechaContrato: '2023-06-01',
-  //   fechaRotacion: '2023-09-01',
-  // },
-  // {
-  //   id: 3,
-  //   nombre: 'Ana Torres',
-  //   correo: 'ana@cinepacho.com',
-  //   telefono: '3204567890',
-  //   cargo: 'Despachador de comida',
-  //   multiplex: 'Gran Estación',
-  //   estado: 'Inactivo',
-  //   fechaContrato: '2024-02-20',
-  //   fechaRotacion: '2024-05-20',
-  // },
-]
-
 export default function AdminEmployees() {
   const { user } = useApp()
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [employees, setEmployees] = useState(initialEmployees)
+  const [employees, setEmployees] = useState([])
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [employeeToEdit, setEmployeeToEdit] = useState(null)
   const [multiplexes, setMultiplexes] = useState([])
   const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
+
+  useEffect(() => {
+  const loadEmployees = async () => {
+    try {
+      const data = await getEmployees()
+      setEmployees(data)
+    } catch (error) {
+      console.error('Error cargando empleados:', error)
+    }
+  }
+
+  loadEmployees()
+}, [])
 
   const [newEmployee, setNewEmployee] = useState({
     email: '',
@@ -204,7 +181,7 @@ const handleEditEmployee = () => {
       multiplexId: finalMultiplexId
     }
 
-    
+
     console.log('Payload enviado:', payload)
 
     await registerEmployee(payload)

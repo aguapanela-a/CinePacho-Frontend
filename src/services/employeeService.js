@@ -9,6 +9,12 @@ import { apiFetch } from './api'
  * POST /api/admin/register_employee
  * Registra un nuevo empleado o manager.
  */
+export const getEmployees = () =>
+  apiFetch('/api/admin/employees',{
+    method: 'GET',
+  })
+
+
 export const registerEmployee = (data) =>
   apiFetch('/api/admin/register_employee', {
     method: 'POST',
