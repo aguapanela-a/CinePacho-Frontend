@@ -2,6 +2,22 @@ import { useState } from 'react'
 import { AppContext } from './appContextObject'
 import { formatCurrency, getUnitPrice } from '../utils/formatCurrency'
 
+// Normalizar roles que el backend devuelva en diferentes formatos
+function normalizeUserType(rawRole) {
+  if (!rawRole) return 'BUYER'
+  const normalized = rawRole.toUpperCase().trim()
+  
+  // Mapa de valores comunes a valores esperados
+  const roleMap = {
+    'ADMIN': 'ADMIN', 'ADMIN_USER': 'ADMIN', 'SYSTEM_ADMIN': 'ADMIN', 'ADMINISTRATOR': 'ADMIN',
+    'MANAGER': 'MANAGER', 'MANAGER_USER': 'MANAGER', 'GERENTE': 'MANAGER',
+    'EMPLOYEE': 'EMPLOYEE', 'EMPLOYEE_USER': 'EMPLOYEE', 'CAJERO': 'EMPLOYEE', 'CASHIER': 'EMPLOYEE',
+    'BUYER': 'BUYER', 'BUYER_USER': 'BUYER', 'CUSTOMER': 'BUYER', 'CLIENTE': 'BUYER',
+  }
+  
+  return roleMap[normalized] || normalized // Si no está en el mapa, devolver como está
+}
+
 function normalizeCartItem(item) {
   const qty = item.qty || 1
   // If unitPrice is already provided (from SeatSelector), use it directly
@@ -31,8 +47,11 @@ export function AppProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
 
   const loginUser = (authResponse) => {
-    const { token: jwt, userType, name, multiplexId } = authResponse
-    const userData = { name, userType, multiplexId }
+    const { token: jwt, userType, role, name, multiplexId } = authResponse
+    // Si el backend devuelve 'role' en lugar de 'userType', usar 'role'
+    const rawRole = userType || role
+    const finalUserType = normalizeUserType(rawRole)
+    const userData = { name, userType: finalUserType, multiplexId }
 
     localStorage.setItem('cinepacho_token', jwt)
     localStorage.setItem('cinepacho_user', JSON.stringify(userData))

@@ -100,6 +100,8 @@ export default function Login() {
 
       // Respuesta exitosa del backend (AuthResponseDTO): { token, userType, name }
       const data = await res.json()
+      console.log('🔍 Backend devolvió:', data) // DEBUG: Ver qué devuelve el backend
+      console.log('🔍 userType:', data.userType) // DEBUG: Verificar el campo
       loginUser(data)
 
       // Redirección inteligente según el rol detectado por el backend

@@ -7,7 +7,9 @@
  *  - Lanzar errores HTTP descriptivos para que los servicios los capturen
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL// Vite proxy redirige /admin → localhost:8010
+// En desarrollo: Vite proxy redirige /api y /admin → localhost:8010
+// En producción (Vercel): usa la URL del backend desde .env (Railway, Heroku, etc.)
+const BASE_URL = import.meta.env.VITE_API_URL || ''
 
 /**
  * Retorna los headers estándar incluyendo el JWT si existe en localStorage.

@@ -15,6 +15,10 @@ export const getAllSnacks = async () => {
   }
 }
 
+/** GET /api/admin/snacks — Lista completa de snacks (ADMIN, MANAGER) */
+export const getAdminSnacks = () =>
+  apiFetch('/api/admin/snacks')
+
 export const getSnackById = (id) =>
   apiFetch(`/api/admin/snacks/${id}`)
 

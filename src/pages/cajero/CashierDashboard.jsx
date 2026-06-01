@@ -14,7 +14,7 @@ import { getAllSnacks } from '../../services/snackService'
 import { createCheckoutSession } from '../../services/paymentService'
 import { scanTicket } from '../../services/employeeService'
 import { validateVoucher } from '../../services/pointsService'
-import { searchCustomerByQuery } from '../../services/customerService'
+// Customer search endpoint no existe en backend actual.
 import { saveOrderSnapshot } from '../../utils/orderSnapshot'
 
 export default function CashierDashboard() {
@@ -24,6 +24,7 @@ export default function CashierDashboard() {
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
+    const CUSTOMER_SEARCH_ENABLED = false
   const [movies, setMovies] = useState([])
   const [snacks, setSnacks] = useState([])
 
@@ -185,18 +186,11 @@ export default function CashierDashboard() {
   const total = Math.max(0, subtotal - discount)
 
   const handleSearchCustomer = async () => {
-    if (!searchCustomer.trim()) return
-    try {
-      const found = await searchCustomerByQuery(searchCustomer.trim())
-      if (found) {
-        setActiveCustomer(found)
-        setSearchCustomer('')
-      } else {
-        toast.error(t('cashier.customerNotFound'))
-      }
-    } catch {
-      toast.error(t('cashier.customerNotFound'))
+    if (!CUSTOMER_SEARCH_ENABLED) {
+      toast.error('Busqueda de clientes no disponible en el backend actual.')
+      return
     }
+    if (!searchCustomer.trim()) return
   }
 
   const handleCheckout = async () => {
@@ -470,11 +464,13 @@ export default function CashierDashboard() {
                       onChange={(e) => setSearchCustomer(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearchCustomer()}
                       className="w-full bg-carbon border border-border/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-gold transition-colors"
+                      disabled={!CUSTOMER_SEARCH_ENABLED}
                     />
                   </div>
                   <button
                     onClick={handleSearchCustomer}
-                    className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+                    className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer disabled:opacity-50"
+                    disabled={!CUSTOMER_SEARCH_ENABLED}
                   >
                     Buscar
                   </button>

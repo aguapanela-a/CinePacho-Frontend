@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Users,
@@ -14,6 +14,8 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { registerEmployee } from '../../services/employeeService'
+import { getAllMultiplexes } from '../../services/multiplexService'
+import { useApp } from '../../context/useApp'
 
 
 
@@ -54,6 +56,7 @@ const initialEmployees = [
 ]
 
 export default function AdminEmployees() {
+  const { user } = useApp()
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [employees, setEmployees] = useState(initialEmployees)
@@ -61,20 +64,61 @@ export default function AdminEmployees() {
   const [employeeToDelete, setEmployeeToDelete] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [employeeToEdit, setEmployeeToEdit] = useState(null)
+  const [multiplexes, setMultiplexes] = useState([])
+  const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
 
   const [newEmployee, setNewEmployee] = useState({
     nombre: '',
     correo: '',
     telefono: '',
     cargo: '',
-    multiplex: '',
     password: '',
-    identityCard: '', // Corrected typo
+    identityCard: '',
     salary: '',
     fechaContrato: '',
-  });
+    userType: 'EMPLOYEE',
+    multiplexId: '',
+    multiplexName: '',
+  })
   const [creating, setCreating] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
+
+  const openCreateEmployee = () => {
+    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
+    const lockedMultiplex = multiplexes.find((m) => (m.idMultiplex || m.id) === lockedMultiplexId)
+
+    setNewEmployee((prev) => ({
+      ...prev,
+      nombre: '',
+      correo: '',
+      telefono: '',
+      cargo: '',
+      password: '',
+      identityCard: '',
+      salary: '',
+      fechaContrato: '',
+      userType: 'EMPLOYEE',
+      multiplexId: lockedMultiplexId || '',
+      multiplexName: lockedMultiplex?.nameMultiplex || '',
+    }))
+    setErrorForm(null)
+    setIsModalOpen(true)
+  }
+
+  useEffect(() => {
+    const loadMultiplexes = async () => {
+      setLoadingMultiplexes(true)
+      try {
+        const data = await getAllMultiplexes()
+        setMultiplexes(Array.isArray(data) ? data : [])
+      } catch {
+        setMultiplexes([])
+      } finally {
+        setLoadingMultiplexes(false)
+      }
+    }
+    loadMultiplexes()
+  }, [])
 
   const filteredEmployees = employees.filter((employee) =>
     employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -119,16 +163,20 @@ const handleEditEmployee = () => {
 
 //Crear empleados local
   const handleCreateEmployee = async () => {
+    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
+    const finalMultiplexId = lockedMultiplexId || newEmployee.multiplexId
+
     if (
       !newEmployee.nombre ||
       !newEmployee.correo ||
       !newEmployee.telefono ||
       !newEmployee.cargo ||
-      !newEmployee.multiplex ||
       !newEmployee.password ||
-      !newEmployee.identityCard || // Corrected typo here
+      !newEmployee.identityCard ||
       !newEmployee.salary ||
-      !newEmployee.fechaContrato
+      !newEmployee.fechaContrato ||
+      !newEmployee.userType ||
+      !finalMultiplexId
     ) {
       setErrorForm('Todos los campos son obligatorios')
       return
@@ -142,15 +190,18 @@ const handleEditEmployee = () => {
         name: newEmployee.nombre,
         email: newEmployee.correo,
         password: newEmployee.password,
-        userType: 'EMPLOYEE',
-        indentityCard: newEmployee.identityCard, 
+        userType: newEmployee.userType,
+        identityCard: newEmployee.identityCard,
         phoneNumber: newEmployee.telefono,
         salary: parseFloat(newEmployee.salary),
         position: newEmployee.cargo,
-        // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
-      };
+        multiplexId: finalMultiplexId,
+      }
 
-        const response = await registerEmployee(payload)
+        await registerEmployee(payload)
+
+        const multiplexMatch = multiplexes.find((m) => (m.idMultiplex || m.id) === finalMultiplexId)
+        const multiplexName = multiplexMatch?.nameMultiplex || newEmployee.multiplexName || '—'
 
         setEmployees((prev) => [
           ...prev,
@@ -160,7 +211,7 @@ const handleEditEmployee = () => {
             correo: newEmployee.correo,
             telefono: newEmployee.telefono,
             cargo: newEmployee.cargo,
-            multiplex: newEmployee.multiplex,
+            multiplex: multiplexName,
             estado: 'Activo',
             fechaContrato: newEmployee.fechaContrato,
           },
@@ -171,11 +222,13 @@ const handleEditEmployee = () => {
           correo: '',
           telefono: '',
           cargo: '',
-          multiplex: '',
           password: '',
           identityCard: '',
           salary: '',
           fechaContrato: '',
+          userType: 'EMPLOYEE',
+          multiplexId: lockedMultiplexId || '',
+          multiplexName: '',
         })
 
         setIsModalOpen(false)
@@ -210,8 +263,8 @@ const handleEditEmployee = () => {
           </div>
         </div>
 
-     <button
-        onClick={() => setIsModalOpen(true)}
+    <button
+      onClick={openCreateEmployee}
         className="flex items-center justify-center gap-2 bg-gradient-to-r from-magenta to-vinotinto hover:opacity-90 transition-all text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 cursor-pointer"
         >
         <Plus size={18} />
@@ -514,6 +567,25 @@ const handleEditEmployee = () => {
 
               <div>
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Tipo de usuario
+                </label>
+                <select
+                  value={newEmployee.userType}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      userType: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                >
+                  <option value="EMPLOYEE">EMPLOYEE</option>
+                  <option value="MANAGER">MANAGER</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
                   Contraseña
                 </label>
                 <input
@@ -577,22 +649,27 @@ const handleEditEmployee = () => {
                 </label>
 
                 <select
-                  value={newEmployee.multiplex}
-                  onChange={(e) =>
+                  value={newEmployee.multiplexId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value
+                    const selected = multiplexes.find((m) => (m.idMultiplex || m.id) === selectedId)
                     setNewEmployee({
                       ...newEmployee,
-                      multiplex: e.target.value,
+                      multiplexId: selectedId,
+                      multiplexName: selected?.nameMultiplex || '',
                     })
-                  }
+                  }}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  disabled={user?.userType === 'MANAGER'}
                 >
-                  <option value="">Seleccionar multiplex</option>
-                  <option value="Titán">Titán</option>
-                  <option value="Unicentro">Unicentro</option>
-                  <option value="Gran Estación">Gran Estación</option>
-                  <option value="Embajador">Embajador</option>
-                  <option value="Plaza Central">Plaza Central</option>
-                  <option value="Las Américas">Las Américas</option>
+                  <option value="">
+                    {loadingMultiplexes ? 'Cargando...' : 'Seleccionar multiplex'}
+                  </option>
+                  {multiplexes.map((m) => (
+                    <option key={m.idMultiplex || m.id} value={m.idMultiplex || m.id}>
+                      {m.nameMultiplex}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
