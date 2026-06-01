@@ -26,19 +26,52 @@ export default function SeatSelector({
 
   const [occupiedSeats, setOccupiedSeats] = useState(new Set())
   const [backendSeats, setBackendSeats] = useState([])
+  const [seatTimers, setSeatTimers] = useState({})
+  const [tick, setTick] = useState(0)
+
+  const reloadSeats = async () => {
+    if (!roomId || !screeningId) return
+    const data = await getSeatsByRoom(roomId, screeningId)
+    setBackendSeats(data)
+    const occupied = new Set(
+      data.filter(s => s.status === 'BLOCKED' || s.status === 'SOLD').map(s => s.idSeat)
+    )
+    setOccupiedSeats(occupied)
+  }
 
   useEffect(() => {
     if (!roomId || !screeningId) return
-    getSeatsByRoom(roomId, screeningId)
-      .then(data => {
-        setBackendSeats(data)
-        const occupied = new Set(
-          data.filter(s => s.status === 'BLOCKED' || s.status === 'SOLD').map(s => s.idSeat)
-        )
-        setOccupiedSeats(occupied)
+    reloadSeats().catch(err => console.error('Error loading seats:', err))
+  }, [roomId, screeningId])
+
+  useEffect(() => {
+    const interval = setInterval(() => setTick((prev) => prev + 1), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const formatRemainingTime = (expiry) => {
+    if (!expiry) return '--:--'
+    const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000))
+    const minutes = String(Math.floor(remaining / 60)).padStart(2, '0')
+    const seconds = String(remaining % 60).padStart(2, '0')
+    return `${minutes}:${seconds}`
+  }
+
+  useEffect(() => {
+    const expiredSeats = Object.entries(seatTimers)
+      .filter(([, expiry]) => expiry <= Date.now())
+      .map(([seatId]) => seatId)
+
+    if (expiredSeats.length > 0) {
+      setSeatTimers(prev => {
+        const next = { ...prev }
+        expiredSeats.forEach(id => delete next[id])
+        return next
       })
-      .catch(err => console.error('Error loading seats:', err))
-  }, [roomId])
+      setSelectedSeats(prev => prev.filter(id => !expiredSeats.includes(id)))
+      reloadSeats().catch(err => console.error('Error reloading seats after timer expiry:', err))
+    }
+  }, [tick, seatTimers])
 
   // Mapping A1...F10 to backend seat index (assuming sequential 1-60)
   const getBackendSeat = (rowStr, colInt) => {
@@ -48,24 +81,71 @@ export default function SeatSelector({
   }
 
   const toggleSeat = async (seatId) => {
-    if (occupiedSeats.has(seatId)) return
+    if (!roomId || !screeningId) return
 
-    if (selectedSeats.includes(seatId)) {
-      // Deseleccionar → llamar backend para desbloquear
+    const isSelected = selectedSeats.includes(seatId)
+    const backendSeat = backendSeats.find((seat) => seat.idSeat === seatId)
+    const isSold = backendSeat?.status === 'SOLD'
+    const isBlocked = backendSeat?.status === 'BLOCKED'
+    const isOccupied = isSold || (isBlocked && !isSelected)
+
+    if (isSelected) {
       try {
-        await toggleSeatStatus(seatId, screeningId)
-      } catch { /* si falla, igual quitamos local */ }
-      setSelectedSeats(prev => prev.filter(s => s !== seatId))
-    } else {
-      if (selectedSeats.length >= maxSeats) {
-        toast.error(t('seats.maxSeatsAlert', { max: maxSeats }))
-        return
-      }
-      // Seleccionar → llamar backend para bloquear (10 min)
-      try {
-        await toggleSeatStatus(seatId, screeningId)
-        setSelectedSeats(prev => [...prev, seatId])
+        const result = await toggleSeatStatus(seatId, screeningId)
+        setSelectedSeats(prev => prev.filter(s => s !== seatId))
+        setSeatTimers(prev => {
+          const next = { ...prev }
+          delete next[seatId]
+          return next
+        })
+        await reloadSeats()
+        if (result?.status === 'AVAILABLE') {
+          toast.success(t('seats.unblockedSuccess') || 'Silla liberada correctamente.')
+        }
       } catch (err) {
+        if (err.status === 409) {
+          toast.error(t('seats.conflictAlert') || 'La silla ya fue ocupada por otro usuario.')
+        } else {
+          toast.error(err.message || 'No se pudo liberar la silla')
+        }
+      }
+      return
+    }
+
+    if (isOccupied) {
+      toast.error(t('seats.occupiedAlert') || 'La silla está ocupada o bloqueada por otro usuario.')
+      return
+    }
+
+    if (selectedSeats.length >= maxSeats) {
+      toast.error(t('seats.maxSeatsAlert', { max: maxSeats }))
+      return
+    }
+
+    try {
+      const result = await toggleSeatStatus(seatId, screeningId)
+      if (result?.status === 'BLOCKED') {
+        setSelectedSeats(prev => [...prev, seatId])
+        const expiry = result.expiresAt ? new Date(result.expiresAt).getTime() : Date.now() + 10 * 60 * 1000
+        setSeatTimers(prev => ({
+          ...prev,
+          [seatId]: expiry,
+        }))
+      } else if (result?.status === 'AVAILABLE') {
+        setSelectedSeats(prev => prev.filter(s => s !== seatId))
+        setSeatTimers(prev => {
+          const next = { ...prev }
+          delete next[seatId]
+          return next
+        })
+      }
+      await reloadSeats()
+    } catch (err) {
+      if (err.status === 409) {
+        toast.error(t('seats.conflictAlert') || 'La silla ya fue ocupada por otro usuario.')
+      } else if (err.status === 400) {
+        toast.error(t('seats.invalidAlert') || 'Solicitud inválida al intentar bloquear la silla.')
+      } else {
         toast.error(err.message || 'No se pudo reservar la silla')
       }
     }
@@ -83,8 +163,14 @@ export default function SeatSelector({
 
   const getSeatClass = (seatId) => {
     const pref = isPreferential(seatId)
-    if (occupiedSeats.has(seatId)) return 'bg-red-500/10 border-red-500/20 text-transparent cursor-not-allowed opacity-50'
     if (selectedSeats.includes(seatId)) return 'bg-gradient-to-t from-magenta to-vinotinto border-magenta shadow-[0_0_15px_rgba(200,22,122,0.5)] text-white'
+
+    const backendSeat = backendSeats.find((seat) => seat.idSeat === seatId)
+    const isSold = backendSeat?.status === 'SOLD'
+    const isBlocked = backendSeat?.status === 'BLOCKED'
+    if (isSold || isBlocked || occupiedSeats.has(seatId)) {
+      return 'bg-red-500/10 border-red-500/20 text-transparent cursor-not-allowed opacity-50'
+    }
 
     // Estilos distintos para Preferencial (borde dorado) vs General (borde blanco)
     if (pref) {
@@ -135,7 +221,10 @@ export default function SeatSelector({
                   const seatId = `${row}${col}`
                   const backendSeat = getBackendSeat(row, col)
                   const actualSeatId = backendSeat ? backendSeat.idSeat : seatId
-                  const isOccupied = backendSeat ? (backendSeat.status === 'BLOCKED' || backendSeat.status === 'SOLD') : occupiedSeats.has(seatId)
+                  const isSelected = selectedSeats.includes(actualSeatId)
+                  const isSold = backendSeat?.status === 'SOLD'
+                  const isBlocked = backendSeat?.status === 'BLOCKED'
+                  const isOccupied = isSold || (isBlocked && !isSelected)
                   const isAisle = col === 3 || col === 7 // Pasillo después de columnas 3 y 7
 
                   return (
@@ -202,6 +291,19 @@ export default function SeatSelector({
               <p className="text-gold font-display text-xl tracking-wider">
                 ${total.toLocaleString('es-CO')}
               </p>
+            </div>
+          )}
+          {selectedSeats.length > 0 && (
+            <div className="mt-3 text-xs text-text-secondary space-y-1">
+              <p className="font-bold uppercase tracking-widest">{t('seats.blockedTimerLabel') || 'Tiempo restante por asiento'}</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedSeats.map(seatId => (
+                  <span key={seatId} className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-border/60 px-3 py-1 text-[11px] text-text-secondary">
+                    <strong className="text-white">{seatId}</strong>
+                    {formatRemainingTime(seatTimers[seatId])}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
           <Button

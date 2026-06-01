@@ -15,6 +15,7 @@ import { createCheckoutSession } from '../../services/paymentService'
 import { scanTicket } from '../../services/employeeService'
 import { validateVoucher } from '../../services/pointsService'
 import { searchCustomerByQuery } from '../../services/customerService'
+import { saveOrderSnapshot } from '../../utils/orderSnapshot'
 
 export default function CashierDashboard() {
   const { user, logoutUser, cart, addToCart, removeFromCart, setCart } = useApp() // Usar el carrito global
@@ -267,6 +268,7 @@ export default function CashierDashboard() {
         if (result.paymentId) {
           localStorage.setItem('cinepacho_payment_id', result.paymentId)
         }
+        saveOrderSnapshot({ cart, cartTotal: total, pendingPoints: 0, buyerEmail, shippingInfo: null })
         window.location.href = result.sessionUrl
       } else {
         toast.error('Error al generar sesión de pago.')

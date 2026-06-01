@@ -40,7 +40,7 @@ function mapCartToPaymentData(cart) {
   })
 
   return {
-    screeningId: screeningId || '850e8400-e29b-41d4-a716-446655440000', // fallback
+    screeningId,
     seats,
     snacks: Array.from(snacksMap.values()),
   }
@@ -54,9 +54,10 @@ function mapCartToPaymentData(cart) {
  * "pendiente de conexión al backend" con un aviso claro.
  */
 export default function Checkout() {
-  const { cart, cartTotal, pendingPoints } = useApp()
+  const { cart, cartTotal, pendingPoints, user } = useApp()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const isEmployeeOrManager = user?.userType === 'EMPLOYEE' || user?.userType === 'MANAGER'
 
   const [shippingInfo, setShippingInfo] = useState({
     address: '',
@@ -64,10 +65,11 @@ export default function Checkout() {
     postalCode: '',
     phone: ''
   })
+  const [buyerEmail, setBuyerEmail] = useState('')
   const [shippingErrors, setShippingErrors] = useState({})
 
   const handlePaymentSuccess = () => {
-    saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo })
+    saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo, buyerEmail: isEmployee ? buyerEmail : undefined })
   }
 
   const [isProcessing, setIsProcessing] = useState(false)
@@ -88,19 +90,38 @@ export default function Checkout() {
 
     try {
       const paymentData = mapCartToPaymentData(cart)
+      const buyerEmailToSend = isEmployeeOrManager ? buyerEmail.trim() : null
+
+      if (!paymentData.screeningId) {
+        setIntentError('No se encontró la función de la compra. Por favor revisa el carrito.')
+        setIsProcessing(false)
+        return
+      }
+
+      if (isEmployeeOrManager && !buyerEmailToSend) {
+        setIntentError('Debe ingresar el correo del comprador final antes de cobrar.')
+        setIsProcessing(false)
+        return
+      }
 
       const result = await createCheckoutSession(
         paymentData.screeningId,
         paymentData.seats,
-        paymentData.snacks
+        paymentData.snacks,
+        buyerEmailToSend
       )
 
+      const checkoutPayload = {
+        ...paymentData,
+        ...(buyerEmailToSend ? { buyerEmail: buyerEmailToSend } : {}),
+      }
+
       if (result.sessionUrl) {
-        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify(paymentData))
+        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify(checkoutPayload))
         if (result.paymentId) {
           localStorage.setItem('cinepacho_payment_id', result.paymentId)
         }
-        saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo })
+        saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo, buyerEmail: buyerEmailToSend })
         window.location.href = result.sessionUrl // Redirige al Hosted Checkout de Stripe
       } else {
         setIntentError('Error: No se recibió la URL de Stripe')
@@ -252,6 +273,25 @@ export default function Checkout() {
               {intentError && (
                 <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 mb-4">
                   <AlertCircle size={18} /> {intentError}
+                </div>
+              )}
+
+              {isEmployeeOrManager && (
+                <div className="mb-6">
+                  <label className="text-sm font-bold text-text-secondary block mb-2">
+                    {t('checkout.buyerEmailLabel') || 'Correo del comprador final'}
+                  </label>
+                  <input
+                    type="email"
+                    name="buyerEmail"
+                    value={buyerEmail}
+                    onChange={(e) => setBuyerEmail(e.target.value)}
+                    placeholder="cliente@correo.com"
+                    className="w-full bg-carbon border-2 rounded-xl px-4 py-3 text-text-primary placeholder-text-secondary/50 outline-none transition-all border-border/80 focus:border-magenta"
+                  />
+                  <p className="text-xs text-text-secondary mt-2">
+                    {t('checkout.buyerEmailHelp') || 'Este correo es obligatorio para cobros realizados por cajeros o empleados.'}
+                  </p>
                 </div>
               )}
 

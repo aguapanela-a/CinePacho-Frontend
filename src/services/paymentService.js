@@ -2,22 +2,23 @@
  * paymentService.js
  * Servicio de pagos — Stripe.
  *
- * El backend debe exponer POST /api/payments/create-intent
- * que retorne { clientSecret: "pi_xxx_secret_xxx" }.
+ * El backend debe exponer POST /api/checkout/stripe para crear la sesión
+ * de checkout y retornar { sessionUrl, paymentId, status }.
  *
- * Cuando el backend esté listo, este servicio se conecta sin
- * cambiar nada en los componentes de UI.5
+ * Stripe Checkout debe configurarse con:
+ *   success_url: https://<tu-dominio>/stripe/success
+ *   cancel_url:  https://<tu-dominio>/stripe/cancel
  */
 
 import { apiFetch } from './api'
 
 /**
- * Solicita al backend la creación de un PaymentIntent de Stripe.
- * @param {number} amount - Monto en pesos colombianos
- * @param {string} currency - Código de moneda ISO (default: 'cop')
+ * Solicita al backend la creación de una sesión de checkout de Stripe.
+ * @param {string} screeningId - ID de la función
  * @param {Array} seats - Array de objetos con { seatId }
  * @param {Array} snacks - Array de objetos con { snackId, quantity }
- * @returns {{ clientSecret: string }}
+ * @param {string|null} buyerEmail - Correo del comprador final para empleados
+ * @returns {{ sessionUrl: string, paymentId?: string, sessionId?: string }}
  */
 export const createCheckoutSession = (
   screeningId,

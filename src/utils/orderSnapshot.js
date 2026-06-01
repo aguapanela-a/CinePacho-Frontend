@@ -1,10 +1,10 @@
 const SNAPSHOT_KEY = 'cinepacho_order_snapshot'
 const SNAPSHOT_TTL_MS = 30 * 60 * 1000
 
-export function saveOrderSnapshot({ cart, cartTotal, pendingPoints }) {
+export function saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo, buyerEmail }) {
   sessionStorage.setItem(
     SNAPSHOT_KEY,
-    JSON.stringify({ cart, cartTotal, pendingPoints, at: Date.now() })
+    JSON.stringify({ cart, cartTotal, pendingPoints, shippingInfo, buyerEmail, at: Date.now() })
   )
 }
 

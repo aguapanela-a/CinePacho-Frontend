@@ -235,8 +235,8 @@ function AppLayout() {
           <Route path="/checkout" element={<CheckoutGuard><Checkout /></CheckoutGuard>} />
           <Route path="/confirmacion" element={<CheckoutGuard requireSnapshot><OrderConfirmation /></CheckoutGuard>} />
           
-          <Route path="/api/checkout/stripe/success" element={<StripeSuccess />} />
-          <Route path="/api/checkout/stripe/cancel" element={<StripeCancel />} />
+          <Route path="/stripe/success" element={<StripeSuccess />} />
+          <Route path="/stripe/cancel" element={<StripeCancel />} />
 
           {/* ── 404 No Encontrado ── */}
           <Route path="*" element={<NotFound />} />

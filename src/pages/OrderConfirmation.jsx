@@ -14,6 +14,8 @@ export default function OrderConfirmation() {
   const cart = snapshot?.cart ?? []
   const cartTotal = snapshot?.cartTotal ?? 0
   const pendingPoints = snapshot?.pendingPoints ?? livePoints
+  const buyerEmail = snapshot?.buyerEmail
+  const shippingInfo = snapshot?.shippingInfo
 
   useEffect(() => {
     if (pendingPoints > 0) {
@@ -55,6 +57,27 @@ export default function OrderConfirmation() {
 
         {cart.length > 0 && (
           <>
+            {/* Datos del comprador, si existen */}
+            {(buyerEmail || shippingInfo?.address) && (
+              <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 mb-6 text-left backdrop-blur-xl">
+                <h2 className="font-display tracking-widest uppercase text-sm text-text-secondary mb-4">
+                  {t('confirmation.customerData') || 'Datos de la compra'}
+                </h2>
+                {buyerEmail && (
+                  <p className="text-sm text-text-secondary mb-2">
+                    <span className="font-bold text-white">{t('confirmation.buyerEmail') || 'Correo del comprador'}:</span> {buyerEmail}
+                  </p>
+                )}
+                {shippingInfo?.address && (
+                  <>
+                    <p className="text-sm text-text-secondary">{shippingInfo.address}</p>
+                    <p className="text-sm text-text-secondary">{shippingInfo.city} • {shippingInfo.postalCode}</p>
+                    <p className="text-sm text-text-secondary">{shippingInfo.phone}</p>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Detalles de la Orden */}
             <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 mb-8 text-left backdrop-blur-xl">
               <h2 className="font-display tracking-widest uppercase text-sm text-text-secondary mb-4">

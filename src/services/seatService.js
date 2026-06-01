@@ -24,4 +24,4 @@ export const getSeatsByRoom = (roomId, screeningId) =>
  * @param {string} screeningId - UUID de la función
  */
 export const toggleSeatStatus = (seatId, screeningId) =>
-  apiFetch(`/api/seats/${seatId}/screening/${screeningId}/changeStatus`, { method: 'PUT' })
+  apiFetch(`/api/seats/${seatId}/changeStatus?screeningId=${screeningId}`, { method: 'PUT' })

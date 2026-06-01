@@ -6,6 +6,10 @@ export default function StripeCancel() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    localStorage.removeItem('cinepacho_checkout_payload')
+    localStorage.removeItem('cinepacho_payment_id')
+    sessionStorage.removeItem('cinepacho_order_snapshot')
+
     const timer = setTimeout(() => {
       navigate('/checkout', { replace: true })
     }, 2000)
