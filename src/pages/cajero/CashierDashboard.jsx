@@ -34,18 +34,20 @@ export default function CashierDashboard() {
   // Cargar datos
   useEffect(() => {
     const loadData = async () => {
+      const multiplexId = user?.multiplexId
+      if (!multiplexId) {
+        setMovies([])
+        setSnacks([])
+        return
+      }
+
       try {
-        const multiplexId = user?.multiplexId
-        if (!multiplexId) {
-          setMovies([])
-          return
-        }
         const moviesResp = await getMovieSelectorsByMultiplex(multiplexId)
         if (Array.isArray(moviesResp)) {
           setMovies(moviesResp.map(item => ({
-            id: item.movieInfo.id,
-            title: item.movieInfo.originalTitle,
-            posterUrl: item.movieInfo.posterPath,
+            id: item.movieInfo?.id,
+            title: item.movieInfo?.originalTitle,
+            posterUrl: item.movieInfo?.posterPath,
             screenings: item.screenings || [], // Guardar screenings reales
           })))
         } else {
@@ -61,7 +63,8 @@ export default function CashierDashboard() {
           setSnacks(snacksResp.map(s => ({
             id: s.idSnack, // UUID real del backend
             name: s.nameSnack,
-            price: s.priceSnack,
+            price: Number(s.priceSnack) || 0,
+            multiplexId,
             imageUrl: s.imageUrl || 'https://via.placeholder.com/150' // Placeholder para imágenes si no vienen del backend
           })))
         } else {
@@ -72,7 +75,7 @@ export default function CashierDashboard() {
       }
     }
     loadData()
-  }, [])
+  }, [user?.multiplexId])
 
   // Customer
   const [activeCustomer, setActiveCustomer] = useState(null)
@@ -180,7 +183,7 @@ export default function CashierDashboard() {
       type: 'snack',
       qty: 1,
       image: snack.imageUrl || null, // Asumiendo que snack tiene imageUrl
-      multiplexId: user?.multiplexId || null,
+      multiplexId: snack.multiplexId || user?.multiplexId || null,
     }
     addToCart(item)
   }

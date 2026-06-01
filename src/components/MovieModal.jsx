@@ -7,14 +7,14 @@ import MovieSummary from './movie-modal/MovieSummary'
 import ShowtimePicker from './movie-modal/ShowtimePicker'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
-import { showtimeDates, ticketFormats } from '../data/mockMoviesData'
+import { ticketFormats } from '../data/mockMoviesData'
 import { getMovieTrailer, getMovieSelectorsById } from '../services/movieService'
 import { getMovieReviews } from '../services/reviewService'
 import { Play, Star, MessageSquare } from 'lucide-react'
 
 export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex', multiplexId }) {
   const [step, setStep] = useState(1)
-  const [selectedDate, setSelectedDate] = useState(showtimeDates[0] || '')
+  const [selectedDate, setSelectedDate] = useState('')
   const [selectedFormat, setSelectedFormat] = useState(ticketFormats[0]?.fmt || '2D')
   const [selectedTime, setSelectedTime] = useState('')
   const [selectedScreening, setSelectedScreening] = useState(null)
@@ -74,6 +74,24 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   // Usar los screenings frescos del backend si existen, de lo contrario fallback a mock/cache
   const backendScreenings = liveScreenings || movie.screenings || []
 
+  const backendDates = backendScreenings.length > 0
+    ? [...new Set(
+        backendScreenings
+          .map((screening) => screening.screeningDate)
+          .filter(Boolean)
+          .map((screeningDate) => screeningDate.substring(0, 10))
+      )].sort()
+    : []
+
+  useEffect(() => {
+    if (backendDates.length === 0) return
+
+    if (!backendDates.includes(selectedDate)) {
+      setSelectedDate(backendDates[0])
+      setSelectedTime('')
+    }
+  }, [backendDates, selectedDate])
+
   const canProceedToSeats = selectedDate && selectedFormat && selectedTime
 
   const handleProceedToSeats = () => {
@@ -84,8 +102,9 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
       }
 
       const screening = backendScreenings.find(s => {
+        const screeningDate = s.screeningDate?.substring(0, 10)
         const time = s.screeningDate?.substring(11, 16) // "HH:mm"
-        return time === selectedTime && s.status === 'ACTIVE'
+        return screeningDate === selectedDate && time === selectedTime && s.status === 'ACTIVE'
       })
 
       if (!screening) {

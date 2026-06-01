@@ -54,9 +54,9 @@ export function AppProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
 
   const loginUser = (authResponse) => {
-    const { token: jwt, userType, name, multiplexId } = authResponse
+    const { token: jwt, userType, name, multiplexId, id } = authResponse
     const normalizedType = userType ? String(userType).toUpperCase() : userType
-    const userData = { name, userType: normalizedType, multiplexId }
+    const userData = { id, name, userType: normalizedType, multiplexId }
 
     localStorage.setItem('cinepacho_token', jwt)
     localStorage.setItem('cinepacho_user', JSON.stringify(userData))

@@ -7,6 +7,7 @@ import MovieCardSkeleton from '../components/MovieCardSkeleton'
 import MovieModal from '../components/MovieModal'
 import Button from '../components/Button'
 import { useLanguage } from '../context/useLanguage'
+import { useApp } from '../context/useApp'
 
 import { getMovieSelectorsByMultiplex, getTopRatedMovies } from '../services/movieService'
 
@@ -37,6 +38,8 @@ const getMultiplexId = (plexName) => {
   return MULTIPLEX_IDS[plexName]
 }
 
+const SELL_PORTAL_ROLES = ['BUYER', 'EMPLOYEE', 'MANAGER']
+
 export default function Home() {
   const [search, setSearch] = useState('')
   const [activePlex, setActivePlex] = useState('Todos')
@@ -47,7 +50,9 @@ export default function Home() {
   const [topMovies, setTopMovies] = useState([])
   const [loadError, setLoadError] = useState(null)
   const { t } = useLanguage()
+  const { user, token } = useApp()
   const navigate = useNavigate()
+  const canLoadMultiplexMovies = Boolean(token && user && SELL_PORTAL_ROLES.includes(user.userType))
 
   const handleSearchSubmit = (event) => {
     event.preventDefault()
@@ -58,15 +63,30 @@ export default function Home() {
 
   useEffect(() => {
     const fetchMovies = async () => {
+      setIsLoading(true)
+      setLoadError(null)
+
+      if (!canLoadMultiplexMovies) {
+        setMovies([])
+        setIsLoading(false)
+        return
+      }
+
       try {
         const multiplexId = getMultiplexId(activePlex)
+        if (!multiplexId) {
+          setMovies([])
+          setLoadError('No hay multiplex configurado para esta sede')
+          return
+        }
+
         const data = await getMovieSelectorsByMultiplex(multiplexId, search)
         const mappedMovies = Array.isArray(data)
           ? data.map(item => ({
-              id: item.id,
+              id: item.movieInfo?.id,
               title: item.movieInfo?.originalTitle || item.movieInfo?.title || 'Sin título',
               year: item.movieInfo?.releaseDate?.substring(0, 4) || 'N/A',
-              duration: item.movieInfo?.runtime ? `${item.movieInfo.runtime}m` : '120m',
+              duration: '120m',
               genre: item.movieInfo?.genreIds?.length > 0
                 ? item.movieInfo.genreIds[0].name
                 : 'N/A',
@@ -88,7 +108,7 @@ export default function Home() {
       }
     }
     fetchMovies()
-  }, [activePlex, search])
+  }, [activePlex, search, canLoadMultiplexMovies])
 
   // Cargar Top 10 películas (Público)
   useEffect(() => {
@@ -97,13 +117,13 @@ export default function Home() {
         const top = await getTopRatedMovies()
         if (Array.isArray(top)) {
           setTopMovies(top.map(item => ({
-            id: item.id,
+            id: item.idMovie,
             title: item.originalTitle || item.title,
-            year: item.releaseDate?.substring(0, 4) || 'N/A',
+            year: item.year || 'N/A',
             duration: '120m',
-            genre: item.genreIds && item.genreIds.length > 0 ? item.genreIds[0].name : 'N/A',
-            rating: item.voteAverage || 0,
-            synopsis: item.overview,
+            genre: Array.isArray(item.genres) && item.genres.length > 0 ? item.genres[0] : 'N/A',
+            rating: item.rating || 0,
+            synopsis: item.overview || '',
             posterUrl: item.posterPath,
             backdropUrl: item.backdropPath,
             multiplexes: ['Todos'],
@@ -287,9 +307,7 @@ export default function Home() {
                   key={plex}
                   onClick={() => {
                     if (activePlex !== plex) {
-                      setIsLoading(true)
                       setActivePlex(plex)
-                      setTimeout(() => setIsLoading(false), 500)
                     }
                   }}
                   className={`px-5 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer border ${activePlex === plex
@@ -363,7 +381,7 @@ export default function Home() {
       <MovieModal
         movie={selectedMovie}
         multiplexName={displayMultiplex}
-        multiplexId={MULTIPLEX_IDS[displayMultiplex]}
+        multiplexId={canLoadMultiplexMovies ? getMultiplexId(displayMultiplex) : null}
         onClose={() => setSelectedMovie(null)}
       />
     </div>

@@ -80,11 +80,22 @@ export default function SeatSelector({
     return backendSeats.find(s => s.seatNumber === seatNumber)
   }
 
+  const getBackendSeatById = (seatId) =>
+    backendSeats.find((seat) => seat.idSeat === seatId)
+
+  const getSeatLabel = (seatId) => {
+    const backendSeat = getBackendSeatById(seatId)
+    if (!backendSeat?.seatNumber) return seatId
+    const rowIndex = Math.floor((backendSeat.seatNumber - 1) / COLS)
+    const col = ((backendSeat.seatNumber - 1) % COLS) + 1
+    return `${ROWS[rowIndex] || ''}${col}`
+  }
+
   const toggleSeat = async (seatId) => {
     if (!roomId || !screeningId) return
 
     const isSelected = selectedSeats.includes(seatId)
-    const backendSeat = backendSeats.find((seat) => seat.idSeat === seatId)
+    const backendSeat = getBackendSeatById(seatId)
     const isSold = backendSeat?.status === 'SOLD'
     const isBlocked = backendSeat?.status === 'BLOCKED'
     const isOccupied = isSold || (isBlocked && !isSelected)
@@ -152,7 +163,8 @@ export default function SeatSelector({
   }
 
   const isPreferential = (seatId) => {
-    // Rows E and F are Preferential (20 seats), A-D are General (40 seats) = 60 seats total per room
+    const backendSeat = getBackendSeatById(seatId)
+    if (backendSeat?.type) return backendSeat.type === 'PREFERENTIAL'
     return seatId.startsWith('E') || seatId.startsWith('F')
   }
 
@@ -165,7 +177,7 @@ export default function SeatSelector({
     const pref = isPreferential(seatId)
     if (selectedSeats.includes(seatId)) return 'bg-gradient-to-t from-magenta to-vinotinto border-magenta shadow-[0_0_15px_rgba(200,22,122,0.5)] text-white'
 
-    const backendSeat = backendSeats.find((seat) => seat.idSeat === seatId)
+    const backendSeat = getBackendSeatById(seatId)
     const isSold = backendSeat?.status === 'SOLD'
     const isBlocked = backendSeat?.status === 'BLOCKED'
     if (isSold || isBlocked || occupiedSeats.has(seatId)) {
@@ -279,7 +291,7 @@ export default function SeatSelector({
           </p>
           <div className="flex items-center gap-2">
             <span className="text-white text-sm font-medium">
-              {selectedSeats.length > 0 ? selectedSeats.join(', ') : t('seats.none')}
+              {selectedSeats.length > 0 ? selectedSeats.map(getSeatLabel).join(', ') : t('seats.none')}
             </span>
           </div>
         </div>
@@ -299,7 +311,7 @@ export default function SeatSelector({
               <div className="flex flex-wrap gap-2">
                 {selectedSeats.map(seatId => (
                   <span key={seatId} className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-border/60 px-3 py-1 text-[11px] text-text-secondary">
-                    <strong className="text-white">{seatId}</strong>
+                    <strong className="text-white">{getSeatLabel(seatId)}</strong>
                     {formatRemainingTime(seatTimers[seatId])}
                   </span>
                 ))}

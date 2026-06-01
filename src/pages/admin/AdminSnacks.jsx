@@ -115,7 +115,7 @@ export default function AdminSnacks() {
     const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
     const finalMultiplexId = lockedMultiplexId || multiplexId
 
-    if (!nameSnack || !priceSnack || !quantitySnack || !finalMultiplexId || pointsSnack === '') {
+    if (!nameSnack || priceSnack === '' || quantitySnack === '' || !finalMultiplexId || pointsSnack === '') {
       setFormError('Nombre, precio, cantidad, multiplex y puntos son obligatorios.')
       return
     }

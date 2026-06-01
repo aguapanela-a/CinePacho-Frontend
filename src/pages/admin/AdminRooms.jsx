@@ -13,7 +13,6 @@ import { createRoom, deleteRoom } from '../../services/roomService'
 export default function AdminRooms({ multiplexId, multiplexName, initialRooms = [] }) {
   const [rooms, setRooms]         = useState(initialRooms)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [numberRoom, setNumberRoom]   = useState('')
   const [saving, setSaving]           = useState(false)
   const [formError, setFormError]     = useState(null)
   const [deletingId, setDeletingId]   = useState(null)
@@ -21,16 +20,11 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
 
   // ── Crear sala ────────────────────────────────────────────────────────
   const handleCreate = async () => {
-    if (!numberRoom || isNaN(Number(numberRoom)) || Number(numberRoom) < 1) {
-      setFormError('Ingresa un número de sala válido (mayor a 0).')
-      return
-    }
     setSaving(true)
     setFormError(null)
     try {
-      const created = await createRoom({ multiplexId, numberRoom: Number(numberRoom) })
+      const created = await createRoom(multiplexId)
       setRooms(prev => [...prev, created])
-      setNumberRoom('')
       setIsModalOpen(false)
     } catch (err) {
       setFormError(err.message)
@@ -69,7 +63,7 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
           </p>
         </div>
         <button
-          onClick={() => { setIsModalOpen(true); setFormError(null); setNumberRoom('') }}
+          onClick={() => { setIsModalOpen(true); setFormError(null) }}
           className="flex items-center gap-2 bg-gradient-to-r from-magenta to-vinotinto text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 hover:opacity-90 transition-all cursor-pointer"
         >
           <Plus size={18} />
@@ -198,20 +192,14 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
               </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                Número de sala
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={numberRoom}
-                onChange={(e) => setNumberRoom(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
-                placeholder="Ej: 5"
-                autoFocus
-              />
+            <div className="space-y-4">
+              <p className="text-sm text-text-secondary leading-relaxed">
+                El backend creará automáticamente la siguiente sala para este multiplex.
+                No es necesario elegir un número de sala manualmente.
+              </p>
+              <p className="text-sm text-white/80">
+                Multiplex: <span className="font-bold text-white">{multiplexName}</span>
+              </p>
             </div>
 
             {formError && (

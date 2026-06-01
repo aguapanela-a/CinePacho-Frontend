@@ -4,6 +4,7 @@ import { X, Star, Film, Building2, Send } from 'lucide-react'
 import Button from './Button'
 import { useToast } from '../context/useToast'
 import { useLanguage } from '../context/useLanguage'
+import { useApp } from '../context/useApp'
 import { submitMovieReview, submitServiceReview } from '../services/reviewService'
 
 function StarRating({ value, onChange, label }) {
@@ -42,8 +43,37 @@ export default function ReviewModal({ order, onClose }) {
   const [comment, setComment] = useState('')
   const toast = useToast()
   const { t } = useLanguage()
+  const { user } = useApp()
+  const buyerId = user?.id
+  const buyerIdMissing = user?.userType === 'BUYER' && !buyerId
 
   if (!order) return null
+
+  if (buyerIdMissing) {
+    return createPortal(
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ isolation: 'isolate' }}>
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" aria-hidden />
+        <div className="relative z-10 w-full max-w-lg bg-surface border border-border/50 rounded-3xl p-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-display uppercase tracking-widest text-white mb-3">
+              {t('review.title') || 'Evaluar'}
+            </h2>
+            <p className="text-text-secondary">
+              No se puede enviar la reseña porque el login del backend no provee el UUID del comprador.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-4 w-full py-3 rounded-2xl bg-magenta text-white font-bold hover:opacity-90 transition-all"
+          >
+            {t('common.close') || 'Cerrar'}
+          </button>
+        </div>
+      </div>,
+      document.body
+    )
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -52,8 +82,14 @@ export default function ReviewModal({ order, onClose }) {
       return
     }
 
-    // El buyerId real vendría del auth context, usando un fallback para testing
-    const buyerId = localStorage.getItem('cinepacho_buyer_id') || '450e8400-e29b-41d4-a716-446655440000'
+    const buyerId = user?.id
+    if (!buyerId) {
+      toast.error(
+        t('review.buyerIdMissing') ||
+        'No se encontró el ID del comprador. El backend debe devolver el UUID del usuario en el login.'
+      )
+      return
+    }
 
     try {
       // 1. Enviar reseña de película si hay calificación

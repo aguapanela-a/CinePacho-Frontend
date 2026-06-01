@@ -40,3 +40,8 @@ export const updateSnack = (id, data) =>
     method: 'PUT',
     body: JSON.stringify(data),
   })
+
+export const deleteSnack = (id) =>
+  apiFetch(`/api/admin/snacks/${id}`, {
+    method: 'DELETE',
+  })
