@@ -71,7 +71,7 @@ const fetchMultiplexes = useCallback(async () => {
   const openEdit = (plex, e) => {
     e.preventDefault()           // evita navegar al detalle
     e.stopPropagation()
-    setEditingId(plex.id)
+    setEditingId(plex.idMultiplex)
     setForm({
       nameMultiplex:        plex.nameMultiplex,
       addressMultiplex:     plex.addressMultiplex || '',
@@ -99,7 +99,7 @@ const fetchMultiplexes = useCallback(async () => {
         const updated = await updateMultiplex(editingId, form)
           setMultiplexList((prev) =>
             prev.map((p) =>
-              p.id === editingId ? { ...p, ...updated } : p
+              p.idMultiplex === editingId ? { ...p, ...updated } : p
             )
           )
       } else {
@@ -107,7 +107,7 @@ const fetchMultiplexes = useCallback(async () => {
 
       setMultiplexList((prev) => [
         ...prev,
-        created?.id ? created : { ...form, id: Date.now() }
+        created?.idMultiplex ? created : { ...form, idMultiplex: Date.now() }
       ])
       }
       setIsModalOpen(false)
@@ -126,7 +126,7 @@ const fetchMultiplexes = useCallback(async () => {
       // Segunda pulsación: confirmar borrado
       try {
         await deleteMultiplex(id)
-        setMultiplexList(prev => prev.filter(p => p.id !== id))
+        setMultiplexList(prev => prev.filter(p => p.idMultiplex !== id))
       } catch (err) {
         setError(err.message)
       } finally {
@@ -194,8 +194,8 @@ const fetchMultiplexes = useCallback(async () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {multiplexList.map((plex, index) => (
                 <Link
-                  key={plex.id}
-                  to={`/admin/multiplex/${plex.id}/dashboard`}
+                  key={plex.idMultiplex || plex.id}
+                  to={`/admin/multiplex/${plex.idMultiplex || plex.id}/dashboard`}
                   style={{ animationDelay: `${index * 0.08}s` }}
                   className="group block bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl hover:border-magenta/40 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 animate-[fadeUp_0.5s_ease-out_forwards]"
                 >
@@ -218,15 +218,15 @@ const fetchMultiplexes = useCallback(async () => {
 
                       {/* Botón Eliminar (doble click para confirmar) */}
                       <button
-                        onClick={(e) => handleDelete(plex.id, e)}
+                        onClick={(e) => handleDelete(plex.idMultiplex, e)}
                         className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all text-xs font-bold ${
-                          deletingId === plex.id
+                          deletingId === plex.idMultiplex
                             ? 'bg-red-500/20 border-red-500/60 text-red-400 animate-pulse'
                             : 'border-border/50 bg-carbon/50 text-text-secondary hover:text-red-400 hover:border-red-500/40'
                         }`}
-                        title={deletingId === plex.id ? 'Confirmar eliminación' : 'Eliminar multiplex'}
+                        title={deletingId === plex.idMultiplex ? 'Confirmar eliminación' : 'Eliminar multiplex'}
                       >
-                        {deletingId === plex.id ? '!' : <Trash2 size={14} />}
+                        {deletingId === plex.idMultiplex ? '!' : <Trash2 size={14} />}
                       </button>
                     </div>
                   </div>

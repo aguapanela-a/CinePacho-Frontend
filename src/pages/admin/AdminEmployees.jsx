@@ -72,6 +72,7 @@ export default function AdminEmployees() {
     identityCard: '', // Corrected typo
     salary: '',
     fechaContrato: '',
+    rol:'',
   });
   const [creating, setCreating] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
@@ -147,6 +148,7 @@ const handleEditEmployee = () => {
         phoneNumber: newEmployee.telefono,
         salary: parseFloat(newEmployee.salary),
         position: newEmployee.cargo,
+        rol: newEmployee.rol,
         // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
       };
 
