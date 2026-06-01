@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Users,
   Ticket,
@@ -9,20 +8,12 @@ import {
 } from 'lucide-react'
 import {
   getMultiplexById,
-  getEmployeesByMultiplex,
-  getInventoryByMultiplex,
   getSalesByMultiplex,
   getLowStockItems,
   countActiveEmployees,
   formatCOP,
 } from '../../data/mockMultiplexData'
 
-/**
- * MultiplexDashboard: Panel de resumen de un multiplex individual.
- * Componente compartido — usado tanto por el Manager como por el Admin en drill-down.
- *
- * @param {string} multiplexId - ID del multiplex a mostrar
- */
 export default function MultiplexDashboard({ multiplexId }) {
   const multiplex = getMultiplexById(multiplexId)
   const employeeCount = countActiveEmployees(multiplexId)
@@ -39,98 +30,57 @@ export default function MultiplexDashboard({ multiplexId }) {
     { title: 'Empleados activos', value: String(employeeCount), icon: Users },
   ]
 
-  if (!multiplex) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-text-secondary text-lg">Multiplex no encontrado</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="animate-[fadeUp_0.5s_ease-out_forwards]">
-        <h1 className="text-5xl font-display uppercase tracking-widest text-white">
-          {multiplex.name}
+    <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+      {/* Mensaje de Bienvenida Corto */}
+      <div>
+        <h1 className="text-2xl font-bold font-display tracking-wider text-white">
+          Resumen Operativo
         </h1>
-        <p className="text-text-secondary mt-2 text-lg">
-          {multiplex.address} · {multiplex.salas} salas
+        <p className="text-xs text-text-secondary mt-1">
+          Estado actual e indicadores de la sede {multiplex?.name}.
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {stats.map(({ title, value, icon: Icon }, index) => (
-          <div
-            key={title}
-            style={{ animationDelay: `${index * 0.08}s` }}
-            className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl hover:border-magenta/40 transition-all duration-300 hover:shadow-2xl hover:shadow-magenta/10 animate-[fadeUp_0.5s_ease-out_forwards]"
-          >
-            <div className="flex items-center justify-between mb-5">
-              <div className="w-14 h-14 rounded-2xl bg-magenta/10 flex items-center justify-center border border-magenta/20">
-                <Icon className="text-magenta" size={28} />
+      {/* Grid de KPIs principales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            /* CORREGIDO: Se añade key única aquí */
+            <div key={stat.title} className="bg-surface/40 border border-border/30 rounded-2xl p-5 flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block">
+                  {stat.title}
+                </span>
+                <span className="text-2xl font-display font-bold text-white tracking-wide block">
+                  {stat.value}
+                </span>
               </div>
-              <TrendingUp className="text-gold" size={20} />
+              <div className="w-11 h-11 rounded-xl bg-carbon border border-border/50 flex items-center justify-center text-magenta">
+                <Icon size={18} />
+              </div>
             </div>
-
-            <p className="text-text-secondary text-sm font-bold uppercase tracking-wider mb-1">
-              {title}
-            </p>
-            <h2 className="text-4xl font-display text-white tracking-wide">
-              {value}
-            </h2>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Últimas ventas */}
-        <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl animate-[fadeUp_0.6s_ease-out_forwards]">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-3xl font-display text-white tracking-wider uppercase">
-              Últimas Ventas
-            </h3>
-            <span className="text-xs bg-gold/10 border border-gold/30 text-gold px-3 py-1 rounded-full font-bold">
-              Tiempo real
-            </span>
+      {/* Alertas de Inventario y Actividad Reciente */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Inventario Crítico */}
+        <div className="lg:col-span-1 bg-surface/30 border border-border/30 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-yellow-500 mb-1">
+              <AlertTriangle size={16} />
+              <h2 className="text-sm font-bold font-display tracking-widest uppercase text-white">
+                Alertas de Stock
+              </h2>
+            </div>
+            <p className="text-xs text-text-secondary">Insumos por debajo del mínimo.</p>
           </div>
 
-          <div className="space-y-4">
-            {sales.length > 0 ? sales.map((sale) => (
-              <div
-                key={sale.id}
-                className="bg-carbon border border-border/40 rounded-2xl px-4 py-4 flex items-center justify-between"
-              >
-                <span className="font-medium text-white">
-                  {sale.description} — {formatCOP(sale.amount)}
-                </span>
-                <span className="text-xs text-text-secondary">
-                  {sale.time}
-                </span>
-              </div>
-            )) : (
-              <p className="text-text-secondary text-center py-8">
-                No hay ventas recientes
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Alertas de inventario bajo */}
-        <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl animate-[fadeUp_0.7s_ease-out_forwards]">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-3xl font-display text-white tracking-wider uppercase">
-              Alertas Stock
-            </h3>
-            {lowStock.length > 0 && (
-              <span className="text-xs bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-1 rounded-full font-bold">
-                {lowStock.length} alerta{lowStock.length > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-4">
+          <div className="space-y-2 flex-1 overflow-y-auto max-h-[280px] pr-1 custom-scrollbar my-2">
             {lowStock.length > 0 ? lowStock.map((item) => (
               <div
                 key={item.id}
@@ -139,13 +89,13 @@ export default function MultiplexDashboard({ multiplexId }) {
                 <div className="flex items-center gap-3">
                   <AlertTriangle size={18} className={item.stock === 0 ? 'text-red-400' : 'text-yellow-400'} />
                   <div>
-                    <span className="font-medium text-white block">{item.name}</span>
+                    <span className="font-medium text-white block text-sm">{item.name}</span>
                     <span className="text-xs text-text-secondary">
                       Mín: {item.minStock} unidades
                     </span>
                   </div>
                 </div>
-                <span className={`text-sm font-bold ${item.stock === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+                <span className={`text-xs font-bold ${item.stock === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
                   {item.stock === 0 ? 'AGOTADO' : `${item.stock} uds`}
                 </span>
               </div>
@@ -154,12 +104,51 @@ export default function MultiplexDashboard({ multiplexId }) {
                 <div className="w-14 h-14 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <Popcorn size={24} className="text-green-400" />
                 </div>
-                <p className="text-green-400 font-bold">Todo en orden</p>
-                <p className="text-text-secondary text-sm mt-1">No hay productos con stock bajo</p>
+                <p className="text-green-400 font-bold text-sm">Todo en orden</p>
+                <p className="text-text-secondary text-xs mt-0.5">El inventario base está completo.</p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Últimas Ventas */}
+        <div className="lg:col-span-2 bg-surface/30 border border-border/30 rounded-2xl p-5 space-y-4">
+          <div>
+            <div className="flex items-center gap-2 text-magenta mb-1">
+              <TrendingUp size={16} />
+              <h2 className="text-sm font-bold font-display tracking-widest uppercase text-white">
+                Flujo de Caja Reciente
+              </h2>
+            </div>
+            <p className="text-xs text-text-secondary">Últimas transacciones registradas en el sistema.</p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border/40 text-[10px] font-bold tracking-widest text-text-secondary uppercase">
+                  <th className="pb-3">ID</th>
+                  <th className="pb-3">Concepto</th>
+                  <th className="pb-3">Método</th>
+                  <th className="pb-3 text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/20 text-xs text-text-primary">
+                {sales.map((sale) => (
+                  <tr key={sale.id} className="hover:bg-white/[0.01]">
+                    <td className="py-3 font-mono text-text-secondary">{sale.id}</td>
+                    <td className="py-3 font-medium text-white">{sale.concept}</td>
+                    <td className="py-3 text-text-secondary">{sale.method}</td>
+                    <td className="py-3 text-right font-bold text-magenta">
+                      {formatCOP(sale.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   )

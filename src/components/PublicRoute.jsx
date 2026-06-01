@@ -1,6 +1,5 @@
-import React from 'react'
 import { Navigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 
 /**
  * PublicRoute: Guarda para rutas destinadas únicamente a clientes (BUYER) o invitados.
@@ -11,11 +10,17 @@ export default function PublicRoute({ children }) {
   const { user } = useApp()
 
   if (user) {
-    if (user.userType === 'ADMIN') return <Navigate to="/admin/dashboard" replace />
-    if (user.userType === 'MANAGER') return <Navigate to="/manager/dashboard" replace />
-    if (user.userType === 'EMPLOYEE') return <Navigate to="/cajero" replace />
+    if (user.userType === 'ADMIN') {
+      return <Navigate to="/admin/dashboard" replace />
+    }
+    if (user.userType === 'MANAGER') {
+      return <Navigate to="/manager/dashboard" replace />
+    }
+    if (user.userType === 'EMPLOYEE') {
+      return <Navigate to="/cajero" replace />
+    }
   }
 
-  // Invitados y BUYER pueden ver la vista
+  // Invitados y usuarios de tipo BUYER pueden renderizar el flujo público con normalidad
   return children
 }

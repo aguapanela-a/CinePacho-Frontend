@@ -1,4 +1,3 @@
-import React from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   FileBarChart2,
@@ -96,7 +95,7 @@ const topMultiplex = [
 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 animate-[fadeUp_0.7s_ease-out_forwards]">
 
   <div className="xl:col-span-2 bg-surface/50 border border-border/50 rounded-3xl p-6 backdrop-blur-xl">
-    
+
     <div className="flex items-center justify-between mb-8">
       <div>
         <h2 className="text-xl font-display tracking-widest uppercase text-white">
@@ -193,6 +192,206 @@ const topMultiplex = [
         </p>
       </div>
 
+    </div>
+  </div>
+</div>
+
+{/* Reporte 1: Ventas Mensuales por Multiplex */}
+<div className="bg-surface/50 border border-border/50 rounded-3xl p-6 backdrop-blur-xl animate-[fadeUp_0.8s_ease-out_forwards]">
+  <div className="flex items-center justify-between mb-6">
+    <div>
+      <h2 className="text-xl font-display tracking-widest uppercase text-white">
+        Ventas Mensuales por Multiplex
+      </h2>
+      <p className="text-text-secondary text-sm mt-1">
+        Análisis de ingresos por sede (primer semestre 2026)
+      </p>
+    </div>
+    <div className="w-12 h-12 rounded-2xl bg-magenta/10 border border-magenta/20 flex items-center justify-center">
+      <TrendingUp className="text-magenta" size={22} />
+    </div>
+  </div>
+
+  <div className="overflow-x-auto">
+    <svg width="100%" height="350" viewBox="0 0 800 350" className="bg-carbon/30 rounded-2xl p-4">
+      {/* Grid lines */}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <line
+          key={i}
+          x1="60"
+          y1={50 + i * 60}
+          x2="760"
+          y2={50 + i * 60}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="1"
+        />
+      ))}
+
+      {/* Y-axis labels */}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <text
+          key={i}
+          x="50"
+          y={55 + i * 60}
+          fill="#888"
+          fontSize="11"
+          textAnchor="end"
+        >
+          ${(4 - i) * 5}M
+        </text>
+      ))}
+
+      {/* Bars for each multiplex */}
+      {[
+        { name: 'Titán', data: [12, 15, 13, 16, 14, 18], color: '#C8167A' },
+        { name: 'Gran Estación', data: [8, 10, 9, 11, 10, 12], color: '#FFD700' },
+        { name: 'Unicentro', data: [6, 8, 7, 9, 8, 10], color: '#00CED1' },
+        { name: 'Plaza Central', data: [4, 5, 5, 6, 5, 7], color: '#FF6B6B' },
+      ].map((multiplex, mi) => (
+        <g key={multiplex.name}>
+          {multiplex.data.map((value, i) => {
+            const x = 80 + i * 110 + mi * 25
+            const height = (value / 20) * 240
+            const y = 290 - height
+            return (
+              <rect
+                key={`${multiplex.name}-${i}`}
+                x={x}
+                y={y}
+                width={20}
+                height={height}
+                fill={multiplex.color}
+                opacity="0.8"
+                rx="2"
+              />
+            )
+          })}
+        </g>
+      ))}
+
+      {/* X-axis labels */}
+      {['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'].map((month, i) => (
+        <text
+          key={month}
+          x={140 + i * 110}
+          y="310"
+          fill="#888"
+          fontSize="12"
+          textAnchor="middle"
+        >
+          {month}
+        </text>
+      ))}
+
+      {/* Legend */}
+      <g transform="translate(60, 330)">
+        {[
+          { name: 'Titán', color: '#C8167A' },
+          { name: 'Gran Estación', color: '#FFD700' },
+          { name: 'Unicentro', color: '#00CED1' },
+          { name: 'Plaza Central', color: '#FF6B6B' },
+        ].map((legend, i) => (
+          <g key={legend.name} transform={`translate(${i * 150}, 0)`}>
+            <rect width="15" height="15" fill={legend.color} rx="2" opacity="0.8" />
+            <text x="22" y="12" fill="#fff" fontSize="11">
+              {legend.name}
+            </text>
+          </g>
+        ))}
+      </g>
+    </svg>
+  </div>
+</div>
+
+{/* Reporte 2: Estudio Estadístico Titán - Movilidad de Empleados */}
+<div className="bg-surface/50 border border-border/50 rounded-3xl p-6 backdrop-blur-xl animate-[fadeUp_0.9s_ease-out_forwards]">
+  <div className="flex items-center justify-between mb-6">
+    <div>
+      <h2 className="text-xl font-display tracking-widest uppercase text-white">
+        Estudio Estadístico Titán — Movilidad de Empleados
+      </h2>
+      <p className="text-text-secondary text-sm mt-1">
+        Análisis de relación entre salario y antigüedad
+      </p>
+    </div>
+    <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+      <Users className="text-gold" size={22} />
+    </div>
+  </div>
+
+  <div className="overflow-x-auto">
+    <table className="w-full min-w-[600px]">
+      <thead>
+        <tr className="border-b border-border/50">
+          <th className="text-left px-4 py-3 text-xs font-bold tracking-widest text-text-secondary uppercase">
+            Empleado
+          </th>
+          <th className="text-left px-4 py-3 text-xs font-bold tracking-widest text-text-secondary uppercase">
+            Cargo
+          </th>
+          <th className="text-left px-4 py-3 text-xs font-bold tracking-widest text-text-secondary uppercase">
+            Antigüedad (meses)
+          </th>
+          <th className="text-left px-4 py-3 text-xs font-bold tracking-widest text-text-secondary uppercase">
+            Salario ($)
+          </th>
+          <th className="text-left px-4 py-3 text-xs font-bold tracking-widest text-text-secondary uppercase">
+            Rotaciones
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {[
+          { name: 'Laura González', cargo: 'Cajero', antiguedad: 18, salario: 1850000, rotaciones: 2 },
+          { name: 'Carlos Ramírez', cargo: 'Director', antiguedad: 36, salario: 3500000, rotaciones: 1 },
+          { name: 'María López', cargo: 'Encargado de sala', antiguedad: 24, salario: 2200000, rotaciones: 3 },
+          { name: 'Pedro Martínez', cargo: 'Despachador de comida', antiguedad: 12, salario: 1650000, rotaciones: 1 },
+          { name: 'Ana Torres', cargo: 'Aseador', antiguedad: 6, salario: 1500000, rotaciones: 0 },
+        ].map((emp, i) => (
+          <tr key={i} className="border-b border-border/30 hover:bg-carbon/40 transition-colors">
+            <td className="px-4 py-3 text-white font-medium">{emp.name}</td>
+            <td className="px-4 py-3">
+              <span className="text-gold text-sm font-bold">{emp.cargo}</span>
+            </td>
+            <td className="px-4 py-3 text-text-secondary">{emp.antiguedad} meses</td>
+            <td className="px-4 py-3 text-white font-bold">${emp.salario.toLocaleString('es-CO')}</td>
+            <td className="px-4 py-3">
+              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                emp.rotaciones === 0 ? 'bg-red-500/15 text-red-400' : 'bg-green-500/15 text-green-400'
+              }`}>
+                {emp.rotaciones}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="bg-carbon border border-border/50 rounded-2xl p-4">
+      <p className="text-text-secondary text-xs uppercase tracking-widest mb-2">
+        Salario Promedio
+      </p>
+      <p className="text-2xl font-display text-white">
+        $2.14M
+      </p>
+    </div>
+    <div className="bg-carbon border border-border/50 rounded-2xl p-4">
+      <p className="text-text-secondary text-xs uppercase tracking-widest mb-2">
+        Antigüedad Promedio
+      </p>
+      <p className="text-2xl font-display text-magenta">
+        19.2 meses
+      </p>
+    </div>
+    <div className="bg-carbon border border-border/50 rounded-2xl p-4">
+      <p className="text-text-secondary text-xs uppercase tracking-widest mb-2">
+        Tasa de Rotación
+      </p>
+      <p className="text-2xl font-display text-gold">
+        1.4/año
+      </p>
     </div>
   </div>
 </div>

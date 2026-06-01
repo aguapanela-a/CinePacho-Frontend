@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import {
   Users,
@@ -10,7 +10,10 @@ import {
   Building2,
   Trash2,
   Pencil,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
+import { registerEmployee } from '../../services/employeeService'
 
 
 
@@ -23,24 +26,30 @@ const initialEmployees = [
     cargo: 'Cajero',
     multiplex: 'Titán',
     estado: 'Activo',
+    fechaContrato: '2024-01-15',
+    fechaRotacion: '2024-04-15',
   },
   {
     id: 2,
     nombre: 'Carlos Ramírez',
     correo: 'carlos@cinepacho.com',
     telefono: '3119876543',
-    cargo: 'Supervisor',
+    cargo: 'Director',
     multiplex: 'Unicentro',
     estado: 'Activo',
+    fechaContrato: '2023-06-01',
+    fechaRotacion: '2023-09-01',
   },
   {
     id: 3,
     nombre: 'Ana Torres',
     correo: 'ana@cinepacho.com',
     telefono: '3204567890',
-    cargo: 'Cajero',
+    cargo: 'Despachador de comida',
     multiplex: 'Gran Estación',
     estado: 'Inactivo',
+    fechaContrato: '2024-02-20',
+    fechaRotacion: '2024-05-20',
   },
 ]
 
@@ -59,7 +68,13 @@ export default function AdminEmployees() {
     telefono: '',
     cargo: '',
     multiplex: '',
-    })
+    password: '',
+    identityCard: '', // Corrected typo
+    salary: '',
+    fechaContrato: '',
+  });
+  const [creating, setCreating] = useState(false);
+  const [errorForm, setErrorForm] = useState(null);
 
   const filteredEmployees = employees.filter((employee) =>
     employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -70,14 +85,6 @@ export default function AdminEmployees() {
 
 
   )
-
-//Borrar empleados local
-
- const handleDeleteEmployee = (id) => {
-  setEmployees(
-    employees.filter((employee) => employee.id !== id)
-  )
-}
 
 //confirmar borrar empleados
 
@@ -111,39 +118,74 @@ const handleEditEmployee = () => {
 
 
 //Crear empleados local
+  const handleCreateEmployee = async () => {
+    if (
+      !newEmployee.nombre ||
+      !newEmployee.correo ||
+      !newEmployee.telefono ||
+      !newEmployee.cargo ||
+      !newEmployee.multiplex ||
+      !newEmployee.password ||
+      !newEmployee.identityCard || // Corrected typo here
+      !newEmployee.salary ||
+      !newEmployee.fechaContrato
+    ) {
+      setErrorForm('Todos los campos son obligatorios')
+      return
+    }
 
-  const handleCreateEmployee = () => {
-  if (
-    !newEmployee.nombre ||
-    !newEmployee.correo ||
-    !newEmployee.telefono ||
-    !newEmployee.cargo ||
-    !newEmployee.multiplex
-  ) {
-    return
+    setCreating(true)
+    setErrorForm(null)
+
+    try {
+      const payload = {
+        name: newEmployee.nombre,
+        email: newEmployee.correo,
+        password: newEmployee.password,
+        userType: 'EMPLOYEE',
+        indentityCard: newEmployee.identityCard, 
+        phoneNumber: newEmployee.telefono,
+        salary: parseFloat(newEmployee.salary),
+        position: newEmployee.cargo,
+        // Multiplex isn't stored in RegisterEmployeeRequestDTO, but we keep it in state for the table
+      };
+
+        const response = await registerEmployee(payload)
+
+        setEmployees((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            nombre: newEmployee.nombre,
+            correo: newEmployee.correo,
+            telefono: newEmployee.telefono,
+            cargo: newEmployee.cargo,
+            multiplex: newEmployee.multiplex,
+            estado: 'Activo',
+            fechaContrato: newEmployee.fechaContrato,
+          },
+        ])
+
+        setNewEmployee({
+          nombre: '',
+          correo: '',
+          telefono: '',
+          cargo: '',
+          multiplex: '',
+          password: '',
+          identityCard: '',
+          salary: '',
+          fechaContrato: '',
+        })
+
+        setIsModalOpen(false)
+
+    } catch (err) {
+      setErrorForm(err.message)
+    } finally {
+      setCreating(false)
+    }
   }
-
-
-  const employee = {
-    id: employees.length + 1,
-    ...newEmployee,
-    estado: 'Activo',
-  }
-
-  setEmployees([...employees, employee])
-
-  setNewEmployee({
-    nombre: '',
-    correo: '',
-    telefono: '',
-    cargo: '',
-    multiplex: '',
-  })
-
-
-
-  setIsModalOpen(false)
-}
 
   return (
      <AdminLayout>
@@ -197,8 +239,8 @@ const handleEditEmployee = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-surface border border-border/50 rounded-3xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-surface border border-border/50 rounded-3xl overflow-hidden w-full max-w-full">
+        <div className="overflow-x-auto w-full max-w-full">
           <table className="w-full min-w-[900px]">
             <thead className="bg-carbon/60 border-b border-border/50">
               <tr>
@@ -216,6 +258,10 @@ const handleEditEmployee = () => {
 
                 <th className="text-left px-6 py-4 text-xs font-bold tracking-widest text-text-secondary uppercase">
                   Multiplex
+                </th>
+
+                <th className="text-left px-6 py-4 text-xs font-bold tracking-widest text-text-secondary uppercase">
+                  Fecha Contrato
                 </th>
 
                 <th className="text-left px-6 py-4 text-xs font-bold tracking-widest text-text-secondary uppercase">
@@ -277,6 +323,31 @@ const handleEditEmployee = () => {
                     <div className="flex items-center gap-2 text-sm">
                       <Building2 size={15} className="text-magenta" />
                       {employee.multiplex}
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-text-primary">
+                        {employee.fechaContrato ? new Date(employee.fechaContrato).toLocaleDateString('es-CO') : '-'}
+                      </span>
+                      {/* Alerta: Sin rotar en 3+ meses */}
+                      {(() => {
+                        const referenceDate = employee.fechaRotacion
+                          ? new Date(employee.fechaRotacion)
+                          : (employee.fechaContrato ? new Date(employee.fechaContrato) : null); // Use fechaContrato if fechaRotacion is null
+                        const threeMonthsAgo = new Date();
+                        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+                        if (referenceDate && referenceDate < threeMonthsAgo) {
+                          return (
+                            <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-full">
+                              ¡Sin rotar en 3+ meses!
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </td>
 
@@ -432,11 +503,72 @@ const handleEditEmployee = () => {
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 >
-                  <option value="">Seleccionar</option>
+                  <option value=""></option>
+                  <option value="Director">Director</option>
                   <option value="Cajero">Cajero</option>
-                  <option value="Supervisor">Supervisor</option>
-                  <option value="Administrador">Administrador</option>
+                  <option value="Despachador de comida">Despachador de comida</option>
+                  <option value="Encargado de sala">Encargado de sala</option>
+                  <option value="Aseador">Aseador</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={newEmployee.password}
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, password: e.target.value })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Min. 8 caracteres"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Cédula
+                </label>
+                <input
+                  type="text"
+                  value={newEmployee.identityCard} // Corrected typo
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, identityCard: e.target.value }) // Corrected typo
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Ej: 1010101010"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Salario ($)
+                </label>
+                <input
+                  type="number"
+                  value={newEmployee.salary}
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, salary: e.target.value })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Ej: 1500000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Fecha de Contrato
+                </label>
+                <input
+                  type="date"
+                  value={newEmployee.fechaContrato}
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, fechaContrato: e.target.value })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                />
               </div>
 
               <div className="md:col-span-2">
@@ -459,9 +591,17 @@ const handleEditEmployee = () => {
                   <option value="Unicentro">Unicentro</option>
                   <option value="Gran Estación">Gran Estación</option>
                   <option value="Embajador">Embajador</option>
+                  <option value="Plaza Central">Plaza Central</option>
+                  <option value="Las Américas">Las Américas</option>
                 </select>
               </div>
             </div>
+
+            {errorForm && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <AlertCircle size={15} /> {errorForm}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 mt-8">
@@ -474,8 +614,10 @@ const handleEditEmployee = () => {
 
               <button
                 onClick={handleCreateEmployee}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20"
+                disabled={creating}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60"
               >
+                {creating && <Loader2 size={16} className="animate-spin" />}
                 Guardar empleado
               </button>
             </div>
@@ -588,9 +730,11 @@ const handleEditEmployee = () => {
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           >
+            <option value="Director">Director</option>
             <option value="Cajero">Cajero</option>
-            <option value="Supervisor">Supervisor</option>
-            <option value="Administrador">Administrador</option>
+            <option value="Despachador de comida">Despachador de comida</option>
+            <option value="Encargado de sala">Encargado de sala</option>
+            <option value="Aseador">Aseador</option>
           </select>
         </div>
 
@@ -609,10 +753,13 @@ const handleEditEmployee = () => {
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           >
+            <option value="">Seleccionar multiplex</option> {/* Added default option */}
             <option value="Titán">Titán</option>
             <option value="Unicentro">Unicentro</option>
             <option value="Gran Estación">Gran Estación</option>
             <option value="Embajador">Embajador</option>
+            <option value="Plaza Central">Plaza Central</option>
+            <option value="Las Américas">Las Américas</option>
           </select>
         </div>
       </div>
@@ -698,3 +845,4 @@ const handleEditEmployee = () => {
     
   )
 }
+

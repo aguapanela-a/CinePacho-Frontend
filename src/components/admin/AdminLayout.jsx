@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import { useState } from 'react'
+import { Menu } from 'lucide-react'
 import AdminSidebar from './AdminSidebar'
 
 export default function AdminLayout({ children }) {

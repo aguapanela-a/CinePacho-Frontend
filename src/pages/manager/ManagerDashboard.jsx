@@ -1,7 +1,6 @@
-import React from 'react'
 import ManagerLayout from '../../components/manager/ManagerLayout'
 import MultiplexDashboard from '../../components/multiplex/MultiplexDashboard'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 
 /**
  * ManagerDashboard: Página del dashboard del gerente.

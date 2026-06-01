@@ -1,5 +1,3 @@
-import React from 'react'
-
 const variants = {
   primary:
     'bg-gradient-to-r from-magenta via-vinotinto to-gold text-white shadow-lg hover:shadow-magenta/40 active:scale-95 border border-white/10',

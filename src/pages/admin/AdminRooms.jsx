@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   DoorOpen, Plus, Trash2, Loader2, AlertCircle,
   Users, Armchair, Star, CheckCircle, XCircle,
@@ -243,3 +243,4 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
     </div>
   )
 }
+

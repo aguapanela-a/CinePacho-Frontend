@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Search, Film, Calendar, DollarSign, Loader2, AlertCircle,
-  CheckCircle, XCircle, Clock, ChevronDown, Clapperboard, Star,
+  Search, Film, DollarSign, Loader2, AlertCircle,
+  CheckCircle, XCircle, Clock, ChevronDown, Clapperboard,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
 import { searchMovies, selectMovie, createScreening, updateScreeningStatus } from '../../services/movieService'
@@ -14,8 +14,6 @@ const STATUS_CONFIG = {
   CANCELLED: { label: 'Cancelada',  icon: XCircle,     cls: 'bg-red-500/15 text-red-400 border-red-500/20' },
   COMPLETED: { label: 'Completada', icon: Clock,        cls: 'bg-text-secondary/15 text-text-secondary border-border/40' },
 }
-const TABS = ['buscar', 'crear', 'funciones']
-
 export default function AdminMovies() {
   const [tab, setTab] = useState('buscar')
 
@@ -108,12 +106,12 @@ export default function AdminMovies() {
     setCreatingScreening(true)
     setScreeningError(null)
     try {
-      const result = await createScreening(multiplexName, {
-        movieId: selectedMovie.id,
-        roomId,
-        dateTime: dateTime.replace('T', ' ') + ':00',
-        price: parseFloat(price),
-      })
+        const result = await createScreening({
+          movieId: selectedMovie.id,
+          roomId,
+          dateTime: dateTime.replace('T', ' ') + ':00',
+          price: parseFloat(price),
+        })
       setCreatedScreening(result)
       // Añadir a la lista de funciones local
       setScreenings(prev => [...prev, { ...result, multiplexName }])
@@ -133,7 +131,7 @@ export default function AdminMovies() {
     setUpdatingId(screening.screeningId)
     setScreeningsError(null)
     try {
-      await updateScreeningStatus(screening.multiplexName, screening.screeningId, newStatus)
+      await updateScreeningStatus(screening.screeningId, newStatus)
       setScreenings(prev =>
         prev.map(s => s.screeningId === screening.screeningId ? { ...s, status: newStatus } : s)
       )
@@ -421,9 +419,9 @@ export default function AdminMovies() {
               </p>
             </div>
           ) : (
-            <div className="bg-surface/50 border border-border/50 rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+            <div className="bg-surface/50 border border-border/50 rounded-3xl overflow-hidden w-full max-w-full">
+              <div className="overflow-x-auto w-full max-w-full">
+                <table className="w-full min-w-[800px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border/50">
                       {['Película', 'Multiplex', 'Fecha / Hora', 'Precio', 'Estado', 'Cambiar Estado'].map(h => (
@@ -482,3 +480,4 @@ export default function AdminMovies() {
     </AdminLayout>
   )
 }
+

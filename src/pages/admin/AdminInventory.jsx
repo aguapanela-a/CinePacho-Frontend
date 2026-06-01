@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { Popcorn, Plus, Search, Building2 } from 'lucide-react'
+import { Plus, Search, Building2 } from 'lucide-react'
 
 // Simular un inventario consolidado global
 const initialInventory = [
@@ -244,9 +244,11 @@ const handleCreateItem = () => {
           >
             <option value="">Seleccionar</option>
             <option value="Titán">Titán</option>
+            <option value="Unicentro">Unicentro</option>
             <option value="Plaza Central">Plaza Central</option>
             <option value="Gran Estación">Gran Estación</option>
-            <option value="Unicentro">Unicentro</option>
+            <option value="Embajador">Embajador</option>
+            <option value="Las Américas">Las Américas</option>
           </select>
         </div>
       </div>
@@ -272,3 +274,4 @@ const handleCreateItem = () => {
     </AdminLayout>
   )
 }
+

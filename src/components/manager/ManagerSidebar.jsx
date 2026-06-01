@@ -1,4 +1,3 @@
-import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -8,15 +7,9 @@ import {
   LogOut,
   Building2,
 } from 'lucide-react'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 import { getMultiplexById } from '../../data/mockMultiplexData'
-
-const links = [
-  { to: '/manager/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/manager/empleados',  label: 'Empleados',  icon: Users },
-  { to: '/manager/inventario', label: 'Inventario',  icon: Popcorn },
-  { to: '/manager/reportes',   label: 'Reportes',   icon: FileBarChart2 },
-]
+import { useLanguage } from '../../context/LanguageContext'
 
 /**
  * ManagerSidebar: Barra lateral del panel de gerente.
@@ -26,17 +19,20 @@ const links = [
 export default function ManagerSidebar() {
   const navigate = useNavigate()
   const { logoutUser, user } = useApp()
+  const { t } = useLanguage()
 
   // Obtiene los datos del multiplex asignado al manager
   const multiplex = getMultiplexById(user?.multiplexId)
 
   const handleLogout = () => {
+    const shouldSignOut = window.confirm(t('nav.logoutConfirm') || '¿Seguro que deseas cerrar sesión?')
+    if (!shouldSignOut) return
     logoutUser()
     navigate('/login')
   }
 
   return (
-    <aside className="w-72 min-h-screen bg-surface/80 backdrop-blur-2xl border-r border-border/50 p-6 flex flex-col">
+    <aside className="w-[280px] max-w-[85vw] h-screen bg-surface/80 backdrop-blur-2xl border-r border-border/50 p-6 flex flex-col">
       
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
@@ -50,7 +46,7 @@ export default function ManagerSidebar() {
             Cine Pacho
           </h1>
           <p className="text-xs text-text-secondary font-bold tracking-widest uppercase">
-            Gerencia
+            {t('manager.sidebarTitle')}
           </p>
         </div>
       </div>
@@ -60,15 +56,15 @@ export default function ManagerSidebar() {
         <div className="flex items-center gap-2 mb-2">
           <Building2 size={16} className="text-magenta" />
           <p className="text-xs text-magenta font-bold tracking-widest uppercase">
-            Mi Multiplex
+            {t('manager.myMultiplex')}
           </p>
         </div>
         <h2 className="text-white font-bold text-xl font-display tracking-wider">
-          {multiplex?.name || 'Sin asignar'}
+          {multiplex?.name || t('manager.unassigned')}
         </h2>
-        {multiplex?.address && (
+        {multiplex?.city && (
           <p className="text-xs text-text-secondary mt-1 truncate">
-            {multiplex.address}
+            {multiplex.city}
           </p>
         )}
       </div>
@@ -76,7 +72,7 @@ export default function ManagerSidebar() {
       {/* Usuario */}
       <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-8">
         <p className="text-xs text-text-secondary uppercase tracking-widest mb-1">
-          Gerente
+          {t('roles.MANAGER')}
         </p>
         <h2 className="text-white font-bold text-lg">
           {user?.name || 'Manager'}
@@ -84,8 +80,13 @@ export default function ManagerSidebar() {
       </div>
 
       {/* Navegación */}
-      <nav className="flex flex-col gap-2 flex-1">
-        {links.map(({ to, label, icon: Icon }) => (
+      <nav className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
+        {[
+          { to: '/manager/dashboard',  label: t('admin.dashboard'),  icon: LayoutDashboard },
+          { to: '/manager/empleados',  label: t('admin.employees'),  icon: Users },
+          { to: '/manager/inventario', label: t('admin.inventory'),  icon: Popcorn },
+          { to: '/manager/reportes',   label: t('admin.reports'),   icon: FileBarChart2 },
+        ].map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -105,11 +106,12 @@ export default function ManagerSidebar() {
 
       {/* Logout */}
       <button
+        type="button"
         onClick={handleLogout}
         className="mt-8 flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all duration-300 rounded-2xl py-3 font-bold cursor-pointer"
       >
         <LogOut size={18} />
-        Cerrar sesión
+        {t('admin.logout')}
       </button>
     </aside>
   )

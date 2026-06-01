@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Star, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Star, AlertCircle } from 'lucide-react'
 import Button from '../components/Button'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { getAllSnacks } from '../services/snackService'
+import { useLanguage } from '../context/useLanguage'
+import { useToast } from '../context/useToast'
 
 export default function Snacks() {
   const { addToCart } = useApp()
+  const { t } = useLanguage()
+  const toast = useToast()
 
   const [snacks, setSnacks]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,28 +31,35 @@ export default function Snacks() {
     fetchSnacks()
   }, [])
 
-  // Mapea los campos del backend al formato que espera el carrito
-  const toCartItem = (snack) => ({
-    id:          snack.idSnack,
-    name:        snack.nameSnack,
-    description: snack.descriptionSnack,
-    price:       `$${Number(snack.priceSnack).toLocaleString('es-CO')}`,
-    points:      Math.floor(Number(snack.priceSnack) / 5000),  // 1 punto por cada $5.000
-    type:        'snack',
-    showtime:    null,
-  })
+  // Mapea los campos del backend al formato que espera el carrito para que AppContext lo normalice
+  const toCartItem = (snack) => {
+    return {
+      id: snack.idSnack,
+      name: snack.nameSnack,
+      description: snack.descriptionSnack,
+      price: Number(snack.priceSnack) || 0, // Ensure price is numeric
+      type: 'snack',
+      showtime: null, // Los snacks no tienen showtime
+      image: snack.imageUrl || null,
+    }
+  }
+
+  const handleAddSnack = (snack) => {
+    addToCart(toCartItem(snack))
+    toast.success(t('toast.addedToCart'))
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
       {/* Cabecera */}
       <div className="text-center mb-16 animate-[fadeUp_0.5s_ease-out_forwards]">
         <h1 className="text-5xl md:text-6xl font-display uppercase tracking-widest text-white mb-4">
-          Snacks &amp; <span className="gradient-brand">Combos</span>
+          <span className="gradient-brand">{t('snacks.title')}</span>
         </h1>
         <p className="text-text-secondary text-lg max-w-2xl mx-auto">
-          Completa tu experiencia cinematográfica con los mejores snacks.
+          {t('snacks.subtitle')}
           <span className="block mt-2 text-gold font-semibold">
-            ¡Recuerda que cada snack que compres te suma puntos Pacho!
+            {t('snacks.pointsReminder')}
           </span>
         </p>
       </div>
@@ -57,7 +68,7 @@ export default function Snacks() {
       {error && (
         <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-5 py-4 mb-8 max-w-xl mx-auto">
           <AlertCircle size={18} />
-          No se pudo cargar el catálogo: {error}
+          {t('snacks.errorLoading')} {error}
         </div>
       )}
 
@@ -77,7 +88,7 @@ export default function Snacks() {
         </div>
       ) : snacks.length === 0 && !error ? (
         <div className="text-center py-24 text-text-secondary">
-          <p className="text-lg">El catálogo de snacks está temporalmente vacío.</p>
+          <p className="text-lg">{t('snacks.emptyCatalog')}</p>
         </div>
       ) : (
         /* Grid de productos */
@@ -96,13 +107,13 @@ export default function Snacks() {
                 {/* Badge de puntos */}
                 <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
                   <Star size={14} fill="currentColor" />
-                  <span>+{Math.floor(Number(snack.priceSnack) / 5000)} pts</span>
+                  <span>+5 {t('common.points')}</span>
                 </div>
 
                 {/* Badge stock bajo */}
                 {snack.quantitySnack <= 5 && snack.quantitySnack > 0 && (
                   <div className="absolute top-4 right-4 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 px-2.5 py-1 rounded-full text-xs font-bold">
-                    Últimas unidades
+                    {t('snacks.lastUnits')}
                   </div>
                 )}
               </div>
@@ -125,12 +136,12 @@ export default function Snacks() {
                   variant="secondary"
                   className="w-full mt-auto"
                   disabled={snack.quantitySnack <= 0}
-                  onClick={() => addToCart(toCartItem(snack))}
+                  onClick={() => handleAddSnack(snack)}
                 >
                   {snack.quantitySnack <= 0 ? (
-                    'Sin stock'
+                    t('snacks.outOfStock')
                   ) : (
-                    <><Plus size={18} /> Agregar a orden</>
+                    <><Plus size={18} /> {t('snacks.addToOrder')}</>
                   )}
                 </Button>
               </div>
@@ -141,3 +152,5 @@ export default function Snacks() {
     </div>
   )
 }
+
+

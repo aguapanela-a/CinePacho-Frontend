@@ -1,23 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   Popcorn,
   Search,
   PackagePlus,
-  AlertTriangle,
   CheckCircle,
   X,
-  Send,
 } from 'lucide-react'
 import { getInventoryByMultiplex, getMultiplexById, formatCOP } from '../../data/mockMultiplexData'
 
-/**
- * MultiplexInventory: Vista de inventario de un multiplex.
- * Componente compartido con permisos controlados por props.
- *
- * @param {string}  multiplexId  - ID del multiplex
- * @param {boolean} canAddStock   - ¿Puede agregar stock directamente? (solo Admin)
- * @param {boolean} canRequestStock - ¿Puede solicitar stock? (solo Manager)
- */
 export default function MultiplexInventory({
   multiplexId,
   canAddStock = false,
@@ -33,121 +23,86 @@ export default function MultiplexInventory({
   const [requestReason, setRequestReason] = useState('')
   const [requestSuccess, setRequestSuccess] = useState(false)
 
-  // Categorías únicas extraídas del inventario
-  const categories = ['Todos', ...new Set(items.map((i) => i.category))]
+  const categories = ['Todos', ...new Set(items.map(item => item.category))]
 
-  const filteredItems = items.filter((item) => {
-    const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
-    const matchCategory = filterCategory === 'Todos' || item.category === filterCategory
-    return matchSearch && matchCategory
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = filterCategory === 'Todos' || item.category === filterCategory
+    return matchesSearch && matchesCategory
   })
 
-  const getStockStatus = (item) => {
-    if (item.stock === 0) return { label: 'Agotado', color: 'red' }
-    if (item.stock <= item.minStock) return { label: 'Bajo', color: 'yellow' }
-    return { label: 'Normal', color: 'green' }
-  }
-
-  // ── Solicitar stock (Manager) ──
-  const handleRequestStock = () => {
-    setRequestSuccess(true)
-    setTimeout(() => {
-      setIsRequestModalOpen(false)
-      setSelectedItem(null)
-      setRequestQty('')
-      setRequestReason('')
-      setRequestSuccess(false)
-    }, 2000)
-  }
-
-// ── Agregar stock directo (Solo Admin) ──
-const handleAddStock = () => {
-  if (!canAddStock) return
-
-  const qty = parseInt(requestQty)
-
-  if (!qty || qty <= 0) return
-
-  setItems(
-    items.map((i) =>
-      i.id === selectedItem.id
-        ? { ...i, stock: i.stock + qty }
-        : i
-    )
-  )
-
-  setIsRequestModalOpen(false)
-  setSelectedItem(null)
-  setRequestQty('')
-  setRequestReason('')
-}
-
-
-  const openStockModal = (item) => {
+  const openActionModal = (item) => {
     setSelectedItem(item)
     setRequestQty('')
     setRequestReason('')
-    setRequestSuccess(false)
+    setRequestSuccess(false) // Forzar reinicio del estado del modal
     setIsRequestModalOpen(true)
   }
 
-  return (
-    <div className="space-y-8 animate-[fadeUp_0.4s_ease-out_forwards]">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-2xl bg-gold/15 border border-gold/30 flex items-center justify-center">
-              <Popcorn className="text-gold" size={24} />
-            </div>
-            <div>
-              <h1 className="text-4xl font-display tracking-widest text-white uppercase">
-                <span className="gradient-brand">Inventario</span>
-              </h1>
-              <p className="text-text-secondary text-sm mt-1">
-                Stock de snacks y productos — {multiplex?.name}
-              </p>
-            </div>
-          </div>
-        </div>
+  const handleCloseModal = () => {
+    setIsRequestModalOpen(false)
+    setSelectedItem(null)
+    setRequestQty('')
+    setRequestReason('')
+    setRequestSuccess(false) // Limpieza preventiva
+  }
 
-        {/* Resumen rápido */}
-        <div className="flex items-center gap-4">
-          <div className="bg-surface border border-border/50 rounded-2xl px-4 py-2 text-center">
-            <p className="text-xs text-text-secondary font-bold uppercase">Productos</p>
-            <p className="text-xl font-display text-white">{items.length}</p>
-          </div>
-          <div className="bg-surface border border-border/50 rounded-2xl px-4 py-2 text-center">
-            <p className="text-xs text-text-secondary font-bold uppercase">Alertas</p>
-            <p className="text-xl font-display text-yellow-400">
-              {items.filter((i) => i.stock <= i.minStock).length}
-            </p>
-          </div>
+  const handleAddStock = () => {
+    const qty = parseInt(requestQty)
+    if (isNaN(qty) || qty <= 0) return
+
+    setItems(items.map(item => 
+      item.id === selectedItem.id 
+        ? { ...item, stock: item.stock + qty }
+        : item
+    ))
+    setRequestSuccess(true)
+  }
+
+  const handleRequestStock = () => {
+    const qty = parseInt(requestQty)
+    if (isNaN(qty) || qty <= 0) return
+    
+    // Simula el envío exitoso
+    setRequestSuccess(true)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-surface/40 border border-border/30 rounded-3xl p-6 flex items-center gap-4">
+        <div className="w-12 h-12 bg-magenta/10 border border-magenta/20 rounded-2xl flex items-center justify-center text-magenta">
+          <Popcorn size={22} />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold font-display tracking-wider text-white">Inventario de Sede</h1>
+          <p className="text-xs text-text-secondary mt-0.5">Sede: {multiplex?.name || 'Cargando...'}</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-surface border border-border/50 rounded-3xl p-5 space-y-4">
-        <div className="relative">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" />
+      {/* Controles de Filtrado */}
+      <div className="flex flex-col md:flex-row gap-4 bg-surface/20 border border-border/20 rounded-2xl p-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
           <input
             type="text"
-            placeholder="Buscar producto..."
+            placeholder="Buscar insumo o snack..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-carbon border border-border/50 rounded-2xl pl-12 pr-4 py-3 text-sm outline-none focus:border-magenta transition-colors"
+            className="w-full bg-carbon border border-border/50 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
           />
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
+        
+        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
+          {categories.map(cat => (
             <button
+              type="button"
               key={cat}
               onClick={() => setFilterCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer border ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                 filterCategory === cat
-                  ? 'bg-gradient-to-r from-magenta to-vinotinto text-white border-magenta/50'
-                  : 'bg-carbon border-border/50 text-text-secondary hover:text-white hover:border-magenta/40'
+                  ? 'bg-gradient-to-r from-magenta to-vinotinto text-white shadow-md'
+                  : 'bg-carbon text-text-secondary border border-border/50 hover:text-white'
               }`}
             >
               {cat}
@@ -156,85 +111,78 @@ const handleAddStock = () => {
         </div>
       </div>
 
-      {/* Inventory Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {filteredItems.map((item) => {
-          const status = getStockStatus(item)
-          const stockPercent = Math.min((item.stock / (item.minStock * 3)) * 100, 100)
+      {/* Grid de Items */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredItems.map(item => {
+          const isLowStock = item.stock <= item.minStock
+          const isOut = item.stock === 0
 
           return (
             <div
               key={item.id}
-              className={`bg-surface/80 border rounded-3xl p-5 backdrop-blur-xl transition-all duration-300 hover:shadow-xl ${
-                status.color === 'red'
-                  ? 'border-red-500/30 hover:shadow-red-500/10'
-                  : status.color === 'yellow'
-                  ? 'border-yellow-500/30 hover:shadow-yellow-500/10'
-                  : 'border-border/50 hover:shadow-magenta/10'
+              className={`bg-surface/40 border rounded-2xl p-5 flex flex-col justify-between transition-all relative overflow-hidden ${
+                isOut 
+                  ? 'border-red-500/30 bg-red-500/[0.02]' 
+                  : isLowStock 
+                    ? 'border-yellow-500/30 bg-yellow-500/[0.01]' 
+                    : 'border-border/30'
               }`}
             >
-              {/* Product Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-white text-lg">{item.name}</h3>
-                  <p className="text-xs text-text-secondary mt-1">{item.category}</p>
-                </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  status.color === 'red'
-                    ? 'bg-red-500/15 text-red-400 border border-red-500/20'
-                    : status.color === 'yellow'
-                    ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20'
-                    : 'bg-green-500/15 text-green-400 border border-green-500/20'
+              {/* Alertas Visuales */}
+              {isLowStock && (
+                <div className={`absolute top-0 right-0 px-3 py-1 text-[9px] font-bold tracking-wider rounded-bl-xl uppercase ${
+                  isOut ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
                 }`}>
-                  {status.label}
+                  {isOut ? 'Agotado' : 'Stock Crítico'}
+                </div>
+              )}
+
+              <div>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-text-secondary block mb-1">
+                  {item.category}
                 </span>
+                <h3 className="text-white font-bold text-base leading-snug mb-3">
+                  {item.name}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2 bg-carbon/50 border border-white/5 rounded-xl p-3 mb-4">
+                  <div>
+                    <span className="text-[9px] text-text-secondary uppercase block font-medium">Stock Actual</span>
+                    <span className={`text-base font-display tracking-wide font-bold ${
+                      isOut ? 'text-red-400' : isLowStock ? 'text-yellow-400' : 'text-green-400'
+                    }`}>
+                      {item.stock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-text-secondary uppercase block font-medium">Mínimo Requerido</span>
+                    <span className="text-base font-display tracking-wide font-bold text-white">
+                      {item.minStock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Stock Bar */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-text-secondary">Stock</span>
-                  <span className="font-bold text-white">{item.stock} / {item.minStock * 3}</span>
+              <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/20">
+                <div>
+                  <span className="text-[9px] text-text-secondary uppercase block font-medium">Precio Venta</span>
+                  <span className="text-white font-bold text-sm">
+                    {item.price > 0 ? formatCOP(item.price) : 'N/A (Insumo)'}
+                  </span>
                 </div>
-                <div className="w-full h-2 bg-carbon rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      status.color === 'red'
-                        ? 'bg-red-500'
-                        : status.color === 'yellow'
-                        ? 'bg-yellow-500'
-                        : 'bg-gradient-to-r from-green-500 to-green-400'
-                    }`}
-                    style={{ width: `${stockPercent}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-text-secondary mt-1">
-                  Mínimo recomendado: {item.minStock} uds
-                </p>
-              </div>
 
-              {/* Price + Actions */}
-              <div className="flex items-center justify-between">
-                <span className="text-gold font-bold text-lg font-display">
-                  {formatCOP(item.price)}
-                </span>
-
-                {(canRequestStock || canAddStock) && (
+                {(canAddStock || canRequestStock) && (
                   <button
-                    onClick={() => openStockModal(item)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      canAddStock
-                        ? 'bg-magenta/10 border border-magenta/30 text-magenta hover:bg-magenta/20'
-                        : 'bg-gold/10 border border-gold/30 text-gold hover:bg-gold/20'
+                    type="button"
+                    onClick={() => openActionModal(item)}
+                    className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                      canAddStock 
+                        ? 'bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/20'
+                        : 'bg-gold/10 border-gold/30 text-gold hover:bg-gold/20'
                     }`}
+                    title={canAddStock ? 'Agregar stock' : 'Solicitar reabastecimiento'}
                   >
-                    {canAddStock ? <PackagePlus size={14} /> : <Send size={14} />}
-                    {canAddStock
-                    ? 'Agregar'
-                    : canRequestStock
-                    ? 'Solicitar'
-                    : 'Sin permisos'}
-
+                    <PackagePlus size={16} />
                   </button>
                 )}
               </div>
@@ -243,82 +191,83 @@ const handleAddStock = () => {
         })}
       </div>
 
-      {filteredItems.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-text-secondary">No se encontraron productos.</p>
-        </div>
-      )}
-
-      {/* ── Modal Solicitar / Agregar Stock ── */}
-      {isRequestModalOpen && selectedItem && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+      {/* Modal Reabastecimiento */}
+      {isRequestModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleCloseModal} />
+          <div className="bg-surface border border-border/80 rounded-3xl w-full max-w-md p-6 relative z-10 space-y-5 animate-[scaleUp_0.2s_ease-out]">
+            
             {requestSuccess ? (
-              <div className="text-center py-6">
-                <div className="w-16 h-16 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle size={28} className="text-green-400" />
+              <div className="text-center py-6 space-y-4">
+                <div className="w-14 h-14 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto text-green-400">
+                  <CheckCircle size={28} />
                 </div>
-                <h2 className="text-2xl font-display text-white uppercase tracking-widest mb-2">
-                  Solicitud Enviada
-                </h2>
-                <p className="text-text-secondary">
-                  El administrador aprobará el reabastecimiento.
-                </p>
+                <div>
+                  <h3 className="text-white font-bold text-lg font-display tracking-wider">
+                    {canAddStock ? 'Stock Actualizado' : 'Solicitud Enviada'}
+                  </h3>
+                  <p className="text-sm text-text-secondary mt-1">
+                    {canAddStock 
+                      ? `Se han sumado ${requestQty} unidades a ${selectedItem?.name}.`
+                      : `La solicitud por ${requestQty} unidades ha sido radicada al Administrador.`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold transition-all shadow-lg cursor-pointer text-sm"
+                >
+                  Aceptar
+                </button>
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-display tracking-widest text-white uppercase">
-                      {canAddStock ? 'Agregar' : 'Solicitar'} <span className="gradient-brand">Stock</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <PackagePlus size={20} className={canAddStock ? 'text-magenta' : 'text-gold'} />
+                    <h2 className="text-lg font-bold font-display text-white tracking-wider">
+                      {canAddStock ? 'Cargar Inventario' : 'Solicitar Stock'}
                     </h2>
-                    <p className="text-text-secondary text-sm mt-1">{selectedItem.name}</p>
                   </div>
-                  <button
-                    onClick={() => setIsRequestModalOpen(false)}
-                    className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors flex items-center justify-center cursor-pointer"
-                  >
+                  <button type="button" onClick={handleCloseModal} className="text-text-secondary hover:text-white">
                     <X size={18} />
                   </button>
                 </div>
 
-                <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-text-secondary">Stock actual:</span>
-                    <span className="text-white font-bold">{selectedItem.stock} unidades</span>
-                  </div>
-                  <div className="flex justify-between text-sm mt-2">
-                    <span className="text-text-secondary">Mínimo recomendado:</span>
-                    <span className="text-yellow-400 font-bold">{selectedItem.minStock} unidades</span>
-                  </div>
+                <div className="bg-carbon/40 border border-border/30 rounded-xl p-3 text-xs">
+                  <span className="text-text-secondary block">Insumo seleccionado:</span>
+                  <span className="text-white font-bold text-sm block mt-0.5">{selectedItem?.name}</span>
+                  <span className="text-text-secondary block mt-2">
+                    Stock actual: <strong className="text-white">{selectedItem?.stock} uds</strong>
+                  </span>
                 </div>
 
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                      Cantidad *
+                    <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">
+                      Cantidad a ingresar
                     </label>
                     <input
                       type="number"
                       min="1"
+                      placeholder="Ej. 50"
                       value={requestQty}
                       onChange={(e) => setRequestQty(e.target.value)}
-                      placeholder="Ej: 50"
-                      className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-sm"
+                      className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
                     />
                   </div>
 
                   {canRequestStock && (
                     <div>
-                      <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                        Razón de la solicitud
+                      <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">
+                        Justificación del pedido
                       </label>
                       <textarea
+                        rows="2"
+                        placeholder="Motivo (Ej. Alta demanda de fin de semana)"
                         value={requestReason}
                         onChange={(e) => setRequestReason(e.target.value)}
-                        placeholder="Ej: Alta demanda este fin de semana..."
-                        rows={3}
-                        className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta resize-none text-sm"
+                        className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-3 text-white outline-none focus:border-magenta resize-none text-sm"
                       />
                     </div>
                   )}
@@ -326,21 +275,23 @@ const handleAddStock = () => {
 
                 <div className="flex items-center justify-end gap-3">
                   <button
-                    onClick={() => setIsRequestModalOpen(false)}
-                    className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer"
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer text-sm"
                   >
                     Cancelar
                   </button>
                   <button
-                  onClick={() => {
-                    if (canAddStock) {
-                      handleAddStock()
-                    } else if (canRequestStock) {
-                      handleRequestStock()
-                    }
-                  }}
+                    type="button"
+                    onClick={() => {
+                      if (canAddStock) {
+                        handleAddStock()
+                      } else if (canRequestStock) {
+                        handleRequestStock()
+                      }
+                    }}
                     disabled={!requestQty || parseInt(requestQty) <= 0}
-                    className={`px-6 py-3 rounded-2xl text-white font-bold transition-all shadow-lg cursor-pointer ${
+                    className={`px-6 py-3 rounded-2xl text-white font-bold transition-all shadow-lg text-sm cursor-pointer ${
                       requestQty && parseInt(requestQty) > 0
                         ? 'bg-gradient-to-r from-magenta to-vinotinto shadow-magenta/20 hover:opacity-90'
                         : 'bg-border/50 cursor-not-allowed'

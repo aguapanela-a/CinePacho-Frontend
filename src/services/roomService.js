@@ -18,10 +18,12 @@ export const getRoomById = (id) =>
  * POST /admin/rooms — Crea una sala asociada a un multiplex
  * @param {{ multiplexId: string, numberRoom: number }} data
  */
-export const createRoom = (data) =>
-  apiFetch('/api/admin/rooms', {
+export const createRoom = ({ multiplexId, numberRoom }) =>
+  apiFetch(`/api/admin/${multiplexId}/rooms`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      numberRoom,
+    }),
   })
 
 /** DELETE /admin/rooms/{id} — Elimina una sala */

@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Users,
   Ticket,
@@ -8,7 +7,7 @@ import {
 } from 'lucide-react'
 
 import AdminLayout from '../../components/admin/AdminLayout'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { multiplexes } from '../../data/mockMultiplexData'
 
 const stats = [

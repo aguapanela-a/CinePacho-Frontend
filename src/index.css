@@ -15,7 +15,7 @@
   --color-gold-light: #EBB04D;
   
   --color-text-primary: #F5F5F5;
-  --color-text-secondary: #A3A3A3;
+  --color-text-secondary: #B8B8B8; /* Mejorado para accesibilidad WCAG */
   --color-border: #2A2A35;
   
   /* Fonts */
@@ -26,6 +26,19 @@
   --animate-fade-up: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   --animate-float: float 6s ease-in-out infinite;
   --animate-shimmer: shimmer 2s linear infinite;
+  --animate-pulse-slow: pulse-slow 2s ease-in-out infinite;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Global Styles */

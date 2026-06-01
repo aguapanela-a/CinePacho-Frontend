@@ -1,7 +1,6 @@
-import React from 'react'
 import ManagerLayout from '../../components/manager/ManagerLayout'
 import MultiplexInventory from '../../components/multiplex/MultiplexInventory'
-import { useApp } from '../../context/AppContext'
+import { useApp } from '../../context/useApp'
 
 /**
  * ManagerInventory: Página de inventario del gerente.

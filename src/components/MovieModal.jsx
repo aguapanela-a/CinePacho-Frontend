@@ -1,36 +1,33 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Play, Clock, Star, MapPin, Clock4, Armchair, Gift, Clapperboard, Calendar } from 'lucide-react'
-import { useApp } from '../context/AppContext'
-import Button from './Button'
+import { X } from 'lucide-react'
+import { useApp } from '../context/useApp'
 import SeatSelector from './SeatSelector'
+import MovieSummary from './movie-modal/MovieSummary'
+import ShowtimePicker from './movie-modal/ShowtimePicker'
+import { useLanguage } from '../context/useLanguage'
+import { useToast } from '../context/useToast'
+import { showtimeDates, ticketFormats } from '../data/mockMoviesData'
+import { getMovieTrailer, getMovieSelectorsById } from '../services/movieService'
+import { getMovieReviews } from '../services/reviewService'
+import { Play, Star, MessageSquare } from 'lucide-react'
 
-const showtimeDates = [
-  { day: 'Hoy', date: '24 Oct' },
-  { day: 'Mañana', date: '25 Oct' },
-  { day: 'Jueves', date: '26 Oct' },
-  { day: 'Viernes', date: '27 Oct' },
-]
+export default function MovieModal({ movie, onClose, multiplexName = 'Titán', multiplexId }) {
+  const [step, setStep] = useState(1)
+  const [selectedDate, setSelectedDate] = useState(showtimeDates[0] || '')
+  const [selectedFormat, setSelectedFormat] = useState(ticketFormats[0]?.fmt || '2D')
+  const [selectedTime, setSelectedTime] = useState('')
+  const [selectedScreening, setSelectedScreening] = useState(null)
 
-const showtimes = ['14:30', '16:45', '19:15', '21:00', '22:45']
-
-const castData = {
-  1: 'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr.',
-  2: 'Timothée Chalamet, Zendaya, Austin Butler, Florence Pugh',
-  3: 'Amy Poehler, Maya Hawke, Ayo Edebiri, Kensington Tallman',
-  4: 'Paul Mescal, Pedro Pascal, Denzel Washington, Connie Nielsen',
-  5: 'Bill Skarsgård, Lily-Rose Depp, Nicholas Hoult, Willem Dafoe',
-  6: 'Cynthia Erivo, Ariana Grande, Jeff Goldblum, Michelle Yeoh',
-  7: 'Ryan Reynolds, Hugh Jackman, Emma Corrin, Morena Baccarin',
-  8: 'Cailee Spaeny, David Jonsson, Archie Renaux, Isabela Merced',
-}
-
-export default function MovieModal({ movie, onClose }) {
-  const [selectedDate, setSelectedDate] = useState(showtimeDates[0].date)
-  const [selectedTime, setSelectedTime] = useState(null)
-  const [selectedFormat, setSelectedFormat] = useState(null)
-  const [step, setStep] = useState(1) // 1: Select function, 2: Select seats
   const { addToCart } = useApp()
+  const { t } = useLanguage()
+  const toast = useToast()
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
+
+  const [trailerKey, setTrailerKey] = useState(null)
+  const [showTrailer, setShowTrailer] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [liveScreenings, setLiveScreenings] = useState(null)
 
   const handleEscape = useCallback((e) => {
     if (e.key === 'Escape') onClose()
@@ -47,265 +44,181 @@ export default function MovieModal({ movie, onClose }) {
     }
   }, [movie, handleEscape])
 
+  // Cargar datos reales: Trailer, Reviews y Funciones frescas
   useEffect(() => {
-    if (movie) {
-      setSelectedDate(showtimeDates[0].date)
-      setSelectedTime(null)
-      setSelectedFormat(null)
-      setStep(1)
+    if (!movie || !movie.id) return
+    const fetchFreshData = async () => {
+      try {
+        const trailerData = await getMovieTrailer(movie.id).catch(() => null)
+        if (trailerData && trailerData.key) setTrailerKey(trailerData.key)
+        else if (typeof trailerData === 'string' && trailerData.length > 0) setTrailerKey(trailerData)
+
+        const reviewsData = await getMovieReviews(movie.id).catch(() => [])
+        if (Array.isArray(reviewsData)) setReviews(reviewsData)
+
+        if (multiplexId) {
+          const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
+          if (freshData && freshData.screenings) {
+            setLiveScreenings(freshData.screenings)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching movie extra data', err)
+      }
     }
-  }, [movie])
+    fetchFreshData()
+  }, [movie, multiplexId])
 
   if (!movie) return null
 
-  const canProceedToSeats = selectedDate && selectedTime && selectedFormat
+  // Usar los screenings frescos del backend si existen, de lo contrario fallback a mock/cache
+  const backendScreenings = liveScreenings || movie.screenings || []
+
+  const canProceedToSeats = selectedDate && selectedFormat && selectedTime
 
   const handleProceedToSeats = () => {
-    if (!canProceedToSeats) return
-    setStep(2)
+    if (canProceedToSeats) {
+      // Si hay screenings del backend, buscar el que coincida con la hora seleccionada
+      if (backendScreenings.length > 0) {
+        const screening = backendScreenings.find(s => {
+          const time = s.screeningDate?.substring(11, 16) // "HH:mm"
+          return time === selectedTime && s.status === 'ACTIVE'
+        })
+        setSelectedScreening(screening || null)
+      }
+      setStep(2)
+    }
   }
 
-  const handleConfirmSeats = (selectedSeats, total) => {
-    addToCart({
-      id: `${movie.id}-${selectedDate}-${selectedTime}`, // Unique ID for this specific showtime
-      name: movie.title,
-      type: 'ticket',
-      showtime: `${selectedDate} - ${selectedTime} • Sillas: ${selectedSeats.join(', ')}`,
-      format: selectedFormat,
-      price: `$${(total / selectedSeats.length).toLocaleString('es-CO')}`, // unit price for display
-      qty: selectedSeats.length,
-      points: 10,
-      image: movie.posterUrl,
-    })
-    onClose()
+  // Obtener roomId del screening seleccionado (o usar default)
+  const activeRoomId = selectedScreening?.roomId || '650e8400-e29b-41d4-a716-446655440000'
+  const activeRoomName = selectedScreening?.roomNumber || 'Sala 3'
+  const activeScreeningId = selectedScreening?.screeningId || null
+
+  const handleConfirmSeats = async (seats, total) => {
+    setIsAddingToCart(true)
+    try {
+      // Create a unique ID based on movie, date, time, format, and room to prevent duplicates
+      const dateStr = typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate
+      const uniqueId = `${movie.id}-${dateStr}-${selectedTime}-${selectedFormat}-${activeRoomName}`
+
+      // Calculate unit price per seat
+      const unitPrice = total / seats.length
+
+      addToCart({
+        id: uniqueId,
+        name: movie.title,
+        type: 'ticket',
+        showtime: `${typeof selectedDate === 'object' ? selectedDate.date : selectedDate} — ${selectedTime} (${selectedFormat})`,
+        room: activeRoomName,
+        qty: seats.length,
+        seats,
+        seatIds: seats, // UUIDs reales del backend para checkout
+        screeningId: activeScreeningId, // UUID del screening para POST /api/checkout/stripe
+        unitPrice, // Pass unit price directly to prevent recalculation
+        price: total,
+      })
+      toast.success(t('movie.addedToCart') || 'Entradas agregadas al carrito')
+      onClose()
+    } catch {
+      toast.error(t('movie.errorAdding') || 'Error al agregar al carrito')
+    } finally {
+      setIsAddingToCart(false)
+    }
   }
 
-  const getPrice = () => {
-    if (!selectedFormat) return null
-    if (selectedFormat === 'IMAX') return '$20.000'
-    if (selectedFormat === '3D') return '$15.000'
-    return '$11.000'
-  }
-
-  // createPortal renderiza fuera del árbol DOM de <main>, 
-  // así el transform de la animación no rompe position:fixed
   return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
-      style={{ isolation: 'isolate' }}
-    >
-      {/* Overlay oscuro */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
-        onClick={onClose}
-      />
-
-      {/* ═══════════════════════════════════════════════
-          MODAL CENTRADO — max-h para que quepa en viewport
-      ═══════════════════════════════════════════════ */}
-      <div className="relative z-10 w-full max-w-[1080px] max-h-[90vh] bg-surface rounded-2xl shadow-[0_8px_60px_rgba(0,0,0,0.9)] border border-border/40 overflow-hidden flex flex-col animate-[scaleIn_0.25s_ease-out_forwards]">
-
-        {/* Botón cerrar — siempre visible */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
+      <div className="bg-surface border border-border/40 w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
+        
+        {/* Botón cerrar */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-50 p-2 bg-carbon/90 rounded-full text-text-secondary hover:text-white hover:bg-magenta transition-all duration-200 shadow-lg cursor-pointer"
-          aria-label="Cerrar"
+          className="absolute right-4 top-4 z-30 w-10 h-10 rounded-xl bg-carbon/60 border border-white/5 flex items-center justify-center text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer"
         >
           <X size={18} />
         </button>
 
-        {/* CONTENIDO SCROLLABLE */}
-        <div className="overflow-y-auto custom-scrollbar flex-1">
-          <div className="flex flex-col lg:flex-row min-h-0">
-
-            {/* ─── POSTER (columna izquierda / banner mobile) ─── */}
-            <div className="relative lg:w-[280px] xl:w-[320px] shrink-0 bg-carbon">
-              <div className="relative h-48 sm:h-56 lg:h-full lg:min-h-[500px]">
+        <div className="overflow-y-auto flex-1">
+          <div className="flex flex-col md:flex-row">
+            
+            {/* Poster / Trailer (columna izquierda) */}
+            <div className="w-full md:w-80 shrink-0 relative aspect-[2/3] md:aspect-auto md:h-auto bg-carbon flex flex-col">
+              <div className="relative flex-1">
                 <img
                   src={movie.posterUrl}
                   alt={movie.title}
                   className="w-full h-full object-cover"
                 />
-                {/* Degradado para integración visual */}
-                <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-surface/80" />
-
-                {/* Botón trailer */}
-                <button className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-magenta/80 hover:border-magenta transition-all hover:scale-110 duration-200 shadow-xl cursor-pointer">
-                  <Play size={22} fill="currentColor" className="ml-0.5" />
-                </button>
-
-                {/* Badge puntos */}
-                <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 bg-carbon/85 backdrop-blur-md border border-gold/40 text-gold px-2.5 py-1 rounded-full text-[11px] font-bold">
-                  <Gift size={11} />
-                  +10 pts
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-carbon via-transparent to-transparent opacity-90 md:opacity-40" />
+                
+                {trailerKey && !showTrailer && (
+                  <button 
+                    onClick={() => setShowTrailer(true)}
+                    className="absolute inset-0 m-auto w-16 h-16 bg-magenta/80 text-white rounded-full flex items-center justify-center hover:bg-magenta hover:scale-110 transition-all shadow-[0_0_20px_rgba(200,22,122,0.8)] cursor-pointer"
+                  >
+                    <Play fill="currentColor" size={24} className="ml-1" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* ─── CONTENIDO (columna derecha) ─── */}
+            {/* Contenido (columna derecha) */}
             <div className="flex-1 p-5 sm:p-6 lg:p-7 flex flex-col gap-5 min-w-0">
 
               {step === 2 ? (
-                <SeatSelector 
+                <SeatSelector
                   onBack={() => setStep(1)}
                   onConfirm={handleConfirmSeats}
-                  formatPrice={getPrice()}
+                  roomId={activeRoomId}
+                  screeningId={activeScreeningId}
+                  selectedFormat={selectedFormat}
+                  isLoading={isAddingToCart}
                 />
               ) : (
                 <>
-                  {/* TÍTULO + BADGES */}
-              <div>
-                <h2 className="text-3xl sm:text-4xl font-display uppercase tracking-widest text-white leading-none mb-3 pr-8">
-                  {movie.title}
-                </h2>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-gold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/30 text-xs font-bold">
-                    <Star size={11} fill="currentColor" />
-                    {movie.rating}
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
-                    <Clock size={11} />
-                    {movie.duration}
-                  </span>
-                  <span className="bg-magenta/10 px-2.5 py-1 rounded-full border border-magenta/30 text-xs font-bold text-magenta">
-                    {movie.genre}
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
-                    <Calendar size={11} />
-                    {movie.year}
-                  </span>
-                </div>
-              </div>
+                  <MovieSummary movie={movie} />
 
-              {/* SINOPSIS + FICHA — en 2 columnas compactas */}
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4">
-                <div>
-                  <h3 className="text-xs font-display tracking-widest text-magenta mb-1">SINOPSIS</h3>
-                  <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-                    {movie.synopsis}
-                  </p>
-                </div>
-                <div className="sm:w-52 bg-carbon/50 p-3.5 rounded-xl border border-white/5 space-y-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
-                      <Clapperboard size={9} /> Director
-                    </p>
-                    <p className="text-white text-sm font-medium">{movie.director}</p>
-                  </div>
-                  <div className="h-px bg-border/20" />
-                  <div>
-                    <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">Reparto</p>
-                    <p className="text-white/75 text-[11px] leading-relaxed">
-                      {castData[movie.id] || 'No disponible'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* DIVISOR */}
-              <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
-
-              {/* ═══ SELECTOR DE FUNCIONES — todo compacto ═══ */}
-              <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
-                <div className="flex items-center gap-2">
-                  <MapPin size={15} className="text-magenta" />
-                  <span className="font-display text-base tracking-widest text-white">Funciones en Titán</span>
-                </div>
-
-                {/* Fechas */}
-                <div>
-                  <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">Fecha</p>
-                  <div className="flex gap-1.5">
-                    {showtimeDates.map((d) => (
-                      <button
-                        key={d.date}
-                        onClick={() => setSelectedDate(d.date)}
-                        className={`flex flex-col items-center min-w-[65px] py-1.5 px-2.5 rounded-lg border text-center transition-all duration-150 cursor-pointer ${
-                          selectedDate === d.date
-                            ? 'border-magenta bg-magenta/10 text-magenta'
-                            : 'border-border/40 bg-carbon text-text-secondary hover:border-text-secondary hover:text-white'
-                        }`}
-                      >
-                        <span className="text-[9px] font-bold uppercase leading-tight">{d.day}</span>
-                        <span className="text-xs font-display tracking-wider">{d.date}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Formato + Horarios en una fila */}
-                <div className="flex flex-col sm:flex-row gap-3.5">
-                  <div className="shrink-0">
-                    <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">Formato</p>
-                    <div className="flex gap-1.5">
-                      {[
-                        { fmt: '2D', price: '$11K' },
-                        { fmt: '3D', price: '$15K' },
-                        { fmt: 'IMAX', price: '$20K' },
-                      ].map(({ fmt, price }) => (
-                        <button
-                          key={fmt}
-                          onClick={() => setSelectedFormat(fmt)}
-                          className={`flex flex-col items-center px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all duration-150 cursor-pointer ${
-                            selectedFormat === fmt
-                              ? 'bg-gradient-to-r from-magenta to-vinotinto text-white shadow-md shadow-magenta/20'
-                              : 'bg-surface-light text-text-secondary border border-border hover:text-white hover:border-magenta/40'
-                          }`}
-                        >
-                          <span>{fmt}</span>
-                          <span className={`text-[9px] ${selectedFormat === fmt ? 'text-white/60' : 'text-text-secondary/40'}`}>{price}</span>
-                        </button>
-                      ))}
+                  {/* Reseñas públicas */}
+                  {reviews && reviews.length > 0 && (
+                    <div className="mt-2 mb-4 bg-carbon/50 border border-border/50 rounded-xl p-4">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                        <MessageSquare size={14} className="text-gold" />
+                        Comentarios de Usuarios
+                      </h4>
+                      <div className="space-y-3 max-h-32 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-magenta/30 scrollbar-track-carbon">
+                        {reviews.slice(0, 5).map((rev, idx) => (
+                          <div key={idx} className="text-sm border-b border-border/30 pb-2 last:border-0 last:pb-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-bold text-text-secondary">{rev.buyerName || 'Usuario'}</span>
+                              <div className="flex items-center text-gold">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} size={10} fill={i < (rev.rating || 0) ? 'currentColor' : 'none'} className={i < (rev.rating || 0) ? 'text-gold' : 'text-border'} />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-white/80 italic text-xs">"{rev.comment}"</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase mb-1.5">Horario</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {showtimes.map((time) => (
-                        <button
-                          key={time}
-                          onClick={() => setSelectedTime(time)}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs transition-all duration-150 cursor-pointer ${
-                            selectedTime === time
-                              ? 'border-gold bg-gold/10 text-gold'
-                              : 'border-border/40 bg-carbon text-text-secondary hover:border-gold/40 hover:text-white'
-                          }`}
-                        >
-                          <Clock4 size={11} />
-                          <span className="font-display text-sm tracking-wider">{time}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
 
-              {/* CTA FINAL */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                {canProceedToSeats && (
-                  <div className="flex-1 bg-carbon/40 border border-border/30 rounded-xl px-4 py-2 animate-[fadeIn_0.2s_ease-out]">
-                    <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">Selección</p>
-                    <p className="text-white text-sm font-medium">
-                      {selectedDate} • {selectedTime} • {selectedFormat}
-                      <span className="text-gold font-bold ml-2">{getPrice()}</span>
-                    </p>
-                  </div>
-                )}
-                <Button
-                  onClick={handleProceedToSeats}
-                  variant="primary"
-                  size="md"
-                  className={`w-full sm:w-auto px-8 rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)] ${
-                    !canProceedToSeats ? 'opacity-40 cursor-not-allowed' : ''
-                  }`}
-                  disabled={!canProceedToSeats}
-                >
-                  <Armchair size={16} />
-                  {canProceedToSeats ? 'Seleccionar Sillas' : 'Selecciona función'}
-                </Button>
-              </div>
-
+                  <ShowtimePicker
+                    multiplexName={multiplexName}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    selectedFormat={selectedFormat}
+                    setSelectedFormat={setSelectedFormat}
+                    selectedTime={selectedTime}
+                    setSelectedTime={setSelectedTime}
+                    selectedRoom={activeRoomName}
+                    canProceedToSeats={canProceedToSeats}
+                    handleProceedToSeats={handleProceedToSeats}
+                    backendScreenings={backendScreenings}
+                  />
                 </>
               )}
 
@@ -313,6 +226,29 @@ export default function MovieModal({ movie, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Modal Iframe de YouTube */}
+      {showTrailer && trailerKey && (
+        <div className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4 animate-[fadeIn_0.3s_ease-out]">
+          <button 
+            onClick={() => setShowTrailer(false)}
+            className="absolute top-6 right-6 text-white hover:text-magenta transition-colors"
+          >
+            <X size={32} />
+          </button>
+          <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-magenta/20 border border-border/50">
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   )
