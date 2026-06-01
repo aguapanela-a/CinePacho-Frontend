@@ -1,24 +1,11 @@
 import { MapPin, Clock4 } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
-import { ticketFormats } from '../../data/mockMoviesData'
+import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
 
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
   return `$${price.toLocaleString('es-CO')}`
-}
-
-const formatBackendDate = (dateString) => {
-  try {
-    const date = new Date(dateString)
-    return new Intl.DateTimeFormat('es-CO', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    }).format(date)
-  } catch {
-    return dateString
-  }
 }
 
 export default function ShowtimePicker({
@@ -36,30 +23,15 @@ export default function ShowtimePicker({
 }) {
   const { t } = useLanguage()
 
-  const backendDates = backendScreenings.length > 0
+  // Extraer horarios reales del backend si hay screenings, sino usar mocks
+  const showtimesList = backendScreenings.length > 0
     ? [...new Set(
         backendScreenings
-          .map(s => s.screeningDate?.substring(0, 10))
+          .filter(s => s.status === 'ACTIVE')
+          .map(s => s.screeningDate?.substring(11, 16)) // "HH:mm"
           .filter(Boolean)
       )].sort()
-    : []
-
-  const dateOptions = backendDates.length > 0
-    ? backendDates.map((date) => ({ value: date, label: formatBackendDate(date) }))
-    : []
-
-  const showtimesList = backendDates.length > 0
-    ? [...new Set(
-        backendScreenings
-          .filter((s) => s.status === 'ACTIVE')
-          .filter((s) => {
-            if (!selectedDate) return true
-            return s.screeningDate?.substring(0, 10) === selectedDate
-          })
-          .map(s => s.screeningDate?.substring(11, 16))
-          .filter(Boolean)
-      )].sort()
-    : []
+    : mockShowtimes
 
   return (
     <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
@@ -76,29 +48,23 @@ export default function ShowtimePicker({
           {t('movie.dateLabel') || 'Selecciona el Día'}
         </p>
         <div className="flex flex-wrap gap-2">
-          {dateOptions.length > 0 ? (
-            dateOptions.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  setSelectedDate(value)
-                  setSelectedTime('')
-                }}
-                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                  selectedDate === value
-                    ? 'border-magenta bg-magenta/10 text-white'
-                    : 'border-border/45 bg-carbon/50 text-text-secondary hover:text-white'
-                }`}
-              >
-                {label}
-              </button>
-            ))
-          ) : (
-            <div className="rounded-xl border border-border/40 bg-carbon/60 px-4 py-3 text-xs text-text-secondary">
-              {t('movie.noDatesAvailable') || 'No hay días disponibles para esta película en el multiplex seleccionado.'}
-            </div>
-          )}
+          {showtimeDates.map(({ dayKey, date }) => (
+            <button
+              key={dayKey}
+              type="button"
+              onClick={() => {
+                setSelectedDate(dayKey)
+                setSelectedTime('')
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                selectedDate === dayKey
+                  ? 'border-magenta bg-magenta/10 text-white'
+                  : 'border-border/45 bg-carbon/50 text-text-secondary hover:text-white'
+              }`}
+            >
+              {date}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -134,27 +100,21 @@ export default function ShowtimePicker({
           {t('movie.timeLabel') || 'Horarios Disponibles'}
         </p>
         <div className="flex flex-wrap gap-2">
-          {showtimesList.length > 0 ? (
-            showtimesList.map((time) => (
-              <button
-                key={time}
-                type="button"
-                onClick={() => setSelectedTime(time)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer ${
-                  selectedTime === time
-                    ? 'bg-gradient-to-r from-magenta to-vinotinto border-transparent text-white shadow-md shadow-magenta/10'
-                    : 'border-border/40 bg-carbon/40 text-text-secondary hover:text-white hover:bg-carbon'
-                }`}
-              >
-                <Clock4 size={12} />
-                <span className="font-display text-xs tracking-wider">{time}</span>
-              </button>
-            ))
-          ) : (
-            <div className="rounded-xl border border-border/40 bg-carbon/60 px-4 py-3 text-xs text-text-secondary">
-              {t('movie.noTimesAvailable') || 'No hay horarios activos disponibles para la fecha seleccionada.'}
-            </div>
-          )}
+          {showtimesList.map((time) => (
+            <button
+              key={time}
+              type="button"
+              onClick={() => setSelectedTime(time)}
+              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer ${
+                selectedTime === time
+                  ? 'bg-gradient-to-r from-magenta to-vinotinto border-transparent text-white shadow-md shadow-magenta/10'
+                  : 'border-border/40 bg-carbon/40 text-text-secondary hover:text-white hover:bg-carbon'
+              }`}
+            >
+              <Clock4 size={12} />
+              <span className="font-display text-xs tracking-wider">{time}</span>
+            </button>
+          ))}
         </div>
       </div>
 

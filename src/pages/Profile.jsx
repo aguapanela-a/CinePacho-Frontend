@@ -8,14 +8,8 @@ import ReviewModal from '../components/ReviewModal';
 import { getUserReviews } from '../services/reviewService';
 import { getMyPoints, redeemPoints } from '../services/pointsService';
 
-// Perfil BUYER usa:
-//  - GET /api/{buyerId}/review         => reseñas del usuario
-//  - GET /api/points                   => puntos e historial de puntos
-//  - POST /api/points/redeem           => canje de cupones
-// El backend actual no expone el UUID del comprador en el login.
-// Por eso las funciones de reseñas de usuario están deshabilitadas
-// hasta que el frontend reciba buyerId o un endpoint equivalente.
-// El historial de órdenes/boletas aún no está soportado por el backend actual.
+// TODO: reemplazar por GET /api/orders/my cuando el back lo implemente
+// import { getOrderHistory } from '../services/orderService'
 
 export default function Profile() {
   const { user, basePoints, setBasePoints } = useApp();
@@ -38,7 +32,6 @@ export default function Profile() {
   const [loadingPoints, setLoadingPoints] = useState(true);
   const [redeeming, setRedeeming] = useState(false);
   const [currentTime] = useState(() => Date.now());
-  const buyerIdMissing = user?.userType === 'BUYER' && !user?.id;
 
   // ── Cargar historial de órdenes ─────────────────────────────────────────────
   useEffect(() => {
@@ -46,9 +39,10 @@ export default function Profile() {
       setLoadingOrders(true)
       setOrdersError(null)
       try {
-        // El backend actual no expone un endpoint de historial de órdenes.
-        setOrderHistory([])
-        setOrdersError('El historial de órdenes aún no está disponible porque el backend no expone ese endpoint.')
+        // TODO: descomentar cuando el back implemente GET /api/orders/my
+        // const data = await getOrderHistory()
+        // setOrderHistory(Array.isArray(data) ? data : [])
+        setOrderHistory([]) // vacío hasta que el back esté listo
       } catch (err) {
         setOrdersError(err.message)
       } finally {
@@ -63,12 +57,8 @@ export default function Profile() {
     const fetchReviews = async () => {
       setLoadingReviews(true)
       try {
-        const buyerId = user?.id
-        if (!buyerId) {
-          console.warn('Profile: falta user.id en el login, no se pueden cargar las reseñas del usuario')
-          setUserReviews([])
-          return
-        }
+        const buyerId = user?.id ?? localStorage.getItem('cinepacho_buyer_id')
+        if (!buyerId) return
         const data = await getUserReviews(buyerId)
         setUserReviews(Array.isArray(data) ? data : [])
       } catch (err) {
@@ -314,16 +304,6 @@ export default function Profile() {
               </div>
             )}
 
-            {buyerIdMissing && (
-              <div className="mb-6 rounded-3xl border border-yellow-400/30 bg-yellow-500/10 p-4 text-yellow-900">
-                <p className="font-bold">Funcionalidad de reseñas limitada</p>
-                <p className="text-sm">
-                  El backend actual no está entregando el UUID del comprador en el login,
-                  por lo que no es posible usar las reseñas personales.
-                </p>
-              </div>
-            )}
-
             {!loadingOrders && orderHistory.length > 0 && (
               <div className="space-y-4">
                 {orderHistory.map((order) => (
@@ -357,14 +337,6 @@ export default function Profile() {
                         <span className="text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl">
                           ✓ {t('review.reviewed') || 'Evaluado'}
                         </span>
-                      ) : buyerIdMissing ? (
-                        <button
-                          disabled
-                          className="text-xs font-bold text-border bg-border/10 border border-border/30 px-3 py-2 rounded-xl cursor-not-allowed"
-                          title="Reseñas no disponibles sin el UUID del comprador"
-                        >
-                          {t('review.evaluate') || 'Evaluar'}
-                        </button>
                       ) : (
                         <button
                           onClick={() => setReviewOrder(order)}
@@ -401,14 +373,7 @@ export default function Profile() {
               </div>
             )}
 
-            {!loadingReviews && buyerIdMissing && (
-              <div className="rounded-3xl border border-yellow-400/30 bg-yellow-500/10 p-4 text-yellow-900 text-sm">
-                El backend actual no entrega el UUID necesario para consultar tus reseñas.
-                Las reseñas personales están deshabilitadas hasta que el login incluya buyerId.
-              </div>
-            )}
-
-            {!loadingReviews && !buyerIdMissing && userReviews.length === 0 && (
+            {!loadingReviews && userReviews.length === 0 && (
               <p className="text-text-secondary text-sm text-center py-4">
                 No has realizado ninguna valoración aún.
               </p>

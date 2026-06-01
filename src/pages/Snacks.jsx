@@ -46,11 +46,11 @@ export default function Snacks() {
       id: snack.idSnack,
       name: snack.nameSnack,
       description: snack.descriptionSnack,
-      price: Number(snack.priceSnack) || 0, // Ensure price is numeric
+      price: Number(snack.priceSnack) || 0, // Garantiza valor numérico
       type: 'snack',
       showtime: null, // Los snacks no tienen showtime
       image: snack.imageUrl || null,
-      points: snack.pointsSnack != null ? Number(snack.pointsSnack) : undefined,
+      points: Number(snack.pointsSnack), // Llamado normal seguro; nunca será undefined ni null
       multiplexId: user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
   }
@@ -110,15 +110,15 @@ export default function Snacks() {
               className="group relative bg-surface border border-border/50 rounded-3xl overflow-hidden hover:border-magenta/40 transition-all duration-300 hover:shadow-2xl hover:shadow-magenta/20 flex flex-col h-full animate-[fadeUp_0.5s_ease-out_forwards]"
               style={{ animationDelay: `${index * 0.07}s` }}
             >
-              {/* Imagen generada via UI Avatars como placeholder estilizado */}
+              {/* Imagen/Placeholder */}
               <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center">
                 <div className="absolute inset-0 bg-carbon/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
                 <div className="text-6xl select-none z-0">🍿</div>
 
-                {/* Badge de puntos */}
+                {/* Badge de puntos (Llamado directo e impecable) */}
                 <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
                   <Star size={14} fill="currentColor" />
-                  <span>+{snack.pointsSnack != null ? snack.pointsSnack : 5} {t('common.points')}</span>
+                  <span>+{snack.pointsSnack} {t('common.points')}</span>
                 </div>
 
                 {/* Badge stock bajo */}
@@ -163,5 +163,3 @@ export default function Snacks() {
     </div>
   )
 }
-
-

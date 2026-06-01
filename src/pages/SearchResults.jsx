@@ -21,11 +21,7 @@ export default function SearchResults() {
   const [results, setResults] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const DEFAULT_MULTIPLEX_ID =
-    user?.multiplexId ||
-    import.meta.env.VITE_DEFAULT_MULTIPLEX_ID ||
-    import.meta.env.VITE_MULTIPLEX_TITAN_ID
-
+  const DEFAULT_MULTIPLEX_ID = '550e8400-e29b-41d4-a716-446655440000'
   const canSearchMultiplexMovies = Boolean(
     token && user && ['BUYER', 'EMPLOYEE', 'MANAGER'].includes(user.userType)
   )

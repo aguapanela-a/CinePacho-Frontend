@@ -1,15 +1,4 @@
-/**
- * api.js — Capa base de comunicación con el backend
- *
- * Centraliza:
- * - Configuración automática de la URL base
- * - Adjuntar el header Authorization: Bearer <token>
- * - Parsear la respuesta como JSON
- * - Lanzar errores HTTP descriptivos
- */
 
-// Intentamos leer la variable de entorno.
-// Si estamos en Vercel y falla, forzamos la URL de producción de Railway.
 let BASE_URL = import.meta.env.VITE_API_URL || ''
 
 if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
@@ -26,6 +15,34 @@ function getHeaders(extra = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
   }
+}
+
+/**
+ * Función auxiliar para normalizar recursivamente las propiedades de los snacks,
+ * subsanando la falta de mapeo del campo 'pointsSnack' en el backend.
+ * @param {any} obj - Objeto o arreglo proveniente de la API
+ * @returns {any} - Objeto con los datos de snacks normalizados
+ */
+function normalizeSnacks(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+
+  // Si el objeto actual representa un DTO de Snack (identificado por su idSnack)
+  if (Object.prototype.hasOwnProperty.call(obj, 'idSnack')) {
+    if (obj.pointsSnack === null || obj.pointsSnack === undefined) {
+      obj.pointsSnack = 5 // Valor por defecto seguro para el flujo del frontend
+    }
+  }
+
+  // Recorremos de manera recursiva en caso de estructuras anidadas o arreglos
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      obj[key] = normalizeSnacks(obj[key])
+    }
+  }
+
+  return obj
 }
 
 /**
@@ -63,7 +80,8 @@ export async function apiFetch(endpoint, options = {}) {
       throw error
     }
 
-    return data
+    // Normalizamos la respuesta antes de retornarla para limpiar los DTOs de snacks
+    return normalizeSnacks(data)
   } catch (error) {
     if (error instanceof TypeError) {
       const networkError = new Error(
@@ -75,4 +93,3 @@ export async function apiFetch(endpoint, options = {}) {
     throw error
   }
 }
-

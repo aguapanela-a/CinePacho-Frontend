@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   X,
 } from 'lucide-react'
+import { getEmployeesByMultiplex } from '../../data/mockMultiplexData'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -24,7 +25,7 @@ export default function MultiplexEmployees({
 }) {
   const { t } = useLanguage()
   const [multiplex, setMultiplex] = useState(null)
-  const [employees, setEmployees] = useState([])
+  const [employees, setEmployees] = useState(() => getEmployeesByMultiplex(multiplexId))
 
   useEffect(() => {
     if (!multiplexId) return
@@ -237,15 +238,6 @@ export default function MultiplexEmployees({
           </table>
         </div>
       </div>
-      {filteredEmployees.length === 0 && (
-        <div className="mt-6 bg-yellow-500/10 border border-yellow-500/20 rounded-3xl p-6 text-sm text-yellow-100">
-          <p className="font-semibold mb-2">Información backend no disponible</p>
-          <p>
-            Actualmente no existe un endpoint backend para listar empleados por multiplex.
-            El componente muestra datos vacíos porque no hay una API oficial que lo provea.
-          </p>
-        </div>
-      )}
 
       {/* Modal Agregar Empleado */}
       {isAddModalOpen && (
