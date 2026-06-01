@@ -18,7 +18,7 @@ ubicados en los diferentes multiplex.
 
 ## Integrantes
 - Camilo Andres Martinez Duarte - 20231020019
-- (Nombre 2)
+- Dilan Stive Arboleda Zambrano - 20212020105
 - (Nombre 3)
 - (Nombre 4)
 - (Nombre 5)

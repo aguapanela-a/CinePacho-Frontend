@@ -1,0 +1,803 @@
+import { useState } from 'react'
+import {
+  Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock, QrCode
+} from 'lucide-react'
+import { Scanner } from '@yudiel/react-qr-scanner'
+import { useApp } from '../../context/useApp'
+import { useToast } from '../../context/ToastContext'
+import { useLanguage } from '../../context/LanguageContext'
+import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { getUnitPrice } from '../../utils/formatCurrency'
+import { getMovieSelectorsByMultiplex } from '../../services/movieService'
+import { getAllSnacks } from '../../services/snackService'
+import { createCheckoutSession } from '../../services/paymentService'
+import { scanTicket } from '../../services/employeeService'
+import { validateVoucher } from '../../services/pointsService'
+import { searchCustomerByQuery } from '../../services/customerService'
+import { saveOrderSnapshot } from '../../utils/orderSnapshot'
+
+export default function CashierDashboard() {
+  const { user, logoutUser, cart, addToCart, removeFromCart, setCart } = useApp() // Usar el carrito global
+  const toast = useToast()
+  const { t } = useLanguage()
+  const navigate = useNavigate()
+
+  const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
+  const [movies, setMovies] = useState([])
+  const [snacks, setSnacks] = useState([])
+
+  // QR Scanner
+  const [isScanning, setIsScanning] = useState(false)
+  const [isScanProcessing, setIsScanProcessing] = useState(false)
+
+  // Cargar datos
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const multiplexId = user?.multiplexId
+        if (!multiplexId) {
+          setMovies([])
+          return
+        }
+        const moviesResp = await getMovieSelectorsByMultiplex(multiplexId)
+        if (Array.isArray(moviesResp)) {
+          setMovies(moviesResp.map(item => ({
+            id: item.movieInfo.id,
+            title: item.movieInfo.originalTitle,
+            posterUrl: item.movieInfo.posterPath,
+            screenings: item.screenings || [], // Guardar screenings reales
+          })))
+        } else {
+          setMovies([])
+        }
+      } catch {
+        setMovies([])
+      }
+
+      try {
+        const snacksResp = await getAllSnacks()
+        if (Array.isArray(snacksResp) && snacksResp.length > 0) {
+          setSnacks(snacksResp.map(s => ({
+            id: s.idSnack, // UUID real del backend
+            name: s.nameSnack,
+            price: s.priceSnack,
+            imageUrl: s.imageUrl || 'https://via.placeholder.com/150' // Placeholder para imágenes si no vienen del backend
+          })))
+        } else {
+          setSnacks([])
+        }
+      } catch {
+        setSnacks([])
+      }
+    }
+    loadData()
+  }, [])
+
+  // Customer
+  const [searchCustomer, setSearchCustomer] = useState('')
+  const [activeCustomer, setActiveCustomer] = useState(null)
+  const [manualEmail, setManualEmail] = useState('')
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [wantsPoints, setWantsPoints] = useState(false)
+
+  // Voucher / Cupón
+  const [voucherCode, setVoucherCode] = useState('')
+  const [validatingVoucher, setValidatingVoucher] = useState(false)
+  const [appliedVoucher, setAppliedVoucher] = useState(null)
+
+  // Ticket Selection Modal
+  const [selectedMovie, setSelectedMovie] = useState(null)
+
+  // Extraer las funciones reales si existen, sino fallback
+  const movieScreenings = selectedMovie?.screenings?.filter(s => s.status === 'ACTIVE') || []
+
+  // Agrupar screenings por hora (HH:mm)
+  const availableShowtimes = movieScreenings.length > 0
+    ? [...new Set(movieScreenings.map(s => s.screeningDate?.substring(11, 16)).filter(Boolean))].sort()
+    : []
+
+  const [selectedTime, setSelectedTime] = useState(null)
+
+  // Salas disponibles para la hora seleccionada
+  const availableRooms = movieScreenings.length > 0 && selectedTime
+    ? movieScreenings
+      .filter(s => s.screeningDate?.substring(11, 16) === selectedTime)
+      .map(s => ({ id: s.roomId, name: s.roomNumber, screeningId: s.screeningId, price: s.price, formats: s.formats || [] }))
+    : []
+
+  const [selectedRoomObj, setSelectedRoomObj] = useState(null)
+
+  // Puntos fijos por compra
+  const POINTS_PER_PURCHASE = 10 // Esto podría venir del backend o ser dinámico
+
+  const handleLogout = () => {
+    logoutUser()
+    navigate('/login')
+  }
+
+  const handleSelectMovie = (movie) => {
+    setSelectedMovie(movie)
+    setSelectedTime(null)
+    setSelectedRoomObj(null)
+  }
+
+  const handleAddTicket = (time, format, price) => {
+    if (!selectedRoomObj) {
+      toast.error('Por favor selecciona una sala')
+      return
+    }
+    if (!selectedRoomObj.screeningId) {
+      toast.error('No se encontró la función seleccionada')
+      return
+    }
+
+    const item = {
+      id: `${selectedMovie.id}-${time}-${format}-${selectedRoomObj.name}`,
+      name: `Boleta ${format} - ${selectedMovie.title} (${time}) - ${selectedRoomObj.name}`,
+      price: Number(price) || 0,
+      type: 'ticket',
+      showtime: `${time} - ${selectedRoomObj.name}`,
+      qty: 1,
+      image: selectedMovie.posterUrl,
+      screeningId: selectedRoomObj.screeningId,
+    }
+    addToCart(item)
+    setSelectedMovie(null)
+    setSelectedTime(null)
+    setSelectedRoomObj(null)
+  }
+
+  const handleAddSnackToCart = (snack) => {
+    const item = {
+      id: snack.id,
+      name: snack.name,
+      price: Number(snack.price) || 0, // Ensure price is numeric
+      type: 'snack',
+      qty: 1,
+      image: snack.imageUrl || null, // Asumiendo que snack tiene imageUrl
+    }
+    addToCart(item)
+  }
+
+  const handleRemoveFromCart = (itemToRemove) => {
+    removeFromCart(itemToRemove.id, itemToRemove.type, itemToRemove.showtime)
+  }
+
+  // Calcular total sin descuento
+  const subtotal = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
+
+  // Calcular descuento (la boleta más barata)
+  let discount = 0
+  if (appliedVoucher) {
+    let cheapestTicketPrice = Infinity
+    cart.forEach(item => {
+      if (item.type === 'ticket') {
+        const p = getUnitPrice(item)
+        if (p < cheapestTicketPrice) cheapestTicketPrice = p
+      }
+    })
+    if (cheapestTicketPrice !== Infinity) {
+      discount = cheapestTicketPrice
+    }
+  }
+
+  const total = Math.max(0, subtotal - discount)
+
+  const handleSearchCustomer = async () => {
+    if (!searchCustomer.trim()) return
+    try {
+      const found = await searchCustomerByQuery(searchCustomer.trim())
+      if (found) {
+        setActiveCustomer(found)
+        setSearchCustomer('')
+      } else {
+        toast.error(t('cashier.customerNotFound'))
+      }
+    } catch {
+      toast.error(t('cashier.customerNotFound'))
+    }
+  }
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return
+
+    try {
+      const snacksPayloadMap = new Map()
+
+      // Agrupar tickets por screeningId — el cajero debe tener todos los tickets de la misma función
+      const ticketItems = cart.filter(item => item.type === 'ticket')
+      const screeningIds = [...new Set(ticketItems.map(item => item.screeningId).filter(Boolean))]
+
+      if (ticketItems.length > 0 && screeningIds.length === 0) {
+        toast.error('Los tickets no tienen una función válida asociada.')
+        return
+      }
+      if (screeningIds.length > 1) {
+        toast.error('Solo se puede procesar una función por venta. Separa los tickets por función.')
+        return
+      }
+
+      const screeningId = screeningIds[0] || null
+
+      // Seats: el cajero opera sin mapa de sala, se envía lista vacía y el backend asigna asientos disponibles
+      // Si el backend requiere seatId explícito, este flujo debe redirigirse al selector de asientos
+      const seats = ticketItems.flatMap(item =>
+        item.seatIds
+          ? item.seatIds.map(seatId => ({ seatId }))
+          : []
+      )
+
+      cart.forEach(item => {
+        if (item.type === 'snack') {
+          if (snacksPayloadMap.has(item.id)) {
+            snacksPayloadMap.get(item.id).quantity += item.qty
+          } else {
+            snacksPayloadMap.set(item.id, { snackId: item.id, quantity: item.qty })
+          }
+        }
+      })
+
+      const buyerEmail = activeCustomer ? activeCustomer.email : manualEmail
+      if (!buyerEmail) {
+        toast.error('Debe seleccionar un cliente o ingresar un correo electrónico antes de cobrar.')
+        return
+      }
+
+      if (ticketItems.length > 0 && !screeningId) {
+        toast.error('No se encontró la función para los tickets seleccionados.')
+        return
+      }
+
+      const payload = {
+        screeningId,
+        seats,
+        snacks: Array.from(snacksPayloadMap.values()),
+        buyerEmail
+      }
+
+      const result = await createCheckoutSession(
+        payload.screeningId,
+        payload.seats,
+        payload.snacks,
+        payload.buyerEmail
+      )
+
+      if (result.sessionUrl) {
+        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify(payload))
+        if (result.paymentId) {
+          localStorage.setItem('cinepacho_payment_id', result.paymentId)
+        }
+        saveOrderSnapshot({ cart, cartTotal: total, pendingPoints: 0, buyerEmail, shippingInfo: null })
+        window.location.href = result.sessionUrl
+      } else {
+        toast.error('Error al generar sesión de pago.')
+      }
+    } catch (err) {
+      toast.error('Error al procesar pago: ' + err.message)
+    }
+  }
+
+  const resetPOS = () => {
+    setCart([]) // Limpiar carrito global
+    setActiveCustomer(null)
+    setWantsPoints(false)
+    setShowSuccess(false)
+    setAppliedVoucher(null)
+    setVoucherCode('')
+    setManualEmail('')
+  }
+
+  const [scanResultUI, setScanResultUI] = useState(null) // { type: 'success' | 'error', message: '' }
+
+  const handleScan = async (result) => {
+    if (!result || isScanProcessing) return
+    const billingId = result[0]?.rawValue || result // Asegúrate de que extraiga el UUID del QR
+
+    if (billingId) {
+      setIsScanProcessing(true)
+      try {
+        // LLAMADA EXACTA: PUT /api/checkout/employee/billing/{billingId}/scan
+        // Pasa el token del empleado en los headers dentro de tu servicio
+        const response = await scanTicket(billingId)
+        setScanResultUI({
+          type: 'success',
+          message: response?.message || 'Entrada válida. Bienvenido a CinePacho'
+        })
+      } catch (err) {
+        setScanResultUI({
+          type: 'error',
+          message: err.message || 'Entrada Inválida o ya escaneada'
+        })
+      } finally {
+        setIsScanProcessing(false)
+        setTimeout(() => setScanResultUI(null), 4000)
+      }
+    }
+  }
+
+  const handleValidateVoucher = async () => {
+    if (!voucherCode) return
+    setValidatingVoucher(true)
+    try {
+      const data = await validateVoucher(voucherCode)
+      toast.success('Cupón validado. Descuento aplicado.')
+      setAppliedVoucher(data || true) // Save voucher data
+    } catch (err) {
+      toast.error(err.message || 'Cupón inválido o expirado')
+      setVoucherCode('')
+    } finally {
+      setValidatingVoucher(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-carbon text-white flex flex-col h-screen overflow-hidden">
+      {/* ── Navbar del Cajero ── */}
+      <header className="h-16 bg-surface border-b border-border/50 flex items-center justify-between px-6 shrink-0 z-10 relative">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-gold to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-gold/20">
+            <Ticket size={20} className="text-carbon" />
+          </div>
+          <div>
+            <h1 className="font-display tracking-widest text-lg uppercase text-white leading-none">
+              Punto de Venta
+            </h1>
+            <p className="text-[10px] font-bold tracking-widest text-gold uppercase mt-1">Cine Pacho POS</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="text-right hidden md:block">
+            <p className="text-sm font-bold leading-none">{user?.name || 'Cajero'}</p>
+            <p className="text-xs text-text-secondary mt-1">Sede: Titán</p>
+          </div>
+          <button
+            onClick={() => setIsScanning(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-magenta/10 text-magenta hover:bg-magenta/20 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+          >
+            <QrCode size={16} />
+            Escanear QR
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+          >
+            <LogOut size={16} />
+            Salir
+          </button>
+        </div>
+      </header>
+
+      {/* ── Main Layout ── */}
+      <div className="flex-1 flex overflow-hidden relative z-10">
+
+        {/* Catálogo (Izquierda) */}
+        <div className="flex-1 overflow-hidden flex flex-col bg-carbon/50">
+
+          {/* Tabs */}
+          <div className="flex p-6 pb-0 gap-4">
+            <button
+              onClick={() => setActiveTab('tickets')}
+              className={`flex-1 py-4 rounded-t-2xl font-display tracking-widest uppercase transition-colors flex justify-center items-center gap-2 cursor-pointer ${activeTab === 'tickets' ? 'bg-surface border-t border-x border-border/50 text-magenta' : 'bg-transparent text-text-secondary border-b border-border/50 hover:text-white'
+                }`}
+            >
+              <Film size={20} /> Películas
+            </button>
+            <button
+              onClick={() => setActiveTab('snacks')}
+              className={`flex-1 py-4 rounded-t-2xl font-display tracking-widest uppercase transition-colors flex justify-center items-center gap-2 cursor-pointer ${activeTab === 'snacks' ? 'bg-surface border-t border-x border-border/50 text-gold' : 'bg-transparent text-text-secondary border-b border-border/50 hover:text-white'
+                }`}
+            >
+              <Popcorn size={20} /> Snacks
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 bg-surface border-t-0 border-border/50">
+            {activeTab === 'tickets' && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {movies.map(movie => (
+                  <button
+                    key={movie.id}
+                    onClick={() => handleSelectMovie(movie)}
+                    className="bg-carbon border border-border/50 rounded-2xl overflow-hidden hover:border-magenta/50 hover:shadow-[0_0_15px_rgba(200,22,122,0.3)] transition-all group cursor-pointer text-left flex flex-col"
+                  >
+                    <div className="aspect-[2/3] overflow-hidden w-full relative">
+                      <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-carbon via-transparent to-transparent" />
+                    </div>
+                    <div className="p-4 pt-2">
+                      <span className="font-bold text-sm text-white line-clamp-1 group-hover:text-magenta transition-colors">{movie.title}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'snacks' && (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {snacks.map(snack => (
+                  <button
+                    key={snack.id}
+                    onClick={() => handleAddSnackToCart(snack)} // Usar la nueva función
+                    className="bg-carbon border border-border/50 rounded-2xl p-5 text-left hover:border-gold/50 hover:bg-gold/5 transition-all group flex flex-col h-32 cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Popcorn size={18} className="text-gold" />
+                    </div>
+                    <span className="font-bold text-sm text-text-primary line-clamp-1">{snack.name}</span>
+                    <span className="text-gold font-bold mt-auto">${snack.price.toLocaleString('es-CO')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Panel lateral derecho (Cliente y Carrito) */}
+        <div className="w-96 bg-surface border-l border-border/50 flex flex-col shrink-0">
+          {/* Módulo de Cliente */}
+          <div className="p-5 border-b border-border/50">
+            <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-3">Cliente (Fidelización)</h3>
+
+            {activeCustomer ? (
+              <div className="bg-carbon border border-green-500/30 rounded-xl p-4 relative">
+                <button
+                  onClick={() => setActiveCustomer(null)}
+                  className="absolute top-2 right-2 text-text-secondary hover:text-red-400 cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
+                    <UserCheck size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-white">{activeCustomer.name}</p>
+                    <p className="text-xs text-text-secondary">Puntos: <span className="text-gold font-bold">{activeCustomer.points}</span></p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+                    <input
+                      type="text"
+                      placeholder="CC o Email..."
+                      value={searchCustomer}
+                      onChange={(e) => setSearchCustomer(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchCustomer()}
+                      className="w-full bg-carbon border border-border/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-gold transition-colors"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSearchCustomer}
+                    className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+                  >
+                    Buscar
+                  </button>
+                </div>
+                <div className="border-t border-border/50 pt-3">
+                  <input
+                    type="email"
+                    placeholder="Correo (Si no está registrado)"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    className="w-full bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-gold transition-colors placeholder-text-secondary"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Carrito de Compras POS */}
+          <div className="flex-1 overflow-y-auto p-5">
+            <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-4">Orden Actual</h3>
+
+            {cart.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-text-secondary">
+                <ShoppingCart size={32} className="mb-3 opacity-20" />
+                <p className="text-sm">No hay productos en la orden</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cart.map(item => (
+                  <div key={`${item.id}-${item.type}-${item.showtime}`} className="bg-carbon rounded-xl p-3 flex items-center justify-between group">
+                    <div className="flex-1 pr-3 min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{item.name}</p>
+                      <p className="text-[10px] text-text-secondary mt-0.5">${getUnitPrice(item).toLocaleString('es-CO')} x {item.qty}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <p className="text-sm font-bold text-gold">${(getUnitPrice(item) * item.qty).toLocaleString('es-CO')}</p>
+                      <button
+                        onClick={() => handleRemoveFromCart(item)}
+                        className="text-text-secondary hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Checkout Footer */}
+          <div className="p-5 border-t border-border/50 bg-carbon/50 mt-auto">
+            {/* Voucher Section */}
+            {activeCustomer && cart.some(i => i.type === 'ticket') && (
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Código de cupón"
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    className="flex-1 bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-magenta disabled:opacity-50"
+                    disabled={appliedVoucher !== null || validatingVoucher}
+                  />
+                  {!appliedVoucher ? (
+                    <button
+                      onClick={handleValidateVoucher}
+                      disabled={!voucherCode || validatingVoucher}
+                      className="px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {validatingVoucher ? '...' : 'Aplicar'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setAppliedVoucher(null); setVoucherCode(''); }}
+                      className="px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-sm cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                {appliedVoucher && discount > 0 && (
+                  <p className="text-xs text-green-400 font-bold mt-2">
+                    ¡Cupón aplicado! Descuento: -${discount.toLocaleString('es-CO')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-text-secondary font-bold uppercase tracking-widest text-sm">Total a pagar</span>
+              <span className="text-3xl font-display text-white">${total.toLocaleString('es-CO')}</span>
+            </div>
+
+            {activeCustomer && cart.length > 0 && (
+              <div className="mb-4 bg-gold/10 border border-gold/30 rounded-xl p-4">
+
+                <p className="text-xs font-bold text-gold uppercase tracking-widest mb-3">
+                  ¿Desea acumular puntos?
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setWantsPoints(true)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${wantsPoints
+                      ? 'bg-gold text-carbon'
+                      : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
+                      }`}
+                  >
+                    Sí
+                  </button>
+
+                  <button
+                    onClick={() => setWantsPoints(false)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${!wantsPoints
+                      ? 'bg-red-500 text-white'
+                      : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
+                      }`}
+                  >
+                    No
+                  </button>
+                </div>
+
+                {wantsPoints && (
+                  <p className="text-xs text-gold font-bold mt-3 text-center">
+                    🌟 El cliente ganará{' '}
+                    <span className="text-white">
+                      {POINTS_PER_PURCHASE} puntos
+                    </span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0}
+              className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg ${cart.length > 0
+                ? 'bg-gradient-to-r from-gold to-yellow-600 text-carbon shadow-gold/20 hover:opacity-90 cursor-pointer'
+                : 'bg-border/50 text-text-secondary cursor-not-allowed'
+                }`}
+            >
+              Cobrar e Imprimir
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Modal de Selección de Función ── */}
+      {selectedMovie && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-surface border border-border/50 rounded-3xl p-6 relative animate-[scaleIn_0.2s_ease-out_forwards]">
+            <button
+              onClick={() => setSelectedMovie(null)}
+              className="absolute top-4 right-4 text-text-secondary hover:text-white bg-carbon rounded-full p-1 cursor-pointer transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex gap-6 mb-6">
+              <img src={selectedMovie.posterUrl} alt={selectedMovie.title} className="w-24 h-auto rounded-xl object-cover shadow-lg" />
+              <div>
+                <h2 className="text-2xl font-display text-white uppercase tracking-widest mb-1">{selectedMovie.title}</h2>
+                <p className="text-magenta font-bold text-sm">Selecciona una función</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Clock size={14} /> Horarios Disponibles
+                </h3>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {availableShowtimes.map(time => (
+                    <button
+                      key={time}
+                      onClick={() => {
+                        setSelectedTime(time)
+                        setSelectedRoomObj(null)
+                      }}
+                      className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${selectedTime === time
+                        ? 'bg-magenta text-white'
+                        : 'bg-carbon border border-border/50 text-text-secondary hover:border-magenta/50 hover:text-white'
+                        }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedTime && availableRooms.length > 0 && (
+                <div>
+                  <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                    Sala
+                  </h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-4">
+                    {availableRooms.map(room => (
+                      <button
+                        key={room.id}
+                        onClick={() => setSelectedRoomObj(room)}
+                        className={`py-2 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer text-center ${selectedRoomObj?.id === room.id
+                          ? 'bg-cyan-400 text-carbon'
+                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-cyan-400/50 hover:text-white'
+                          }`}
+                      >
+                        {room.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedRoomObj && (
+                    <div className="bg-carbon border border-border/50 rounded-xl p-4 text-center mt-4">
+                      <p className="font-bold text-white mb-3 text-sm">Selecciona el Formato</p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        {(selectedRoomObj.formats || []).length > 0 ? (
+                          selectedRoomObj.formats.map(({ fmt, generalPrice }) => (
+                            <button
+                              key={fmt}
+                              onClick={() => handleAddTicket(selectedTime, fmt, generalPrice)}
+                              className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
+                            >
+                              {fmt}: ${(generalPrice / 1000).toFixed(0)}k
+                            </button>
+                          ))
+                        ) : (
+                          // Si el backend no devuelve formatos en el screening, ofrecer entrada general con el precio del screening
+                          <button
+                            onClick={() => handleAddTicket(selectedTime, 'General', selectedRoomObj.price || 0)}
+                            className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
+                          >
+                            General{selectedRoomObj.price ? `: $${(selectedRoomObj.price / 1000).toFixed(0)}k` : ''}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Venta Exitosa ── */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-surface border border-border/50 rounded-3xl p-8 text-center animate-[scaleIn_0.2s_ease-out_forwards]">
+            <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle size={40} className="text-green-400" />
+            </div>
+            <h2 className="text-2xl font-display text-white tracking-widest uppercase mb-2">Venta Exitosa</h2>
+            <p className="text-text-secondary mb-6">Total cobrado: <strong className="text-white">${total.toLocaleString('es-CO')}</strong></p>
+
+            {activeCustomer && wantsPoints && (
+              <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 mb-6">
+                <p className="text-gold font-bold text-sm mb-1">¡Puntos Asignados!</p>
+                <p className="text-white text-xs">Se sumaron {POINTS_PER_PURCHASE} pts a la cuenta de {activeCustomer.name}</p>
+              </div>
+            )}
+
+            <button
+              onClick={resetPOS}
+              className="w-full bg-carbon border border-border/50 hover:border-gold/50 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer"
+            >
+              Nueva Venta
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Escáner QR ── */}
+      {isScanning && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 relative animate-[scaleIn_0.2s_ease-out_forwards]">
+            <button
+              onClick={() => setIsScanning(false)}
+              className="absolute top-4 right-4 text-text-secondary hover:text-white bg-carbon rounded-full p-1 cursor-pointer transition-colors z-10"
+            >
+              <X size={20} />
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-magenta/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <QrCode size={24} className="text-magenta" />
+              </div>
+              <h2 className="text-xl font-display text-white tracking-widest uppercase mb-1">Escanear Entrada</h2>
+              <p className="text-text-secondary text-sm">Ubique el código QR frente a la cámara</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-magenta/30 aspect-square relative">
+              {isScanProcessing && (
+                <div className="absolute inset-0 bg-black/60 z-10 flex items-center justify-center">
+                  <p className="text-white font-bold animate-pulse">Procesando...</p>
+                </div>
+              )}
+              <Scanner
+                onScan={handleScan}
+                onError={(err) => console.error(err)}
+                styles={{ container: { width: '100%', height: '100%' } }}
+                components={{ audio: false, finder: false }}
+              />
+            </div>
+
+            {/* Feedback visual gigante para el portero */}
+            {scanResultUI && (
+              <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center animate-[scaleIn_0.3s_ease-out_forwards] ${scanResultUI.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  {scanResultUI.type === 'success' ? <CheckCircle size={48} /> : <X size={48} />}
+                </div>
+                <h2 className="text-3xl font-display uppercase tracking-widest mb-2 shadow-sm">
+                  {scanResultUI.type === 'success' ? '¡ACCESO PERMITIDO!' : 'ACCESO DENEGADO'}
+                </h2>
+                <p className="text-lg font-bold shadow-sm">{scanResultUI.message}</p>
+                <button
+                  onClick={() => setScanResultUI(null)}
+                  className="mt-8 px-6 py-2 bg-white/20 hover:bg-white/30 rounded-xl font-bold transition-colors cursor-pointer"
+                >
+                  Continuar Escaneando
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
