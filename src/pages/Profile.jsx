@@ -31,6 +31,7 @@ export default function Profile() {
   const [pointsHistory, setPointsHistory] = useState([]);
   const [loadingPoints, setLoadingPoints] = useState(true);
   const [redeeming, setRedeeming] = useState(false);
+  const [currentTime] = useState(() => Date.now());
 
   // ── Cargar historial de órdenes ─────────────────────────────────────────────
   useEffect(() => {
@@ -231,7 +232,7 @@ export default function Profile() {
                 {pointsHistory.map((pt, i) => (
                   <div key={i} className="flex justify-between items-center bg-carbon border border-border/30 rounded-xl p-3">
                     <div>
-                      <span className="text-xs text-text-secondary block">{new Date(pt.date || pt.createdAt || Date.now()).toLocaleDateString('es-CO')}</span>
+                      <span className="text-xs text-text-secondary block">{new Date(pt.date || pt.createdAt || currentTime).toLocaleDateString('es-CO')}</span>
                       <span className="text-sm font-bold text-white/90">{pt.reason || 'Suma de puntos'}</span>
                     </div>
                     <span className={`text-sm font-bold ${pt.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
