@@ -16,7 +16,7 @@ export const getMultiplexById = (id) =>
 
 /**
  * POST /admin/multiplexes — Crea un nuevo multiplex
- * @param {{ nameMultiplex, addressMultiplex, cityMultiplex }} data
+ * @param {{ nameMultiplex, addressMultiplex, cityMultiplex, numberOfRooms, generalSeatPrice, preferentialSeatPrice}} data
  */
 export const createMultiplex = (data) =>
   apiFetch('/api/admin/multiplexes', {
@@ -27,7 +27,7 @@ export const createMultiplex = (data) =>
 /**
  * PUT /admin/multiplexes/{id} — Actualiza un multiplex existente
  * @param {string} id
- * @param {{ nameMultiplex, addressMultiplex, cityMultiplex }} data
+ * @param {{ nameMultiplex, addressMultiplex, cityMultiplex, numberOfRooms, generalSeatPrice, preferentialSeatPrice}} data
  */
 export const updateMultiplex = (id, data) =>
   apiFetch(`/api/admin/multiplexes/${id}`, {
