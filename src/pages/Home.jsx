@@ -61,6 +61,7 @@ export default function Home() {
     navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
+  // Cargar cartelera por Multiplex
   useEffect(() => {
     const fetchMovies = async () => {
       setIsLoading(true)
@@ -85,17 +86,19 @@ export default function Home() {
           ? data.map(item => ({
               id: item.movieInfo?.id,
               title: item.movieInfo?.originalTitle || item.movieInfo?.title || 'Sin título',
+              originalTitle: item.movieInfo?.originalTitle || item.movieInfo?.title || 'Sin título',
               year: item.movieInfo?.releaseDate?.substring(0, 4) || 'N/A',
               duration: '120m',
               genre: item.movieInfo?.genreIds?.length > 0
                 ? item.movieInfo.genreIds[0].name
                 : 'N/A',
-              rating: item.rating,
-              synopsis: item.movieInfo?.overview,
-              posterUrl: item.movieInfo?.posterPath,
-              backdropUrl: item.movieInfo?.backdropPath,
+              rating: item.rating || 0.0,
+              overview: item.movieInfo?.overview || '',
+              posterPath: item.movieInfo?.posterPath,
+              backdropPath: item.movieInfo?.backdropPath,
               multiplexes: ['Todos', activePlex],
               screenings: item.screenings || [],
+              trailerKey: item.key || ''
             }))
           : []
         setMovies(mappedMovies)
@@ -110,24 +113,26 @@ export default function Home() {
     fetchMovies()
   }, [activePlex, search, canLoadMultiplexMovies])
 
-  // Cargar Top 10 películas (Público)
+  // Cargar Top 10 películas (Público) - Sincronizado con MovieListingResponseDTO del Backend
   useEffect(() => {
     const fetchTopMovies = async () => {
       try {
         const top = await getTopRatedMovies()
         if (Array.isArray(top)) {
           setTopMovies(top.map(item => ({
-            id: item.idMovie,
-            title: item.originalTitle || item.title,
+            id: item.idMovie, 
+            title: item.originalTitle || 'Sin título',
+            originalTitle: item.originalTitle || 'Sin título',
             year: item.year || 'N/A',
             duration: '120m',
             genre: Array.isArray(item.genres) && item.genres.length > 0 ? item.genres[0] : 'N/A',
-            rating: item.rating || 0,
-            synopsis: item.overview || '',
-            posterUrl: item.posterPath,
-            backdropUrl: item.backdropPath,
+            rating: item.rating || 0.0,
+            overview: item.overview || '',
+            posterPath: item.posterPath,
+            backdropPath: item.backdropPath,
             multiplexes: ['Todos'],
             screenings: [],
+            trailerKey: ''
           })))
         }
       } catch (error) {
@@ -137,32 +142,27 @@ export default function Home() {
     fetchTopMovies()
   }, [])
 
-  // El Hero mostrará el Top 1 de TopRated si está disponible, si no el primero de la cartelera
   const featuredMovie = topMovies.length > 0 ? topMovies[0] : (movies.length > 0 ? movies[0] : null)
   const displayMultiplex = activePlex
 
   const filteredMovies = useMemo(() => {
-    // El filtro de texto y multiplex ya lo hace el backend.
-    // Solo clonamos el array para aplicar el ordenamiento local.
     let result = [...movies]
-
     if (sortBy === 'rating') {
       result.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     }
-
     return result
   }, [movies, sortBy])
 
   return (
     <div className="min-h-screen pb-12">
-      {/* Sección Hero: Punto focal primario diseñado para alto impacto visual y conversión inmediata */}
+      {/* Sección Hero */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-10">
         <div className="relative w-full rounded-3xl overflow-hidden min-h-[450px] lg:min-h-[500px] flex items-center bg-carbon border border-border/50 animate-[fadeUp_0.5s_ease-out_forwards]">
 
           {featuredMovie && (
             <div className="absolute inset-0 z-0">
               <img
-                src={featuredMovie.backdropUrl || featuredMovie.posterUrl}
+                src={featuredMovie.backdropPath || featuredMovie.posterPath}
                 alt={`${featuredMovie.title} Background`}
                 loading="eager"
                 fetchPriority="high"
@@ -174,7 +174,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Capa de Contenido (Izquierda): Textos e interacciones con Jerarquía tipográfica definida */}
           <div className="relative z-10 p-8 sm:p-12 lg:p-16 w-full lg:w-3/5">
             {featuredMovie ? (
               <div className="space-y-6">
@@ -199,7 +198,7 @@ export default function Home() {
                 </div>
 
                 <p className="text-text-primary/90 text-sm sm:text-base leading-relaxed max-w-md font-body">
-                  {featuredMovie.synopsis}
+                  {featuredMovie.overview}
                 </p>
 
                 <div className="pt-2">
@@ -224,12 +223,11 @@ export default function Home() {
             )}
           </div>
 
-          {/* Overlay Decorativo (Derecha): Tarjeta interactiva con Floating Animation (Aislamiento visual) */}
           <div className="hidden lg:block absolute right-16 top-1/2 -translate-y-1/2 z-20 animate-[float_6s_ease-in-out_infinite]">
             {featuredMovie ? (
               <div className="relative w-64 rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl shadow-magenta/20 bg-carbon cursor-pointer" onClick={() => setSelectedMovie(featuredMovie)}>
                 <img
-                  src={featuredMovie.posterUrl}
+                  src={featuredMovie.posterPath}
                   alt={`${featuredMovie.title} Poster`}
                   loading="lazy"
                   className="w-full h-auto hover:scale-105 transition-transform duration-500"
@@ -262,7 +260,7 @@ export default function Home() {
                   {idx + 1}
                 </div>
                 <div className="rounded-2xl overflow-hidden border border-border/50 group-hover:border-gold/50 transition-colors shadow-lg">
-                  <img src={movie.posterUrl} alt={movie.title} className="w-full aspect-[2/3] object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={movie.posterPath} alt={movie.title} className="w-full aspect-[2/3] object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
                 <h3 className="text-white font-bold text-sm mt-3 truncate group-hover:text-gold transition-colors">{movie.title}</h3>
                 <div className="flex items-center gap-1 text-gold text-xs mt-1">
@@ -283,7 +281,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Componentes de Filtrado de Inventario: Sistema de búsqueda bidireccional (Texto/Sedes) */}
+      {/* Componentes de Filtrado */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-30 -mt-6">
         <div className="bg-surface/60 backdrop-blur-xl border border-border/50 p-6 rounded-3xl shadow-xl space-y-6">
           <form className="grid gap-4" onSubmit={handleSearchSubmit}>
@@ -337,7 +335,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Sección Principal de Inventario (Cartelera) */}
+      {/* Cartelera Principal */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <div className="flex items-center justify-between mb-10">
           <div>
@@ -377,15 +375,25 @@ export default function Home() {
         )}
       </section>
 
-      {/* Renderizado Condicional del Modal: Controlado por el estado local setSelectedMovie */}
-      <MovieModal
-        movie={selectedMovie}
-        multiplexName={displayMultiplex}
-        multiplexId={canLoadMultiplexMovies ? getMultiplexId(displayMultiplex) : null}
-        onClose={() => setSelectedMovie(null)}
-      />
+      {/* Renderizado Condicional del Modal de Películas */}
+      {selectedMovie && (
+        <MovieModal
+          movie={{
+            id: selectedMovie.id,
+            title: selectedMovie.title,
+            originalTitle: selectedMovie.originalTitle,
+            overview: selectedMovie.overview,
+            posterPath: selectedMovie.posterPath,
+            backdropPath: selectedMovie.backdropPath,
+            rating: selectedMovie.rating,
+            trailerKey: selectedMovie.trailerKey
+          }}
+          screenings={selectedMovie.screenings || []}
+          multiplexName={displayMultiplex}
+          multiplexId={canLoadMultiplexMovies ? getMultiplexId(displayMultiplex) : null}
+          onClose={() => setSelectedMovie(null)}
+        />
+      )}
     </div>
   )
 }
-
-

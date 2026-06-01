@@ -19,8 +19,9 @@ export default function Snacks() {
     const fetchSnacks = async () => {
       setLoading(true)
       setError(null)
-      // Si el usuario no se ha logueado, se expone el multiplex por defecto para el catálogo público
-      const multiplexId = user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
+      
+      // Soporta tanto multiplexId como idMultiplex viniendo del usuario autenticado
+      const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
 
       if (!multiplexId) {
         setSnacks([])
@@ -53,7 +54,7 @@ export default function Snacks() {
       showtime: null, 
       image: snack.imageUrl || null,
       points: Number(snack.pointsSnack) || 0, 
-      multiplexId: user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
+      multiplexId: user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
   }
 
