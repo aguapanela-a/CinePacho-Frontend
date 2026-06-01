@@ -216,7 +216,20 @@ const handleEditEmployee = () => {
       multiplexId: lockedMultiplexId || ''
     })
 
-    initialEmployees.push(payload)
+
+    initialEmployees.push(
+      {
+        id: Math.floor(Math.random() * 10000) + 4, // ID aleatorio para demo
+        nombre: newEmployee.name,
+        correo: newEmployee.email,
+        telefono: newEmployee.phoneNumber,
+        cargo: newEmployee.rol,
+        multiplex: finalMultiplexId,
+        fechaContrato: newEmployee.fechaContrato,
+        fechaRotacion: Date.now(),
+        estado: 'Activo'
+      }
+    )
 
     setIsModalOpen(false)
   } catch (err) {
