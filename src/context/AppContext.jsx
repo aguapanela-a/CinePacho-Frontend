@@ -25,14 +25,22 @@ export function AppProvider({ children }) {
 
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('cinepacho_user')
-    return saved ? JSON.parse(saved) : null
+    if (!saved) return null
+    try {
+      const parsed = JSON.parse(saved)
+      if (parsed && parsed.userType) parsed.userType = String(parsed.userType).toUpperCase()
+      return parsed
+    } catch (e) {
+      return null
+    }
   })
 
   const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
 
   const loginUser = (authResponse) => {
     const { token: jwt, userType, name, multiplexId } = authResponse
-    const userData = { name, userType, multiplexId }
+    const normalizedType = userType ? String(userType).toUpperCase() : userType
+    const userData = { name, userType: normalizedType, multiplexId }
 
     localStorage.setItem('cinepacho_token', jwt)
     localStorage.setItem('cinepacho_user', JSON.stringify(userData))
