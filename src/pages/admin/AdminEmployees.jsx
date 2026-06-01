@@ -20,39 +20,39 @@ import { useApp } from '../../context/useApp'
 
 
 const initialEmployees = [
-  {
-    id: 1,
-    nombre: 'Laura González',
-    correo: 'laura@cinepacho.com',
-    telefono: '3001234567',
-    cargo: 'Cajero',
-    multiplex: 'Titán',
-    estado: 'Activo',
-    fechaContrato: '2024-01-15',
-    fechaRotacion: '2024-04-15',
-  },
-  {
-    id: 2,
-    nombre: 'Carlos Ramírez',
-    correo: 'carlos@cinepacho.com',
-    telefono: '3119876543',
-    cargo: 'Director',
-    multiplex: 'Unicentro',
-    estado: 'Activo',
-    fechaContrato: '2023-06-01',
-    fechaRotacion: '2023-09-01',
-  },
-  {
-    id: 3,
-    nombre: 'Ana Torres',
-    correo: 'ana@cinepacho.com',
-    telefono: '3204567890',
-    cargo: 'Despachador de comida',
-    multiplex: 'Gran Estación',
-    estado: 'Inactivo',
-    fechaContrato: '2024-02-20',
-    fechaRotacion: '2024-05-20',
-  },
+  // {
+  //   id: 1,
+  //   nombre: 'Laura González',
+  //   correo: 'laura@cinepacho.com',
+  //   telefono: '3001234567',
+  //   cargo: 'Cajero',
+  //   multiplex: 'Titán',
+  //   estado: 'Activo',
+  //   fechaContrato: '2024-01-15',
+  //   fechaRotacion: '2024-04-15',
+  // },
+  // {
+  //   id: 2,
+  //   nombre: 'Carlos Ramírez',
+  //   correo: 'carlos@cinepacho.com',
+  //   telefono: '3119876543',
+  //   cargo: 'Director',
+  //   multiplex: 'Unicentro',
+  //   estado: 'Activo',
+  //   fechaContrato: '2023-06-01',
+  //   fechaRotacion: '2023-09-01',
+  // },
+  // {
+  //   id: 3,
+  //   nombre: 'Ana Torres',
+  //   correo: 'ana@cinepacho.com',
+  //   telefono: '3204567890',
+  //   cargo: 'Despachador de comida',
+  //   multiplex: 'Gran Estación',
+  //   estado: 'Inactivo',
+  //   fechaContrato: '2024-02-20',
+  //   fechaRotacion: '2024-05-20',
+  // },
 ]
 
 export default function AdminEmployees() {
@@ -76,6 +76,7 @@ export default function AdminEmployees() {
     phoneNumber: '',
     salary: '',
     rol: '',
+    startDate: '',
     multiplexId: ''
   })
   const [creating, setCreating] = useState(false);
@@ -96,6 +97,7 @@ export default function AdminEmployees() {
     phoneNumber: '',
     salary: '',
     rol: '',
+    startDate: '',
     multiplexId: lockedMultiplexId || ''
   })
 
@@ -119,8 +121,8 @@ export default function AdminEmployees() {
   }, [])
 
   const filteredEmployees = employees.filter((employee) =>
-    employee.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    employee.correo.toLowerCase().includes(search.toLowerCase()) ||
+    employee.name.toLowerCase().includes(search.toLowerCase()) ||
+    employee.email.toLowerCase().includes(search.toLowerCase()) ||
     employee.multiplex.toLowerCase().includes(search.toLowerCase())
 
 
@@ -178,6 +180,7 @@ const handleEditEmployee = () => {
     !newEmployee.phoneNumber ||
     !newEmployee.salary ||
     !newEmployee.rol ||
+    !newEmployee.startDate ||
     !finalMultiplexId
   ) {
     setErrorForm('Todos los campos son obligatorios')
@@ -197,9 +200,11 @@ const handleEditEmployee = () => {
       phoneNumber: newEmployee.phoneNumber,
       salary: Number(newEmployee.salary),
       rol: newEmployee.rol,
+      startDate: `${newEmployee.startDate}T00:00:00`, // Convertir a formato ISO
       multiplexId: finalMultiplexId
     }
 
+    
     console.log('Payload enviado:', payload)
 
     await registerEmployee(payload)
@@ -213,23 +218,24 @@ const handleEditEmployee = () => {
       phoneNumber: '',
       salary: '',
       rol: '',
+      startDate: '',
       multiplexId: lockedMultiplexId || ''
     })
 
 
-    initialEmployees.push(
-      {
-        id: Math.floor(Math.random() * 10000) + 4, // ID aleatorio para demo
-        nombre: newEmployee.name,
-        correo: newEmployee.email,
-        telefono: newEmployee.phoneNumber,
-        cargo: newEmployee.rol,
-        multiplex: finalMultiplexId,
-        fechaContrato: newEmployee.fechaContrato,
-        fechaRotacion: Date.now(),
-        estado: 'Activo'
-      }
-    )
+    // initialEmployees.push(
+    //   {
+    //     id: Math.floor(Math.random() * 10000) + 4, // ID aleatorio para demo
+    //     nombre: newEmployee.name,
+    //     correo: newEmployee.email,
+    //     telefono: newEmployee.phoneNumber,
+    //     cargo: newEmployee.rol,
+    //     multiplex: finalMultiplexId,
+    //     fechaContrato: newEmployee.fechaContrato,
+    //     fechaRotacion: Date.now(),
+    //     estado: 'Activo'
+    //   }
+    // )
 
     setIsModalOpen(false)
   } catch (err) {
@@ -341,7 +347,7 @@ const handleEditEmployee = () => {
 
                       <div>
                         <p className="font-bold text-white">
-                          {employee.nombre}
+                          {employee.name}
                         </p>
 
                         <p className="text-xs text-text-secondary">
@@ -355,12 +361,12 @@ const handleEditEmployee = () => {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm text-text-primary">
                         <Mail size={14} className="text-magenta" />
-                        {employee.correo}
+                        {employee.email}
                       </div>
 
                       <div className="flex items-center gap-2 text-sm text-text-secondary">
                         <Phone size={14} />
-                        {employee.telefono}
+                        {employee.phoneNumber}
                       </div>
                     </div>
                   </td>
@@ -368,7 +374,7 @@ const handleEditEmployee = () => {
                   <td className="px-6 py-5">
                     <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 text-gold px-3 py-1.5 rounded-full text-sm font-bold">
                       <BadgeCheck size={14} />
-                      {employee.cargo}
+                      {employee.rol}
                     </div>
                   </td>
 
@@ -382,13 +388,13 @@ const handleEditEmployee = () => {
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-text-primary">
-                        {employee.fechaContrato ? new Date(employee.fechaContrato).toLocaleDateString('es-CO') : '-'}
+                        {employee.startDate ? new Date(employee.startDate).toLocaleDateString('es-CO') : '-'}
                       </span>
                       {/* Alerta: Sin rotar en 3+ meses */}
                       {(() => {
-                        const referenceDate = employee.fechaRotacion
-                          ? new Date(employee.fechaRotacion)
-                          : (employee.fechaContrato ? new Date(employee.fechaContrato) : null); // Use fechaContrato if fechaRotacion is null
+                        const referenceDate = employee.roleUpdateAt
+                          ? new Date(employee.roleUpdateAt)
+                          : (employee.startDate ? new Date(employee.startDate) : null); // Use startDate if roleUpdateAt is null
                         const threeMonthsAgo = new Date();
                         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -634,9 +640,9 @@ const handleEditEmployee = () => {
                 </label>
                 <input
                   type="date"
-                  value={newEmployee.fechaContrato}
+                  value={newEmployee.startDate} 
                   onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, fechaContrato: e.target.value })
+                    setNewEmployee({ ...newEmployee, startDate: e.target.value })
                   }
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 />
