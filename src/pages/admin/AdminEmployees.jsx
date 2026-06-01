@@ -68,38 +68,34 @@ export default function AdminEmployees() {
   const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
 
   const [newEmployee, setNewEmployee] = useState({
-    nombre: '',
-    correo: '',
-    telefono: '',
-    cargo: '',
+    email: '',
+    name: '',
     password: '',
-    identityCard: '',
+    userType: '',
+    indentityCard: '',
+    phoneNumber: '',
     salary: '',
-    fechaContrato: '',
-    userType: 'EMPLOYEE',
-    multiplexId: '',
-    multiplexName: '',
+    rol: '',
+    multiplexId: ''
   })
   const [creating, setCreating] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
 
   const openCreateEmployee = () => {
     const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
-    const lockedMultiplex = multiplexes.find((m) => (m.idMultiplex || m.id) === lockedMultiplexId)
+    // const lockedMultiplex = multiplexes.find((m) => (m.idMultiplex || m.id) === lockedMultiplexId)
 
     setNewEmployee((prev) => ({
       ...prev,
-      nombre: '',
-      correo: '',
-      telefono: '',
-      cargo: '',
+      email: '',
+      name: '',
       password: '',
-      identityCard: '',
+      userType: '',
+      indentityCard: '',
+      phoneNumber: '',
       salary: '',
-      fechaContrato: '',
-      userType: 'EMPLOYEE',
-      multiplexId: lockedMultiplexId || '',
-      multiplexName: lockedMultiplex?.nameMultiplex || '',
+      rol: '',
+      lockedMultiplexId: ''
     }))
     setErrorForm(null)
     setIsModalOpen(true)
@@ -163,82 +159,64 @@ const handleEditEmployee = () => {
 
 //Crear empleados local
   const handleCreateEmployee = async () => {
-    const lockedMultiplexId = user?.userType === 'MANAGER' ? user?.multiplexId : ''
-    const finalMultiplexId = lockedMultiplexId || newEmployee.multiplexId
+  const lockedMultiplexId =
+    user?.userType === 'MANAGER' ? user?.multiplexId : '';
 
-    if (
-      !newEmployee.nombre ||
-      !newEmployee.correo ||
-      !newEmployee.telefono ||
-      !newEmployee.cargo ||
-      !newEmployee.password ||
-      !newEmployee.identityCard ||
-      !newEmployee.salary ||
-      !newEmployee.fechaContrato ||
-      !newEmployee.userType ||
-      !finalMultiplexId
-    ) {
-      setErrorForm('Todos los campos son obligatorios')
-      return
-    }
+  const finalMultiplexId =
+    lockedMultiplexId || newEmployee.multiplexId;
 
-    setCreating(true)
-    setErrorForm(null)
-
-    try {
-      const payload = {
-        name: newEmployee.nombre,
-        email: newEmployee.correo,
-        password: newEmployee.password,
-        userType: newEmployee.userType,
-        identityCard: newEmployee.identityCard,
-        phoneNumber: newEmployee.telefono,
-        salary: parseFloat(newEmployee.salary),
-        position: newEmployee.cargo,
-        multiplexId: finalMultiplexId,
-      }
-
-        await registerEmployee(payload)
-
-        const multiplexMatch = multiplexes.find((m) => (m.idMultiplex || m.id) === finalMultiplexId)
-        const multiplexName = multiplexMatch?.nameMultiplex || newEmployee.multiplexName || '—'
-
-        setEmployees((prev) => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            nombre: newEmployee.nombre,
-            correo: newEmployee.correo,
-            telefono: newEmployee.telefono,
-            cargo: newEmployee.cargo,
-            multiplex: multiplexName,
-            estado: 'Activo',
-            fechaContrato: newEmployee.fechaContrato,
-          },
-        ])
-
-        setNewEmployee({
-          nombre: '',
-          correo: '',
-          telefono: '',
-          cargo: '',
-          password: '',
-          identityCard: '',
-          salary: '',
-          fechaContrato: '',
-          userType: 'EMPLOYEE',
-          multiplexId: lockedMultiplexId || '',
-          multiplexName: '',
-        })
-
-        setIsModalOpen(false)
-
-    } catch (err) {
-      setErrorForm(err.message)
-    } finally {
-      setCreating(false)
-    }
+  if (
+    !newEmployee.email ||
+    !newEmployee.name ||
+    !newEmployee.phoneNumber ||
+    !newEmployee.rol ||
+    !newEmployee.password ||
+    !newEmployee.indentityCard ||
+    !newEmployee.salary ||
+    !newEmployee.userType ||
+    !finalMultiplexId
+  ) {
+    setErrorForm('Todos los campos son obligatorios');
+    return;
   }
+
+  setCreating(true);
+  setErrorForm(null);
+
+  try {
+    const payload = {
+      email: newEmployee.email,
+      name: newEmployee.name,
+      password: newEmployee.password,
+      userType: newEmployee.userType,
+      indentityCard: newEmployee.indentityCard,
+      phoneNumber: newEmployee.phoneNumber,
+      salary: Number(newEmployee.salary),
+      position: newEmployee.rol,
+      multiplexId: finalMultiplexId,
+    };
+
+    await registerEmployee(payload);
+
+    setNewEmployee({
+      email: '',
+      name: '',
+      password: '',
+      userType: 'EMPLOYEE',
+      indentityCard: '',
+      phoneNumber: '',
+      salary: '',
+      rol: '',
+      multiplexId: lockedMultiplexId || '',
+    });
+
+    setIsModalOpen(false);
+  } catch (err) {
+    setErrorForm(err.message);
+  } finally {
+    setCreating(false);
+  }
+};
 
   return (
      <AdminLayout>
