@@ -197,7 +197,7 @@ export default function AdminMovies() {
           {selectedMovie && (
             <div className="mb-6 flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-2xl px-5 py-3">
               <CheckCircle size={18} className="text-green-400 flex-shrink-0" />
-              <span className="text-green-400 font-bold">{selectedMovie.originalTitle}</span>
+              <p className="text-green-400 font-bold">{selectedMovie.title}</p>
               <span className="text-text-secondary text-sm">seleccionada. Ve a "Crear Función" para programarla.</span>
             </div>
           )}
@@ -218,10 +218,10 @@ export default function AdminMovies() {
                 >
                   {/* Poster */}
                   <div className="relative aspect-[2/3] bg-carbon overflow-hidden">
-                    {movie.posterPath ? (
+                    {movie.backdrop_path ? (
                       <img
-                        src={`${TMDB_IMAGE}${movie.posterPath}`}
-                        alt={movie.originalTitle}
+                        src={`${TMDB_IMAGE}${movie.backdrop_path}`}
+                        alt={movie.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
@@ -242,9 +242,9 @@ export default function AdminMovies() {
 
                   {/* Info */}
                   <div className="p-3">
-                    <p className="text-white text-xs font-bold truncate">{movie.originalTitle}</p>
+                    <p className="text-white text-xs font-bold truncate">{movie.title}</p>
                     <p className="text-text-secondary text-xs mt-0.5">
-                      {movie.releaseDate?.split('-')[0] || '—'}
+                      {movie.release_date?.split('-')[0] || '—'}
                     </p>
                   </div>
                 </div>
@@ -281,16 +281,16 @@ export default function AdminMovies() {
 
           {selectedMovie && (
             <div className="flex items-center gap-4 bg-surface/50 border border-border/50 rounded-2xl p-4 mb-6">
-              {selectedMovie.posterPath && (
+              {selectedMovie.backdrop_path && (
                 <img
-                  src={`${TMDB_IMAGE}${selectedMovie.posterPath}`}
-                  alt={selectedMovie.originalTitle}
+                  src={`${TMDB_IMAGE}${selectedMovie.backdrop_path}`}
+                  alt={selectedMovie.title}
                   className="w-12 h-16 rounded-xl object-cover flex-shrink-0"
                 />
               )}
               <div>
                 <p className="text-xs text-text-secondary uppercase tracking-widest">Película seleccionada</p>
-                <p className="text-white font-bold text-lg">{selectedMovie.originalTitle}</p>
+                <p className="text-white font-bold text-lg">{selectedMovie.title}</p>
                 {selectedMovie.director && (
                   <p className="text-text-secondary text-sm">Dir: {selectedMovie.director}</p>
                 )}
