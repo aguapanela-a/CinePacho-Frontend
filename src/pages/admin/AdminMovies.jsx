@@ -245,12 +245,12 @@ export default function AdminMovies() {
                   className="group bg-surface/80 border border-border/50 rounded-2xl overflow-hidden hover:border-magenta/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-magenta/10"
                 >
                   {/* Poster */}
-                  <div className="relative aspect-[2/3] bg-carbon overflow-hidden">
+                  <div className="relative aspect-[2/3] bg-carbon overflow-hidden rounded-t-2xl">
                     {movie.backdrop_path ? (
                       <img
                         src={`${TMDB_IMAGE}${movie.backdrop_path}`}
                         alt={movie.originalTitle}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
