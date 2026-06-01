@@ -14,6 +14,30 @@ const STATUS_CONFIG = {
   CANCELLED: { label: 'Cancelada',  icon: XCircle,     cls: 'bg-red-500/15 text-red-400 border-red-500/20' },
   COMPLETED: { label: 'Completada', icon: Clock,        cls: 'bg-text-secondary/15 text-text-secondary border-border/40' },
 }
+const GENRES = [
+    {  "id": 28, "name": "Acción" },
+    {  "id": 12,  "name": "Aventura" },
+    {  "id": 16,  "name": "Animación"},
+    {  "id": 35,  "name": "Comedia"},
+    {  "id": 80,  "name": "Crimen"},
+    {  "id": 99,  "name": "Documental"},
+    {  "id": 18,  "name": "Drama"},
+    {  "id": 10751,  "name": "Familia"},
+    {  "id": 14,  "name": "Fantasía"},
+    {  "id": 36,  "name": "Historia"},
+    {  "id": 27,  "name": "Horror"},
+    {  "id": 10402,  "name": "Música"},
+    {  "id": 9648,  "name": "Misterio"},
+    {  "id": 10749,  "name": "Romance"},
+    {  "id": 878,  "name": "Ciencia ficción"},
+    {  "id": 10770,  "name": "Película de TV"},
+    {  "id": 53,  "name": "Suspenso"},
+    {  "id": 10752,  "name": "Bélica"},
+    {  "id": 37,  "name": "Oeste"}
+  ]
+
+
+
 export default function AdminMovies() {
   const [tab, setTab] = useState('buscar')
 
@@ -39,6 +63,10 @@ export default function AdminMovies() {
       setSearching(false)
     }
   }, [])
+
+  const genreMap = Object.fromEntries(
+    GENRES.map(g => [g.id, g.name])
+  );
 
   const onQueryChange = (e) => {
     const val = e.target.value
@@ -197,7 +225,7 @@ export default function AdminMovies() {
           {selectedMovie && (
             <div className="mb-6 flex items-center gap-3 bg-green-500/10 border border-green-500/30 rounded-2xl px-5 py-3">
               <CheckCircle size={18} className="text-green-400 flex-shrink-0" />
-              <p className="text-green-400 font-bold">{selectedMovie.title}</p>
+              <span className="text-green-400 font-bold">{selectedMovie.title}</span>
               <span className="text-text-secondary text-sm">seleccionada. Ve a "Crear Función" para programarla.</span>
             </div>
           )}
@@ -221,8 +249,8 @@ export default function AdminMovies() {
                     {movie.backdrop_path ? (
                       <img
                         src={`${TMDB_IMAGE}${movie.backdrop_path}`}
-                        alt={movie.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        alt={movie.originalTitle}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -244,7 +272,12 @@ export default function AdminMovies() {
                   <div className="p-3">
                     <p className="text-white text-xs font-bold truncate">{movie.title}</p>
                     <p className="text-text-secondary text-xs mt-0.5">
-                      {movie.release_date?.split('-')[0] || '—'}
+                      {
+                        movie.genre_ids
+                          ?.map(id => genreMap[id])
+                          .filter(Boolean)
+                          .join(', ') || 'Género desconocido'
+                      }
                     </p>
                   </div>
                 </div>
@@ -436,7 +469,7 @@ export default function AdminMovies() {
                       return (
                         <tr key={sc.screeningId} className="hover:bg-carbon/40 transition-colors">
                           <td className="py-4 px-4">
-                            <p className="font-bold text-white">{sc.originalTitle}</p>
+                            <p className="font-bold text-white">{sc.title}</p>
                             <p className="text-xs text-text-secondary">{sc.director}</p>
                           </td>
                           <td className="py-4 px-4 text-sm text-text-secondary">{sc.multiplexName}</td>
