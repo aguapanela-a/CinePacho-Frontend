@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Search, ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock, QrCode
+  ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock, QrCode
 } from 'lucide-react'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import { useApp } from '../../context/useApp'
@@ -14,7 +14,6 @@ import { getAllSnacks } from '../../services/snackService'
 import { createCheckoutSession } from '../../services/paymentService'
 import { scanTicket } from '../../services/employeeService'
 import { validateVoucher } from '../../services/pointsService'
-// Customer search endpoint no existe en backend actual.
 import { saveOrderSnapshot } from '../../utils/orderSnapshot'
 
 export default function CashierDashboard() {
@@ -57,7 +56,7 @@ export default function CashierDashboard() {
       }
 
       try {
-        const snacksResp = await getAllSnacks()
+        const snacksResp = await getAllSnacks(multiplexId)
         if (Array.isArray(snacksResp) && snacksResp.length > 0) {
           setSnacks(snacksResp.map(s => ({
             id: s.idSnack, // UUID real del backend
@@ -76,9 +75,9 @@ export default function CashierDashboard() {
   }, [])
 
   // Customer
-  const [searchCustomer, setSearchCustomer] = useState('')
   const [activeCustomer, setActiveCustomer] = useState(null)
   const [manualEmail, setManualEmail] = useState('')
+  const [cashOnlyMode, setCashOnlyMode] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [wantsPoints, setWantsPoints] = useState(false)
 
@@ -89,6 +88,8 @@ export default function CashierDashboard() {
 
   // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [selectedSeatIdsByScreening, setSelectedSeatIdsByScreening] = useState({})
+  const [isSeatSelectorOpen, setIsSeatSelectorOpen] = useState(false)
 
   // Extraer las funciones reales si existen, sino fallback
   const movieScreenings = selectedMovie?.screenings?.filter(s => s.status === 'ACTIVE') || []
@@ -108,6 +109,24 @@ export default function CashierDashboard() {
     : []
 
   const [selectedRoomObj, setSelectedRoomObj] = useState(null)
+
+  const ticketItems = cart.filter(item => item.type === 'ticket')
+  const ticketScreeningIds = [...new Set(ticketItems.map(item => item.screeningId).filter(Boolean))]
+  const ticketScreeningId = ticketScreeningIds[0] || null
+  const ticketRoomId = ticketItems[0]?.roomId || null
+  const ticketFormat = ticketItems[0]?.format || '2D'
+  const ticketCount = ticketItems.reduce((total, item) => total + (item.qty || 0), 0)
+  const ticketSeatIdsFromCart = [...new Set(ticketItems.flatMap(item => Array.isArray(item.seatIds) ? item.seatIds : []))]
+  const selectedSeatIds = ticketScreeningId
+    ? selectedSeatIdsByScreening[ticketScreeningId] || ticketSeatIdsFromCart
+    : ticketSeatIdsFromCart
+  const needsSeatSelection = ticketCount > 0 && selectedSeatIds.length !== ticketCount
+
+  useEffect(() => {
+    if (cart.length === 0) {
+      setSelectedSeatIdsByScreening({})
+    }
+  }, [cart])
 
   // Puntos fijos por compra
   const POINTS_PER_PURCHASE = 10 // Esto podría venir del backend o ser dinámico
@@ -142,6 +161,10 @@ export default function CashierDashboard() {
       qty: 1,
       image: selectedMovie.posterUrl,
       screeningId: selectedRoomObj.screeningId,
+      roomId: selectedRoomObj.id,
+      roomName: selectedRoomObj.name,
+      format,
+      multiplexId: user?.multiplexId || null,
     }
     addToCart(item)
     setSelectedMovie(null)
@@ -157,8 +180,26 @@ export default function CashierDashboard() {
       type: 'snack',
       qty: 1,
       image: snack.imageUrl || null, // Asumiendo que snack tiene imageUrl
+      multiplexId: user?.multiplexId || null,
     }
     addToCart(item)
+  }
+
+  const openSeatSelector = () => {
+    if (!ticketScreeningId || !ticketRoomId) {
+      toast.error('No hay información de la función disponible para seleccionar asientos.')
+      return
+    }
+    setIsSeatSelectorOpen(true)
+  }
+
+  const handleConfirmSeatSelection = (seats) => {
+    if (!ticketScreeningId) return
+    setSelectedSeatIdsByScreening(prev => ({
+      ...prev,
+      [ticketScreeningId]: seats,
+    }))
+    setIsSeatSelectorOpen(false)
   }
 
   const handleRemoveFromCart = (itemToRemove) => {
@@ -185,14 +226,6 @@ export default function CashierDashboard() {
 
   const total = Math.max(0, subtotal - discount)
 
-  const handleSearchCustomer = async () => {
-    if (!CUSTOMER_SEARCH_ENABLED) {
-      toast.error('Busqueda de clientes no disponible en el backend actual.')
-      return
-    }
-    if (!searchCustomer.trim()) return
-  }
-
   const handleCheckout = async () => {
     if (cart.length === 0) return
 
@@ -202,6 +235,15 @@ export default function CashierDashboard() {
       // Agrupar tickets por screeningId — el cajero debe tener todos los tickets de la misma función
       const ticketItems = cart.filter(item => item.type === 'ticket')
       const screeningIds = [...new Set(ticketItems.map(item => item.screeningId).filter(Boolean))]
+      const ticketQty = ticketItems.reduce((acc, item) => acc + (item.qty || 0), 0)
+      const screeningId = screeningIds[0] || null
+      const seatIdsFromCart = [...new Set(ticketItems.flatMap(item => Array.isArray(item.seatIds) ? item.seatIds : []))]
+      const selectedSeatIds = seatIdsFromCart.length > 0 ? seatIdsFromCart : (screeningId ? selectedSeatIdsByScreening[screeningId] || [] : [])
+
+      if (ticketItems.length === 0) {
+        toast.error('Este punto de venta solo admite ventas que incluyan tickets. Agrega al menos una boleta y vuelve a intentar.')
+        return
+      }
 
       if (ticketItems.length > 0 && screeningIds.length === 0) {
         toast.error('Los tickets no tienen una función válida asociada.')
@@ -212,28 +254,30 @@ export default function CashierDashboard() {
         return
       }
 
-      const screeningId = screeningIds[0] || null
+      if (ticketQty > 0 && selectedSeatIds.length !== ticketQty) {
+        toast.error('Debes seleccionar asientos para todas las boletas antes de cobrar. Usa el botón "Seleccionar sillas" en la orden actual.')
+        return
+      }
 
-      // Seats: el cajero opera sin mapa de sala, se envía lista vacía y el backend asigna asientos disponibles
-      // Si el backend requiere seatId explícito, este flujo debe redirigirse al selector de asientos
-      const seats = ticketItems.flatMap(item =>
-        item.seatIds
-          ? item.seatIds.map(seatId => ({ seatId }))
-          : []
-      )
+      const seats = selectedSeatIds.map(seatId => ({ seatId }))
 
       cart.forEach(item => {
         if (item.type === 'snack') {
           if (snacksPayloadMap.has(item.id)) {
             snacksPayloadMap.get(item.id).quantity += item.qty
           } else {
-            snacksPayloadMap.set(item.id, { snackId: item.id, quantity: item.qty })
+            snacksPayloadMap.set(item.id, {
+              snackId: item.id,
+              quantity: item.qty,
+              multiplexId: item.multiplexId || user?.multiplexId || null,
+            })
           }
         }
       })
 
       const buyerEmail = activeCustomer ? activeCustomer.email : manualEmail
-      if (!buyerEmail) {
+
+      if (!cashOnlyMode && !buyerEmail) {
         toast.error('Debe seleccionar un cliente o ingresar un correo electrónico antes de cobrar.')
         return
       }
@@ -248,6 +292,12 @@ export default function CashierDashboard() {
         seats,
         snacks: Array.from(snacksPayloadMap.values()),
         buyerEmail
+      }
+
+      if (cashOnlyMode) {
+        saveOrderSnapshot({ cart, cartTotal: total, pendingPoints: 0, buyerEmail: 'cliente.generico', shippingInfo: null })
+        setShowSuccess(true)
+        return
       }
 
       const result = await createCheckoutSession(
@@ -280,6 +330,7 @@ export default function CashierDashboard() {
     setAppliedVoucher(null)
     setVoucherCode('')
     setManualEmail('')
+    setSelectedSeatIdsByScreening({})
   }
 
   const [scanResultUI, setScanResultUI] = useState(null) // { type: 'success' | 'error', message: '' }
@@ -344,7 +395,7 @@ export default function CashierDashboard() {
         <div className="flex items-center gap-6">
           <div className="text-right hidden md:block">
             <p className="text-sm font-bold leading-none">{user?.name || 'Cajero'}</p>
-            <p className="text-xs text-text-secondary mt-1">Sede: Titán</p>
+            <p className="text-xs text-text-secondary mt-1">Sede: {user?.multiplexId || 'No asignada'}</p>
           </div>
           <button
             onClick={() => setIsScanning(true)}
@@ -454,35 +505,49 @@ export default function CashierDashboard() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-                    <input
-                      type="text"
-                      placeholder="CC o Email..."
-                      value={searchCustomer}
-                      onChange={(e) => setSearchCustomer(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearchCustomer()}
-                      className="w-full bg-carbon border border-border/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-gold transition-colors"
-                      disabled={!CUSTOMER_SEARCH_ENABLED}
-                    />
-                  </div>
-                  <button
-                    onClick={handleSearchCustomer}
-                    className="bg-gold/10 text-gold hover:bg-gold/20 px-3 rounded-xl font-bold text-sm transition-colors cursor-pointer disabled:opacity-50"
-                    disabled={!CUSTOMER_SEARCH_ENABLED}
-                  >
-                    Buscar
-                  </button>
+                <div className="rounded-2xl border border-border/50 bg-carbon p-4 text-sm text-text-secondary">
+                  <p className="font-semibold text-white mb-2">Búsqueda de cliente no disponible</p>
+                  <p>El backend actual no expone un endpoint de búsqueda de clientes. Ingresa el correo manualmente para procesar la venta.</p>
                 </div>
                 <div className="border-t border-border/50 pt-3">
-                  <input
-                    type="email"
-                    placeholder="Correo (Si no está registrado)"
-                    value={manualEmail}
-                    onChange={(e) => setManualEmail(e.target.value)}
-                    className="w-full bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-gold transition-colors placeholder-text-secondary"
-                  />
+                  <div className="flex items-start gap-2 mb-3">
+                    <input
+                      id="cash-only-mode"
+                      type="checkbox"
+                      checked={cashOnlyMode}
+                      onChange={() => {
+                        setCashOnlyMode(prev => {
+                          const next = !prev
+                          if (next) {
+                            setActiveCustomer(null)
+                          }
+                          return next
+                        })
+                      }}
+                      className="mt-1 h-4 w-4 rounded border border-border bg-carbon text-gold focus:ring-gold"
+                    />
+                    <label htmlFor="cash-only-mode" className="text-sm text-text-secondary">
+                      Cliente genérico (pago en efectivo, sin Stripe)
+                    </label>
+                  </div>
+                  {cashOnlyMode ? (
+                    <p className="text-xs text-text-secondary mt-2">
+                      Este modo registra la venta como efectivo en el frontend. No se abrirá Stripe y no se acumularán puntos.
+                    </p>
+                  ) : (
+                    <>
+                      <input
+                        type="email"
+                        placeholder="Correo del comprador"
+                        value={manualEmail}
+                        onChange={(e) => setManualEmail(e.target.value)}
+                        className="w-full bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-gold transition-colors placeholder-text-secondary"
+                      />
+                      <p className="text-xs text-text-secondary mt-2">
+                        Si el cliente no está registrado en la app, ingresa su correo y la compra se procesará normalmente sin acumular puntos. Recuérdale usar la app para su próxima visita y así podrá obtener puntos y mejores beneficios.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -498,25 +563,49 @@ export default function CashierDashboard() {
                 <p className="text-sm">No hay productos en la orden</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {cart.map(item => (
-                  <div key={`${item.id}-${item.type}-${item.showtime}`} className="bg-carbon rounded-xl p-3 flex items-center justify-between group">
-                    <div className="flex-1 pr-3 min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{item.name}</p>
-                      <p className="text-[10px] text-text-secondary mt-0.5">${getUnitPrice(item).toLocaleString('es-CO')} x {item.qty}</p>
+              <>
+                <div className="space-y-3">
+                  {cart.map(item => (
+                    <div key={`${item.id}-${item.type}-${item.showtime}`} className="bg-carbon rounded-xl p-3 flex items-center justify-between group">
+                      <div className="flex-1 pr-3 min-w-0">
+                        <p className="text-xs font-bold text-white truncate">{item.name}</p>
+                        <p className="text-[10px] text-text-secondary mt-0.5">${getUnitPrice(item).toLocaleString('es-CO')} x {item.qty}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <p className="text-sm font-bold text-gold">${(getUnitPrice(item) * item.qty).toLocaleString('es-CO')}</p>
+                        <button
+                          onClick={() => handleRemoveFromCart(item)}
+                          className="text-text-secondary hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <p className="text-sm font-bold text-gold">${(getUnitPrice(item) * item.qty).toLocaleString('es-CO')}</p>
+                  ))}
+                </div>
+
+                {ticketCount > 0 && (
+                  <div className="mt-4 p-4 bg-carbon border border-border/40 rounded-3xl text-sm">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <p className="font-bold uppercase tracking-widest text-text-secondary text-[10px]">Asientos</p>
+                        <p className="text-white text-xs">Selecciona los asientos para las boletas antes de cobrar.</p>
+                      </div>
                       <button
-                        onClick={() => handleRemoveFromCart(item)}
-                        className="text-text-secondary hover:text-red-400 opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={openSeatSelector}
+                        className="px-3 py-2 bg-magenta/10 text-magenta border border-magenta/20 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-magenta/20 transition-colors"
                       >
-                        <X size={16} />
+                        {selectedSeatIds.length === ticketCount ? 'Cambiar asientos' : 'Seleccionar sillas'}
                       </button>
                     </div>
+                    <p className={`text-xs ${selectedSeatIds.length === ticketCount ? 'text-white/80' : 'text-red-400'}`}>
+                      {selectedSeatIds.length > 0
+                        ? `Asientos seleccionados (${selectedSeatIds.length}/${ticketCount}): ${selectedSeatIds.join(', ')}`
+                        : `Aún no se seleccionan los ${ticketCount} asientos requeridos.`}
+                    </p>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
 
@@ -564,6 +653,12 @@ export default function CashierDashboard() {
               <span className="text-3xl font-display text-white">${total.toLocaleString('es-CO')}</span>
             </div>
 
+            {needsSeatSelection && (
+              <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                Debes seleccionar {ticketCount} asiento{ticketCount === 1 ? '' : 's'} para las boletas antes de cobrar.
+              </div>
+            )}
+
             {activeCustomer && cart.length > 0 && (
               <div className="mb-4 bg-gold/10 border border-gold/30 rounded-xl p-4">
 
@@ -606,13 +701,13 @@ export default function CashierDashboard() {
 
             <button
               onClick={handleCheckout}
-              disabled={cart.length === 0}
-              className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg ${cart.length > 0
+              disabled={cart.length === 0 || needsSeatSelection}
+              className={`w-full py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg ${cart.length > 0 && !needsSeatSelection
                 ? 'bg-gradient-to-r from-gold to-yellow-600 text-carbon shadow-gold/20 hover:opacity-90 cursor-pointer'
                 : 'bg-border/50 text-text-secondary cursor-not-allowed'
                 }`}
             >
-              Cobrar e Imprimir
+              {cashOnlyMode ? 'Cobrar en efectivo' : 'Cobrar e Imprimir'}
             </button>
           </div>
         </div>
@@ -710,6 +805,22 @@ export default function CashierDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {isSeatSelectorOpen && ticketScreeningId && ticketRoomId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-5xl bg-surface border border-border/50 rounded-3xl overflow-hidden shadow-2xl">
+            <SeatSelector
+              onBack={() => setIsSeatSelectorOpen(false)}
+              onConfirm={handleConfirmSeatSelection}
+              roomId={ticketRoomId}
+              screeningId={ticketScreeningId}
+              selectedFormat={ticketFormat}
+              maxSeats={ticketCount}
+              isLoading={false}
+            />
           </div>
         </div>
       )}

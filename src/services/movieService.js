@@ -25,11 +25,11 @@ export const getMovieSelectorsById = (multiplexId, movieId) =>
   apiFetch(`/api/movie/multiplex/${multiplexId}/selectors/${movieId}`)
 
 /**
- * GET /topRatedMovies
+ * GET /api/topRatedMovies
  * Obtiene las 10 mejores películas (Público)
  */
 export const getTopRatedMovies = () =>
-  apiFetch('/topRatedMovies')
+  apiFetch('/api/topRatedMovies')
 
 /**
  * GET /api/movie/trailer/{movieId}
@@ -39,15 +39,25 @@ export const getMovieTrailer = (movieId) =>
   apiFetch(`/api/movie/trailer/${movieId}`)
 
 /**
+ * GET /api/movie/multiplex/{multiplexId}
+ * Obtiene la cartelera de un multiplex (8 películas) para buyer.
+ */
+export const getMovieListingByMultiplex = (multiplexId) =>
+  apiFetch(`/api/movie/multiplex/${multiplexId}`)
+
+/**
  * GET búsqueda de películas (TMDB backend)
  * /api/admin/movie/search
  * @param {string} query - Texto de búsqueda
  * @param {number} page - Número de página para la paginación
  */
-export const searchMovies = (query, page = 1) =>
-  apiFetch(
-    `/api/admin/movie/search?query=${encodeURIComponent(query)}&page=${page}`
-  )
+export const searchMovies = (query, page = 1) => {
+  const params = new URLSearchParams({
+    query: query?.trim() || '',
+    page: String(page),
+  })
+  return apiFetch(`/api/admin/movie/search?${params.toString()}`)
+}
 
 /**
  * POST seleccionar película

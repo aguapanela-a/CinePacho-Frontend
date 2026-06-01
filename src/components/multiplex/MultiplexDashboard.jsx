@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Users,
   Ticket,
@@ -6,28 +7,46 @@ import {
   TrendingUp,
   AlertTriangle,
 } from 'lucide-react'
-import {
-  getMultiplexById,
-  getSalesByMultiplex,
-  getLowStockItems,
-  countActiveEmployees,
-  formatCOP,
-} from '../../data/mockMultiplexData'
+import { getMultiplexById } from '../../services/multiplexService'
+import { getAdminSnacksByMultiplex } from '../../services/snackService'
+
+const formatCOP = (value) => '$' + Number(value || 0).toLocaleString('es-CO')
 
 export default function MultiplexDashboard({ multiplexId }) {
-  const multiplex = getMultiplexById(multiplexId)
-  const employeeCount = countActiveEmployees(multiplexId)
-  const sales = getSalesByMultiplex(multiplexId)
-  const lowStock = getLowStockItems(multiplexId)
+  const [multiplex, setMultiplex] = useState(null)
+  const [lowStock, setLowStock] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Stats calculados del multiplex
-  const totalSalesAmount = sales.reduce((acc, s) => acc + s.amount, 0)
+  useEffect(() => {
+    if (!multiplexId) return
+
+    const load = async () => {
+      setLoading(true)
+      try {
+        const [multiplexData, snacks] = await Promise.all([
+          getMultiplexById(multiplexId),
+          getAdminSnacksByMultiplex(multiplexId),
+        ])
+        setMultiplex(multiplexData)
+        setLowStock((snacks || []).filter(item => item.quantitySnack <= 10 || item.quantitySnack === 0))
+      } catch (error) {
+        setMultiplex(null)
+        setLowStock([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [multiplexId])
+
+  const recentSales = []
 
   const stats = [
-    { title: 'Ventas del día', value: formatCOP(totalSalesAmount), icon: DollarSign },
-    { title: 'Boletas vendidas', value: '87', icon: Ticket },
-    { title: 'Snacks vendidos', value: '42', icon: Popcorn },
-    { title: 'Empleados activos', value: String(employeeCount), icon: Users },
+    { title: 'Ventas del día', value: 'Pendiente', icon: DollarSign },
+    { title: 'Boletas vendidas', value: 'Pendiente', icon: Ticket },
+    { title: 'Snacks bajos', value: String(lowStock.length), icon: Popcorn },
+    { title: 'Empleados activos', value: 'N/A', icon: Users },
   ]
 
   return (
@@ -83,20 +102,20 @@ export default function MultiplexDashboard({ multiplexId }) {
           <div className="space-y-2 flex-1 overflow-y-auto max-h-[280px] pr-1 custom-scrollbar my-2">
             {lowStock.length > 0 ? lowStock.map((item) => (
               <div
-                key={item.id}
+                key={item.idSnack || item.id}
                 className="bg-carbon border border-border/40 rounded-2xl px-4 py-4 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <AlertTriangle size={18} className={item.stock === 0 ? 'text-red-400' : 'text-yellow-400'} />
+                  <AlertTriangle size={18} className={item.quantitySnack === 0 ? 'text-red-400' : 'text-yellow-400'} />
                   <div>
-                    <span className="font-medium text-white block text-sm">{item.name}</span>
+                    <span className="font-medium text-white block text-sm">{item.nameSnack || item.name}</span>
                     <span className="text-xs text-text-secondary">
-                      Mín: {item.minStock} unidades
+                      Cantidad: {item.quantitySnack ?? item.stock} • Mín: {item.minStock ?? 0} unidades
                     </span>
                   </div>
                 </div>
-                <span className={`text-xs font-bold ${item.stock === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
-                  {item.stock === 0 ? 'AGOTADO' : `${item.stock} uds`}
+                <span className={`text-xs font-bold ${item.quantitySnack === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+                  {item.quantitySnack === 0 ? 'AGOTADO' : `${item.quantitySnack ?? item.stock} uds`}
                 </span>
               </div>
             )) : (
@@ -134,7 +153,7 @@ export default function MultiplexDashboard({ multiplexId }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/20 text-xs text-text-primary">
-                {sales.map((sale) => (
+                {recentSales.length > 0 ? recentSales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-white/[0.01]">
                     <td className="py-3 font-mono text-text-secondary">{sale.id}</td>
                     <td className="py-3 font-medium text-white">{sale.concept}</td>
@@ -143,7 +162,13 @@ export default function MultiplexDashboard({ multiplexId }) {
                       {formatCOP(sale.amount)}
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="4" className="py-8 text-center text-text-secondary">
+                      No hay transacciones disponibles actualmente.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

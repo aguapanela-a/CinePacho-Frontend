@@ -13,7 +13,7 @@ export default function ManagerEmployees() {
   return (
     <ManagerLayout>
       <MultiplexEmployees
-        multiplexId={user?.multiplexId || 'titan'}
+        multiplexId={user?.multiplexId}
         canAssignManager={false}
         canDismiss={false}
         canRequestDismiss={true}

@@ -3,7 +3,7 @@
  * Servicio de sillas — Consulta sillas de una sala y cambia su estado.
  *
  * Endpoints:
- *  - GET /api/seats/{roomId}/screening/{screeningId} → Retorna sillas con estado por función
+ *  - GET /api/seats/{roomId}/screening/{screeningId} → Retorna todas las sillas con su estado (AVAILABLE, BLOCKED, SOLD)
  *  - PUT /api/seats/{seatId}/screening/{screeningId}/changeStatus → Alterna el estado de una silla
  */
 

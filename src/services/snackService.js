@@ -4,20 +4,27 @@
 
 import { apiFetch } from './api'
 
-/** GET /api/snacks — Lista snacks disponibles para compra (BUYER, EMPLOYEE) */
-export const getAllSnacks = async () => {
+/** GET /api/snacks/{multiplexId} — Lista snacks disponibles para compra (BUYER, EMPLOYEE) */
+export const getAllSnacks = async (multiplexId) => {
+  if (!multiplexId) {
+    console.warn('getAllSnacks: multiplexId es obligatorio')
+    return []
+  }
+
   try {
-    const data = await apiFetch('/api/snacks')
-    if (Array.isArray(data) && data.length > 0) return data
+    const data = await apiFetch(`/api/snacks/${multiplexId}`)
+    if (Array.isArray(data)) return data
     return []
   } catch {
     return []
   }
 }
 
-/** GET /api/admin/snacks — Lista completa de snacks (ADMIN, MANAGER) */
 export const getAdminSnacks = () =>
   apiFetch('/api/admin/snacks')
+
+export const getAdminSnacksByMultiplex = (multiplexId) =>
+  apiFetch(`/api/admin/multiplexes/${multiplexId}/snacks`)
 
 export const getSnackById = (id) =>
   apiFetch(`/api/admin/snacks/${id}`)

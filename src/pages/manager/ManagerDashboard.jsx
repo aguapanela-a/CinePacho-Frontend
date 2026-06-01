@@ -12,7 +12,7 @@ export default function ManagerDashboard() {
 
   return (
     <ManagerLayout>
-      <MultiplexDashboard multiplexId={user?.multiplexId || 'titan'} />
+      <MultiplexDashboard multiplexId={user?.multiplexId} />
     </ManagerLayout>
   )
 }

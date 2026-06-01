@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { useApp } from '../../context/useApp'
 import { getAdminSnacks, createSnack, updateSnack } from '../../services/snackService'
 import { getAllMultiplexes } from '../../services/multiplexService'
+import { useApp } from '../../context/useApp'
 
 const EMPTY_FORM = {
   nameSnack: '',

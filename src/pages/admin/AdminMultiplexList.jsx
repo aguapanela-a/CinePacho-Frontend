@@ -10,7 +10,14 @@ import {
 } from '../../services/multiplexService'
 
 // ── Formulario vacío reutilizable ──────────────────────────────────────────
-const EMPTY_FORM = { nameMultiplex: '', addressMultiplex: '', cityMultiplex: '' }
+const EMPTY_FORM = {
+  nameMultiplex: '',
+  addressMultiplex: '',
+  cityMultiplex: '',
+  numberOfRooms: '',
+  generalSeatPrice: '',
+  preferentialSeatPrice: '',
+}
 
 export default function AdminMultiplexList() {
   // ── Estado principal ───────────────────────────────────────────────────
@@ -64,11 +71,14 @@ const fetchMultiplexes = useCallback(async () => {
   const openEdit = (plex, e) => {
     e.preventDefault()           // evita navegar al detalle
     e.stopPropagation()
-    setEditingId(plex.idMultiplex || plex.id)
+    setEditingId(plex.idMultiplex)
     setForm({
-      nameMultiplex:    plex.nameMultiplex,
-      addressMultiplex: plex.addressMultiplex || '',
-      cityMultiplex:    plex.cityMultiplex,
+      nameMultiplex:        plex.nameMultiplex,
+      addressMultiplex:     plex.addressMultiplex || '',
+      cityMultiplex:        plex.cityMultiplex,
+      numberOfRooms:        plex.numberOfRooms ?? '',
+      generalSeatPrice:     plex.generalSeatPrice ?? '',
+      preferentialSeatPrice: plex.preferentialSeatPrice ?? '',
     })
     setFormError(null)
     setIsModalOpen(true)
@@ -76,8 +86,8 @@ const fetchMultiplexes = useCallback(async () => {
 
   // ── Guardar (crear o editar) ───────────────────────────────────────────
   const handleSave = async () => {
-    const { nameMultiplex, addressMultiplex, cityMultiplex } = form
-    if (!nameMultiplex || !addressMultiplex || !cityMultiplex) {
+    const { nameMultiplex, addressMultiplex, cityMultiplex,numberOfRooms, generalSeatPrice, preferentialSeatPrice  } = form
+    if (!nameMultiplex || !addressMultiplex || !cityMultiplex || !numberOfRooms || !generalSeatPrice || !preferentialSeatPrice) {
       setFormError('Todos los campos son obligatorios.')
       return
     }
@@ -89,7 +99,7 @@ const fetchMultiplexes = useCallback(async () => {
         const updated = await updateMultiplex(editingId, form)
           setMultiplexList((prev) =>
             prev.map((p) =>
-              (p.idMultiplex || p.id) === editingId ? { ...p, ...updated } : p
+              p.idMultiplex === editingId ? { ...p, ...updated } : p
             )
           )
       } else {
@@ -97,7 +107,7 @@ const fetchMultiplexes = useCallback(async () => {
 
       setMultiplexList((prev) => [
         ...prev,
-        created?.idMultiplex || created?.id ? created : { ...form, id: Date.now() }
+        created?.idMultiplex ? created : { ...form, idMultiplex: Date.now() }
       ])
       }
       setIsModalOpen(false)
@@ -116,7 +126,7 @@ const fetchMultiplexes = useCallback(async () => {
       // Segunda pulsación: confirmar borrado
       try {
         await deleteMultiplex(id)
-        setMultiplexList(prev => prev.filter(p => (p.idMultiplex || p.id) !== id))
+        setMultiplexList(prev => prev.filter(p => p.idMultiplex !== id))
       } catch (err) {
         setError(err.message)
       } finally {
@@ -208,15 +218,15 @@ const fetchMultiplexes = useCallback(async () => {
 
                       {/* Botón Eliminar (doble click para confirmar) */}
                       <button
-                        onClick={(e) => handleDelete(plex.idMultiplex || plex.id, e)}
+                        onClick={(e) => handleDelete(plex.idMultiplex, e)}
                         className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all text-xs font-bold ${
-                          deletingId === plex.id
+                          deletingId === plex.idMultiplex
                             ? 'bg-red-500/20 border-red-500/60 text-red-400 animate-pulse'
                             : 'border-border/50 bg-carbon/50 text-text-secondary hover:text-red-400 hover:border-red-500/40'
                         }`}
-                        title={deletingId === plex.id ? 'Confirmar eliminación' : 'Eliminar multiplex'}
+                        title={deletingId === plex.idMultiplex ? 'Confirmar eliminación' : 'Eliminar multiplex'}
                       >
-                        {deletingId === plex.id ? '!' : <Trash2 size={14} />}
+                        {deletingId === plex.idMultiplex ? '!' : <Trash2 size={14} />}
                       </button>
                     </div>
                   </div>
@@ -314,6 +324,50 @@ const fetchMultiplexes = useCallback(async () => {
                   onChange={(e) => setForm({ ...form, cityMultiplex: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
                   placeholder="Bogotá"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Número de salas
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.numberOfRooms}
+                  onChange={(e) => setForm({ ...form, numberOfRooms: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                  placeholder="1"
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Precio general
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.generalSeatPrice}
+                  onChange={(e) => setForm({ ...form, generalSeatPrice: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                  placeholder="1"
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Precio preferencial
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.preferentialSeatPrice}
+                  onChange={(e) => setForm({ ...form, preferentialSeatPrice: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                  placeholder="1"
                 />
               </div>
             </div>

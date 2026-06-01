@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -8,8 +9,8 @@ import {
   Building2,
 } from 'lucide-react'
 import { useApp } from '../../context/useApp'
-import { getMultiplexById } from '../../data/mockMultiplexData'
 import { useLanguage } from '../../context/LanguageContext'
+import { getMultiplexById } from '../../services/multiplexService'
 
 /**
  * ManagerSidebar: Barra lateral del panel de gerente.
@@ -20,9 +21,15 @@ export default function ManagerSidebar() {
   const navigate = useNavigate()
   const { logoutUser, user } = useApp()
   const { t } = useLanguage()
+  const [multiplex, setMultiplex] = useState(null)
 
   // Obtiene los datos del multiplex asignado al manager
-  const multiplex = getMultiplexById(user?.multiplexId)
+  useEffect(() => {
+    if (!user?.multiplexId) return
+    getMultiplexById(user.multiplexId)
+      .then((data) => setMultiplex(data))
+      .catch(() => setMultiplex(null))
+  }, [user?.multiplexId])
 
   const handleLogout = () => {
     const shouldSignOut = window.confirm(t('nav.logoutConfirm') || '¿Seguro que deseas cerrar sesión?')

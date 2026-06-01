@@ -5,10 +5,10 @@ import Input from '../components/Input'
 import Button from '../components/Button'
 import { useApp } from '../context/useApp'
 import { useLanguage } from '../context/useLanguage'
+import { login } from '../services/authService'
 
 // Local: /api/auth/login (proxy de Vite lo redirige al backend)
 // Producción: https://backend.railway.app/api/auth/login
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 /**
  * Login Unificado: Formulario único de inicio de sesión para todos los roles.
@@ -87,21 +87,7 @@ export default function Login() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        throw new Error(errorData?.message || t('common.error'))
-      }
-
-      // Respuesta exitosa del backend (AuthResponseDTO): { token, userType, name }
-      const data = await res.json()
-      console.log('🔍 Backend devolvió:', data) // DEBUG: Ver qué devuelve el backend
-      console.log('🔍 userType:', data.userType) // DEBUG: Verificar el campo
+      const data = await login(payload)
       loginUser(data)
 
       // Redirección inteligente según el rol detectado por el backend

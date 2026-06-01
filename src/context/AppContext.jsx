@@ -41,17 +41,22 @@ export function AppProvider({ children }) {
 
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('cinepacho_user')
-    return saved ? JSON.parse(saved) : null
+    if (!saved) return null
+    try {
+      const parsed = JSON.parse(saved)
+      if (parsed && parsed.userType) parsed.userType = String(parsed.userType).toUpperCase()
+      return parsed
+    } catch (e) {
+      return null
+    }
   })
 
   const [token, setToken] = useState(() => localStorage.getItem('cinepacho_token'))
 
   const loginUser = (authResponse) => {
-    const { token: jwt, userType, role, name, multiplexId } = authResponse
-    // Si el backend devuelve 'role' en lugar de 'userType', usar 'role'
-    const rawRole = userType || role
-    const finalUserType = normalizeUserType(rawRole)
-    const userData = { name, userType: finalUserType, multiplexId }
+    const { token: jwt, userType, name, multiplexId } = authResponse
+    const normalizedType = userType ? String(userType).toUpperCase() : userType
+    const userData = { name, userType: normalizedType, multiplexId }
 
     localStorage.setItem('cinepacho_token', jwt)
     localStorage.setItem('cinepacho_user', JSON.stringify(userData))
@@ -85,11 +90,23 @@ export function AppProvider({ children }) {
       const qtyToAdd = normalized.qty
 
       if (existing) {
+        const mergedSeatIds = Array.isArray(existing.seatIds) || Array.isArray(normalized.seatIds)
+          ? [...new Set([...(existing.seatIds || []), ...(normalized.seatIds || [])])]
+          : undefined
+        const mergedSeats = Array.isArray(existing.seats) || Array.isArray(normalized.seats)
+          ? [...new Set([...(existing.seats || []), ...(normalized.seats || [])])]
+          : undefined
+
         return prev.map((i) =>
           i.id === normalized.id &&
           i.type === normalized.type &&
           i.showtime === normalized.showtime
-            ? normalizeCartItem({ ...i, qty: i.qty + qtyToAdd })
+            ? normalizeCartItem({
+                ...i,
+                qty: i.qty + qtyToAdd,
+                seatIds: mergedSeatIds,
+                seats: mergedSeats,
+              })
             : i
         )
       }
