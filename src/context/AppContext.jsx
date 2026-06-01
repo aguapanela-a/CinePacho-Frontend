@@ -66,11 +66,23 @@ export function AppProvider({ children }) {
       const qtyToAdd = normalized.qty
 
       if (existing) {
+        const mergedSeatIds = Array.isArray(existing.seatIds) || Array.isArray(normalized.seatIds)
+          ? [...new Set([...(existing.seatIds || []), ...(normalized.seatIds || [])])]
+          : undefined
+        const mergedSeats = Array.isArray(existing.seats) || Array.isArray(normalized.seats)
+          ? [...new Set([...(existing.seats || []), ...(normalized.seats || [])])]
+          : undefined
+
         return prev.map((i) =>
           i.id === normalized.id &&
           i.type === normalized.type &&
           i.showtime === normalized.showtime
-            ? normalizeCartItem({ ...i, qty: i.qty + qtyToAdd })
+            ? normalizeCartItem({
+                ...i,
+                qty: i.qty + qtyToAdd,
+                seatIds: mergedSeatIds,
+                seats: mergedSeats,
+              })
             : i
         )
       }

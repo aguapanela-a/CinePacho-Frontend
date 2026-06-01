@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Users,
   Ticket,
@@ -8,7 +9,7 @@ import {
 
 import AdminLayout from '../../components/admin/AdminLayout'
 import { Link } from 'react-router-dom'
-import { multiplexes } from '../../data/mockMultiplexData'
+import { getAllMultiplexes } from '../../services/multiplexService'
 
 const stats = [
   {
@@ -34,6 +35,14 @@ const stats = [
 ]
 
 export default function AdminDashboard() {
+  const [multiplexes, setMultiplexes] = useState([])
+
+  useEffect(() => {
+    getAllMultiplexes()
+      .then((data) => setMultiplexes(Array.isArray(data) ? data : []))
+      .catch(() => setMultiplexes([]))
+  }, [])
+
   return (
     <AdminLayout>
       {/* Header */}
@@ -127,12 +136,12 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {multiplexes.slice(0, 5).map((plex, i) => (
               <Link
-                key={i}
+                key={plex.id || i}
                 to={`/admin/multiplex/${plex.id}/dashboard`}
                 className="group bg-carbon border border-border/40 rounded-2xl px-4 py-4 flex items-center justify-between hover:border-magenta/40 hover:bg-magenta/5 transition-all"
               >
                 <span className="font-medium text-white group-hover:text-magenta transition-colors">
-                  {plex.name}
+                  {plex.nameMultiplex || plex.name || `Multiplex ${i + 1}`}
                 </span>
 
                 <div className="flex items-center gap-2">

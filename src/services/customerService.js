@@ -7,24 +7,23 @@
 import { apiFetch } from './api'
 
 /**
- * GET /api/admin/customers/search?query={query}
- * Busca un cliente por cédula (CC) o correo electrónico.
- * @param {string} query - CC o email del cliente
- * @returns {Promise<{ id: string, name: string, email: string, cc: string, points: number } | null>}
+ * searchCustomerByQuery
+ * No existe un endpoint backend compatible para buscar clientes por query.
+ * El frontend usa email manual o datos ya disponibles.
+ * @param {string} query - Email o UUID del cliente
+ * @returns {Promise<null>}
  */
 export const searchCustomerByQuery = async (query) => {
-    const data = await apiFetch(
-        `/api/admin/customers/search?query=${encodeURIComponent(query)}`
-    )
-    // El backend puede devolver un objeto directo o un array; normalizamos a objeto o null
-    if (Array.isArray(data)) return data[0] ?? null
-    return data ?? null
+  console.warn('searchCustomerByQuery: no existe endpoint backend para buscar clientes por query')
+  return null
 }
 
 /**
- * GET /api/admin/customers/{customerId}
- * Obtiene el detalle completo de un cliente por su UUID.
+ * getCustomerById
+ * No existe un endpoint backend compatible para obtener cliente por ID.
  * @param {string} customerId - UUID del cliente
  */
-export const getCustomerById = (customerId) =>
-    apiFetch(`/api/admin/customers/${customerId}`)
+export const getCustomerById = async (customerId) => {
+  console.warn('getCustomerById: no existe endpoint backend para obtener cliente por ID')
+  return null
+}

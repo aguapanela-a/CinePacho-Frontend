@@ -12,7 +12,7 @@ const COLS = 10
 export default function SeatSelector({
   onBack,
   onConfirm,
-  roomId = '650e8400-e29b-41d4-a716-446655440000', // Mock de room default
+  roomId = null,
   screeningId, // Agregado para llamar endpoints específicos de la función
   basePrice = 11000, // Default to General seat price for 2D
   preferentialPrice = 15000, // Default to Preferential seat price for 2D

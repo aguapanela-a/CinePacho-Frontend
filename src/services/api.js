@@ -8,12 +8,12 @@
  * - Lanzar errores HTTP descriptivos
  */
 
-// Intentamos leer la variable de entorno. 
+// Intentamos leer la variable de entorno.
 // Si estamos en Vercel y falla, forzamos la URL de producción de Railway.
-let BASE_URL = import.meta.env.VITE_API_URL || '';
+let BASE_URL = import.meta.env.VITE_API_URL || ''
 
 if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
-  BASE_URL = 'https://back-cinepacho-production.up.railway.app';
+  BASE_URL = 'https://back-cinepacho-production.up.railway.app'
 }
 
 /**
@@ -35,33 +35,44 @@ function getHeaders(extra = {}) {
  * @returns {Promise<any>} - JSON parseado de la respuesta
  */
 export async function apiFetch(endpoint, options = {}) {
-  // Aseguramos que el endpoint empiece con / para no romper la concatenación
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${BASE_URL}${cleanEndpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${BASE_URL}${cleanEndpoint}`
 
-  // Log útil para depurar en F12
-  console.log(`[apiFetch] Conectando a: ${url}`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: getHeaders(options.headers),
+    })
 
-  const response = await fetch(url, {
-    ...options,
-    headers: getHeaders(options.headers),
-  })
+    // Respuestas 204 No Content (DELETE exitoso) no tienen body
+    if (response.status === 204) return null
 
-  // Respuestas 204 No Content (DELETE exitoso) no tienen body
-  if (response.status === 204) return null
+    const data = await response.json().catch(() => null)
 
-  // Intentamos parsear JSON
-  const data = await response.json().catch(() => null)
+    if (!response.ok) {
+      let message =
+        data?.message || data?.error || `Error ${response.status}: ${response.statusText}`
+      if (response.status === 403) {
+        message = data?.message || 'Forbidden: no tienes permiso para acceder a este recurso'
+      } else if (response.status === 404) {
+        message = data?.message || 'No encontrado: el recurso solicitado no existe'
+      }
+      const error = new Error(message)
+      error.status = response.status
+      console.error(`[apiFetch] Error en ${url}:`, message)
+      throw error
+    }
 
-  // Si la respuesta no es 2xx, lanzamos error
-  if (!response.ok) {
-    const message =
-      data?.message || data?.error || `Error ${response.status}: ${response.statusText}`
-    const error = new Error(message)
-    error.status = response.status
-    console.error(`[apiFetch] Error en ${url}:`, message);
+    return data
+  } catch (error) {
+    if (error instanceof TypeError) {
+      const networkError = new Error(
+        `Network error: no se pudo conectar con ${url}`
+      )
+      networkError.status = 0
+      throw networkError
+    }
     throw error
   }
-
-  return data
 }
+

@@ -86,7 +86,7 @@ function AppLayout() {
           <Route
             path="/admin/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <AdminDashboard />
               </ProtectedRoute>
             }
@@ -235,8 +235,12 @@ function AppLayout() {
           <Route path="/checkout" element={<CheckoutGuard><Checkout /></CheckoutGuard>} />
           <Route path="/confirmacion" element={<CheckoutGuard requireSnapshot><OrderConfirmation /></CheckoutGuard>} />
           
+          {/* Stripe redirige al frontend en estas rutas. */}
+          {/* La confirmación final se hace en el backend en POST /api/checkout/stripe/success. */}
           <Route path="/stripe/success" element={<StripeSuccess />} />
           <Route path="/stripe/cancel" element={<StripeCancel />} />
+          <Route path="/api/checkout/stripe/success" element={<StripeSuccess />} />
+          <Route path="/api/checkout/stripe/cancel" element={<StripeCancel />} />
 
           {/* ── 404 No Encontrado ── */}
           <Route path="*" element={<NotFound />} />

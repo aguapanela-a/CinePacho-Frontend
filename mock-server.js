@@ -129,12 +129,98 @@ app.delete('/api/admin/snacks/:id', (req, res) => {
 app.get('/api/admin/rooms', (req, res) => res.json([]));
 app.post('/api/admin/rooms', (req, res) => res.status(201).json({ message: 'Room created' }));
 
-// Movies
-app.get('/admin/search', (req, res) => res.json([{ id: 1, originalTitle: 'Mock Movie', overview: 'Mock desc' }]));
-app.post('/admin/select/:id', (req, res) => res.json({ originalTitle: 'Mock', message: 'Seleccionada' }));
-app.post('/admin/:multiplexName/createScreening', (req, res) => res.json({ status: 'ACTIVE', movieId: req.body.movieId }));
-app.put('/admin/:multiplexName/:screeningId/status', (req, res) => res.json({ status: req.query.status }));
+// Snacks
+app.get('/api/snacks/:multiplexId', (req, res) => {
+  const multiplexId = req.params.multiplexId
+  const result = snacks.map(snack => ({
+    ...snack,
+    multiplexId,
+  }))
+  res.json(result)
+})
+app.get('/api/admin/multiplexes/:multiplexId/snacks', (req, res) => {
+  const multiplexId = req.params.multiplexId
+  const result = snacks.map(snack => ({
+    ...snack,
+    multiplexId,
+  }))
+  res.json(result)
+})
 
+// Movies
+app.get('/api/movie/multiplex/:multiplexId/selectors', (req, res) => {
+  res.json([
+    { movieId: 1, title: 'Mock Movie 1', posterUrl: '/placeholder.png', available: true },
+    { movieId: 2, title: 'Mock Movie 2', posterUrl: '/placeholder.png', available: true },
+  ])
+})
+app.get('/api/movie/multiplex/:multiplexId/selectors/:movieId', (req, res) => {
+  res.json({ movieId: Number(req.params.movieId), title: `Mock Movie ${req.params.movieId}`, posterUrl: '/placeholder.png', available: true })
+})
+app.get('/api/movie/multiplex/:multiplexId', (req, res) => {
+  res.json([
+    { movieId: 1, title: 'Mock Movie 1', rating: 8.2, duration: 120 },
+    { movieId: 2, title: 'Mock Movie 2', rating: 7.4, duration: 110 },
+  ])
+})
+app.get('/api/movie/trailer/:movieId', (req, res) => {
+  res.send('dQw4w9WgXcQ')
+})
+
+// Admin Movie Management
+app.get('/api/admin/movie/search', (req, res) => res.json([{ id: 1, originalTitle: 'Mock Movie', overview: 'Mock desc' }]))
+app.post('/api/admin/movie/select/:movieId', (req, res) => res.json({ originalTitle: 'Mock Movie', message: 'Seleccionada', movieId: Number(req.params.movieId) }))
+app.post('/api/admin/movie/createScreening', (req, res) => res.status(201).json({ status: 'ACTIVE', screeningId: 'mock-screening-id', ...req.body }))
+app.put('/api/admin/movie/changeStatus/:screeningId', (req, res) => res.json({ status: req.query.status || 'ACTIVE', screeningId: req.params.screeningId }))
+
+// Checkout
+app.post('/api/checkout/stripe', (req, res) => {
+  const { screeningId, seats, snacks, buyerEmail } = req.body
+  res.json({
+    sessionUrl: 'https://checkout.stripe.com/pay/mock-session',
+    paymentId: `mock-${Date.now()}`,
+    screeningId,
+    seats,
+    snacks,
+    buyerEmail,
+  })
+})
+app.post('/api/checkout/stripe/success', (req, res) => {
+  const { paymentId, checkoutRequest } = req.body
+  res.json({ message: 'Pago confirmado', paymentId, checkoutRequest })
+})
+app.get('/api/checkout/stripie/cancel', (req, res) => res.json({ message: 'Pago cancelado' }))
+
+// Seats
+app.get('/api/seats/:roomId/screening/:screeningId', (req, res) => {
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F']
+  const seats = []
+  rows.forEach((row, rowIndex) => {
+    for (let col = 1; col <= 10; col += 1) {
+      seats.push({
+        idSeat: `${row}${col}`,
+        seatNumber: rowIndex * 10 + col,
+        status: 'AVAILABLE',
+      })
+    }
+  })
+  res.json(seats)
+})
+app.put('/api/seats/:seatId/screening/:screeningId/changeStatus', (req, res) => {
+  res.json({
+    idSeat: req.params.seatId,
+    status: 'BLOCKED',
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+  })
+})
+
+app.get('/api/admin/multiplexes/:id', (req, res) => {
+  const found = multiplexes.find((m) => m.id === req.params.id)
+  if (!found) {
+    return res.status(404).json({ message: 'Multiplex no encontrado' })
+  }
+  res.json(found)
+})
 
 const PORT = 8010;
 app.listen(PORT, () => {

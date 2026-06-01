@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Popcorn,
   Search,
@@ -6,15 +6,40 @@ import {
   CheckCircle,
   X,
 } from 'lucide-react'
-import { getInventoryByMultiplex, getMultiplexById, formatCOP } from '../../data/mockMultiplexData'
+import { getAdminSnacksByMultiplex } from '../../services/snackService'
+import { getMultiplexById } from '../../services/multiplexService'
+
+const formatCOP = (value) => '$' + Number(value || 0).toLocaleString('es-CO')
 
 export default function MultiplexInventory({
   multiplexId,
   canAddStock = false,
   canRequestStock = false,
 }) {
-  const multiplex = getMultiplexById(multiplexId)
-  const [items, setItems] = useState(() => getInventoryByMultiplex(multiplexId))
+  const [multiplex, setMultiplex] = useState(null)
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!multiplexId) return
+    const load = async () => {
+      setLoading(true)
+      try {
+        const [multiplexData, snacks] = await Promise.all([
+          getMultiplexById(multiplexId),
+          getAdminSnacksByMultiplex(multiplexId),
+        ])
+        setMultiplex(multiplexData)
+        setItems(Array.isArray(snacks) ? snacks : [])
+      } catch {
+        setMultiplex(null)
+        setItems([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [multiplexId])
   const [search, setSearch] = useState('')
   const [filterCategory, setFilterCategory] = useState('Todos')
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
@@ -23,11 +48,12 @@ export default function MultiplexInventory({
   const [requestReason, setRequestReason] = useState('')
   const [requestSuccess, setRequestSuccess] = useState(false)
 
-  const categories = ['Todos', ...new Set(items.map(item => item.category))]
+  const categories = ['Todos', ...new Set(items.map(item => item.category || item.categorySnack || 'Snacks'))]
 
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = filterCategory === 'Todos' || item.category === filterCategory
+    const itemName = item.nameSnack || item.name || ''
+    const matchesSearch = itemName.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = filterCategory === 'Todos' || (item.category || item.categorySnack || 'Snacks') === filterCategory
     return matchesSearch && matchesCategory
   })
 
@@ -76,7 +102,7 @@ export default function MultiplexInventory({
         </div>
         <div>
           <h1 className="text-xl font-bold font-display tracking-wider text-white">Inventario de Sede</h1>
-          <p className="text-xs text-text-secondary mt-0.5">Sede: {multiplex?.name || 'Cargando...'}</p>
+          <p className="text-xs text-text-secondary mt-0.5">Sede: {multiplex?.nameMultiplex || multiplex?.name || 'Cargando...'}</p>
         </div>
       </div>
 
@@ -114,12 +140,17 @@ export default function MultiplexInventory({
       {/* Grid de Items */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredItems.map(item => {
-          const isLowStock = item.stock <= item.minStock
-          const isOut = item.stock === 0
+          const stock = item.quantitySnack ?? item.stock
+          const minStock = item.minStock ?? 0
+          const isLowStock = stock <= minStock
+          const isOut = stock === 0
+          const name = item.nameSnack || item.name || 'Snack'
+          const category = item.category || item.categorySnack || 'Snacks'
+          const price = item.priceSnack ?? item.price
 
           return (
             <div
-              key={item.id}
+              key={item.idSnack || item.id}
               className={`bg-surface/40 border rounded-2xl p-5 flex flex-col justify-between transition-all relative overflow-hidden ${
                 isOut 
                   ? 'border-red-500/30 bg-red-500/[0.02]' 
@@ -139,10 +170,10 @@ export default function MultiplexInventory({
 
               <div>
                 <span className="text-[10px] uppercase tracking-widest font-bold text-text-secondary block mb-1">
-                  {item.category}
+                  {category}
                 </span>
                 <h3 className="text-white font-bold text-base leading-snug mb-3">
-                  {item.name}
+                  {name}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-2 bg-carbon/50 border border-white/5 rounded-xl p-3 mb-4">
@@ -151,13 +182,13 @@ export default function MultiplexInventory({
                     <span className={`text-base font-display tracking-wide font-bold ${
                       isOut ? 'text-red-400' : isLowStock ? 'text-yellow-400' : 'text-green-400'
                     }`}>
-                      {item.stock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
+                      {stock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
                     </span>
                   </div>
                   <div>
                     <span className="text-[9px] text-text-secondary uppercase block font-medium">Mínimo Requerido</span>
                     <span className="text-base font-display tracking-wide font-bold text-white">
-                      {item.minStock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
+                      {minStock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
                     </span>
                   </div>
                 </div>
@@ -167,7 +198,7 @@ export default function MultiplexInventory({
                 <div>
                   <span className="text-[9px] text-text-secondary uppercase block font-medium">Precio Venta</span>
                   <span className="text-white font-bold text-sm">
-                    {item.price > 0 ? formatCOP(item.price) : 'N/A (Insumo)'}
+                    {price > 0 ? formatCOP(price) : 'N/A (Insumo)'}
                   </span>
                 </div>
 

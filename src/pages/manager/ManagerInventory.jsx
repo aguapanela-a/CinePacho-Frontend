@@ -13,7 +13,7 @@ export default function ManagerInventory() {
   return (
     <ManagerLayout>
       <MultiplexInventory
-        multiplexId={user?.multiplexId || 'titan'}
+        multiplexId={user?.multiplexId}
         canAddStock={false}
         canRequestStock={true}
       />

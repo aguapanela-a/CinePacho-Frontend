@@ -12,7 +12,7 @@ import { getMovieTrailer, getMovieSelectorsById } from '../services/movieService
 import { getMovieReviews } from '../services/reviewService'
 import { Play, Star, MessageSquare } from 'lucide-react'
 
-export default function MovieModal({ movie, onClose, multiplexName = 'Titán', multiplexId }) {
+export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex', multiplexId }) {
   const [step, setStep] = useState(1)
   const [selectedDate, setSelectedDate] = useState(showtimeDates[0] || '')
   const [selectedFormat, setSelectedFormat] = useState(ticketFormats[0]?.fmt || '2D')
@@ -78,14 +78,22 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán', m
 
   const handleProceedToSeats = () => {
     if (canProceedToSeats) {
-      // Si hay screenings del backend, buscar el que coincida con la hora seleccionada
-      if (backendScreenings.length > 0) {
-        const screening = backendScreenings.find(s => {
-          const time = s.screeningDate?.substring(11, 16) // "HH:mm"
-          return time === selectedTime && s.status === 'ACTIVE'
-        })
-        setSelectedScreening(screening || null)
+      if (!backendScreenings || backendScreenings.length === 0) {
+        toast.error('No hay funciones disponibles para esta película en el multiplex seleccionado.')
+        return
       }
+
+      const screening = backendScreenings.find(s => {
+        const time = s.screeningDate?.substring(11, 16) // "HH:mm"
+        return time === selectedTime && s.status === 'ACTIVE'
+      })
+
+      if (!screening) {
+        toast.error('No se encontró la función seleccionada. Cambia de horario o actualiza la cartelera.')
+        return
+      }
+
+      setSelectedScreening(screening)
       setStep(2)
     }
   }
@@ -115,6 +123,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Titán', m
         seats,
         seatIds: seats, // UUIDs reales del backend para checkout
         screeningId: activeScreeningId, // UUID del screening para POST /api/checkout/stripe
+        multiplexId,
         unitPrice, // Pass unit price directly to prevent recalculation
         price: total,
       })

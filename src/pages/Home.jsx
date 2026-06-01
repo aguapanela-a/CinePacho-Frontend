@@ -20,6 +20,23 @@ const multiplexes = [
   'Las Américas',
 ]
 
+const MULTIPLEX_IDS = {
+  'Titán': import.meta.env.VITE_MULTIPLEX_TITAN_ID,
+  'Unicentro': import.meta.env.VITE_MULTIPLEX_UNICENTRO_ID,
+  'Plaza Central': import.meta.env.VITE_MULTIPLEX_PLAZA_CENTRAL_ID,
+  'Gran Estación': import.meta.env.VITE_MULTIPLEX_GRAN_ESTACION_ID,
+  'Embajador': import.meta.env.VITE_MULTIPLEX_EMBAJADOR_ID,
+  'Las Américas': import.meta.env.VITE_MULTIPLEX_LAS_AMERICAS_ID,
+}
+
+const DEFAULT_MULTIPLEX_ID =
+  import.meta.env.VITE_DEFAULT_MULTIPLEX_ID || import.meta.env.VITE_MULTIPLEX_TITAN_ID
+
+const getMultiplexId = (plexName) => {
+  if (plexName === 'Todos') return DEFAULT_MULTIPLEX_ID
+  return MULTIPLEX_IDS[plexName]
+}
+
 export default function Home() {
   const [search, setSearch] = useState('')
   const [activePlex, setActivePlex] = useState('Todos')
@@ -28,6 +45,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [movies, setMovies] = useState([])
   const [topMovies, setTopMovies] = useState([])
+  const [loadError, setLoadError] = useState(null)
   const { t } = useLanguage()
   const navigate = useNavigate()
 
@@ -38,44 +56,33 @@ export default function Home() {
     navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
-  // Mapeo de nombre -> UUID real (debe coincidir con la BD)
-  const MULTIPLEX_IDS = {
-    'Todos':         '550e8400-e29b-41d4-a716-446655440000', // Default a Titán
-    'Titán':         '550e8400-e29b-41d4-a716-446655440000',
-    'Unicentro':     'uuid-unicentro',
-    'Plaza Central': 'uuid-plaza',
-    'Gran Estación': 'uuid-gran-estacion',
-    'Embajador':     'uuid-embajador',
-    'Las Américas':  'uuid-las-americas',
-  }
-
-  // Cargar películas desde la API (con multiplexId y search)
   useEffect(() => {
     const fetchMovies = async () => {
-      setIsLoading(true)
       try {
-        const multiplexId = MULTIPLEX_IDS[activePlex] || MULTIPLEX_IDS['Titán']
+        const multiplexId = getMultiplexId(activePlex)
         const data = await getMovieSelectorsByMultiplex(multiplexId, search)
-        
-        // Mapeamos el DTO del backend a nuestro formato local
-        const mappedMovies = Array.isArray(data) ? data.map(item => ({
-          id: item.movieInfo.id,
-          title: item.movieInfo.originalTitle,
-          year: item.movieInfo.releaseDate?.substring(0, 4) || 'N/A',
-          duration: '120m',
-          genre: item.movieInfo.genreIds && item.movieInfo.genreIds.length > 0 
-                  ? item.movieInfo.genreIds[0].name 
-                  : 'N/A',
-          rating: item.rating,
-          synopsis: item.movieInfo.overview,
-          posterUrl: item.movieInfo.posterPath,
-          backdropUrl: item.movieInfo.backdropPath,
-          multiplexes: ['Todos', activePlex],
-          screenings: item.screenings || [],
-        })) : []
+        const mappedMovies = Array.isArray(data)
+          ? data.map(item => ({
+              id: item.id,
+              title: item.movieInfo?.originalTitle || item.movieInfo?.title || 'Sin título',
+              year: item.movieInfo?.releaseDate?.substring(0, 4) || 'N/A',
+              duration: item.movieInfo?.runtime ? `${item.movieInfo.runtime}m` : '120m',
+              genre: item.movieInfo?.genreIds?.length > 0
+                ? item.movieInfo.genreIds[0].name
+                : 'N/A',
+              rating: item.rating,
+              synopsis: item.movieInfo?.overview,
+              posterUrl: item.movieInfo?.posterPath,
+              backdropUrl: item.movieInfo?.backdropPath,
+              multiplexes: ['Todos', activePlex],
+              screenings: item.screenings || [],
+            }))
+          : []
         setMovies(mappedMovies)
-      } catch {
-        setMovies([]) 
+      } catch (error) {
+        console.error(error)
+        setMovies([])
+        setLoadError(error?.message || 'Error al cargar las películas')
       } finally {
         setIsLoading(false)
       }
@@ -112,7 +119,7 @@ export default function Home() {
 
   // El Hero mostrará el Top 1 de TopRated si está disponible, si no el primero de la cartelera
   const featuredMovie = topMovies.length > 0 ? topMovies[0] : (movies.length > 0 ? movies[0] : null)
-  const displayMultiplex = activePlex === 'Todos' ? 'Titán' : activePlex
+  const displayMultiplex = activePlex
 
   const filteredMovies = useMemo(() => {
     // El filtro de texto y multiplex ya lo hace el backend.
@@ -243,6 +250,15 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {loadError && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 relative z-30 mb-6">
+          <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-6 text-red-100">
+            <p className="font-semibold text-white mb-2">Error de carga</p>
+            <p>{loadError}</p>
           </div>
         </section>
       )}
