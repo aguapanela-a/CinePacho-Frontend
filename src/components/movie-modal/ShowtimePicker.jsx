@@ -1,9 +1,7 @@
 import { MapPin, Clock4, Loader } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
-// import { showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
-import { useEffect} from 'react'
-// import { getMovieSelectorsById } from '../../services/movieService'
+import { useEffect, useMemo } from 'react' // Añadimos useMemo
 
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
@@ -14,20 +12,23 @@ export default function ShowtimePicker({
   multiplexName = 'Titán',
   selectedScreening,
   setSelectedScreening,
-  // canProceedToSeats,
   handleProceedToSeats,
   backendScreenings = [],
   loadingScreenings = false,
 }) {
   const { t } = useLanguage()
 
-  // Agrupar funciones por película (en caso de múltiples películas en el modal)
-  // y ordenar por fecha + hora
-  const availableScreenings = [...backendScreenings]
-    .filter(s => s.status?.toUpperCase() === 'ACTIVE')
-    .sort((a, b) => new Date(a.screeningDate.substring(0, 10)) - new Date(b.screeningDate.substring(0, 10)))
+  // CORRECCIÓN: Memorizar el filtrado y ordenado para evitar recreaciones infinitas de arrays
+  const availableScreenings = useMemo(() => {
+    return [...backendScreenings]
+      .filter(s => s.status?.toUpperCase() === 'ACTIVE')
+      .sort((a, b) => {
+        if (!a.screeningDate || !b.screeningDate) return 0
+        return new Date(a.screeningDate.substring(0, 10)) - new Date(b.screeningDate.substring(0, 10))
+      })
+  }, [backendScreenings])
 
-  // Debug logging
+  // Debug logging seguro
   useEffect(() => {
     console.log('ShowtimePicker - backendScreenings:', backendScreenings)
     console.log('ShowtimePicker - availableScreenings (filtered ACTIVE):', availableScreenings)
@@ -36,18 +37,13 @@ export default function ShowtimePicker({
   // Formatear fecha + hora para mostrar
   const formatScreeningDisplay = (screening) => {
     try {
-      // screeningDate viene en formato "yyyy-MM-dd HH:mm:ss"
-      const dateString = screening.screeningDate
+      const dateString = screening?.screeningDate
       if (!dateString) return { dateStr: 'Fecha desconocida', timeStr: 'Hora desconocida' }
       
-      // Extraer hora directamente del string (posiciones 11-16)
       const timeStr = dateString.substring(11, 16)
-      
-      // Extraer y parsear fecha (posiciones 0-10)
       const dateStr = dateString.substring(0, 10)
-      const date = new Date(dateStr)
+      const date = new Date(dateStr + 'T00:00:00') // Forzar formato local para evitar desfases de días
       
-      // Formatear la fecha localmente
       const formatted = date.toLocaleDateString('es-CO', { 
         weekday: 'short', 
         month: 'short', 
