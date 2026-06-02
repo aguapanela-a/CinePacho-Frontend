@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, MapPin, Plus, Pencil, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { getRoomById } from '../../services/roomService'
 import {
   getAllMultiplexes,
   createMultiplex,
@@ -35,7 +34,6 @@ export default function AdminMultiplexList() {
 
   // ── Estado confirmación de borrado ────────────────────────────────────
   const [deletingId, setDeletingId] = useState(null)
-  const [roomCounts, setRoomCounts] = useState({})
 
   // ── Carga inicial desde el backend ────────────────────────────────────
 const fetchMultiplexes = useCallback(async () => {
@@ -44,7 +42,11 @@ const fetchMultiplexes = useCallback(async () => {
   try {
     const data = await getAllMultiplexes()
 
-   console.log(JSON.stringify(data, null, 2))
+   console.log('RESPUESTA DEL BACKEND:', JSON.stringify(data, null, 2))
+   if (data && data.length > 0) {
+     console.log('PRIMER MULTIPLEX - numberOfRooms:', data[0].numberOfRooms, 'Tipo:', typeof data[0].numberOfRooms)
+     console.log('PRIMER MULTIPLEX - addressMultiplex:', data[0].addressMultiplex)
+   }
 
     setMultiplexList(Array.isArray(data) ? data : [])
   } catch (err) {
@@ -55,31 +57,11 @@ const fetchMultiplexes = useCallback(async () => {
 }, [])
 
 useEffect(() => {
-  if (multiplexList.length === 0) return
-
-  const fetchRoomCounts = async () => {
-    const entries = await Promise.all(
-      multiplexList.map(async (plex) => {
-        try {
-          const rooms = await getRoomById(plex.idMultiplex)
-          return [plex.idMultiplex, Array.isArray(rooms) ? rooms.length : 0]
-        } catch {
-          return [plex.idMultiplex, 0]
-        }
-      })
-    )
-    setRoomCounts(Object.fromEntries(entries))
+  const loadMultiplexes = async () => {
+    await fetchMultiplexes()
   }
-
-  fetchRoomCounts()
-}, [multiplexList])
-
-  useEffect(() => {
-    const loadMultiplexes = async () => {
-      await fetchMultiplexes()
-    }
-    loadMultiplexes()
-  }, [fetchMultiplexes])
+  loadMultiplexes()
+}, [fetchMultiplexes])
 
   // ── Abrir modal para crear ─────────────────────────────────────────────
   const openCreate = () => {
@@ -108,8 +90,8 @@ useEffect(() => {
 
   // ── Guardar (crear o editar) ───────────────────────────────────────────
   const handleSave = async () => {
-    const { nameMultiplex, addressMultiplex, cityMultiplex,numberOfRooms, generalSeatPrice, preferentialSeatPrice  } = form
-    if (!nameMultiplex || !addressMultiplex || !cityMultiplex || !numberOfRooms || !generalSeatPrice || !preferentialSeatPrice) {
+    const { nameMultiplex, cityMultiplex,numberOfRooms, generalSeatPrice, preferentialSeatPrice  } = form
+    if (!nameMultiplex || !cityMultiplex || !numberOfRooms || !generalSeatPrice || !preferentialSeatPrice) {
       setFormError('Todos los campos son obligatorios.')
       return
     }
@@ -118,14 +100,20 @@ useEffect(() => {
     try {
       if (editingId) {
         console.log('EDITANDO ID:', editingId)
+        console.log('FORM A ENVIAR:', form)
         const updated = await updateMultiplex(editingId, form)
+        console.log('RESPUESTA DEL UPDATE:', updated)
+        console.log('numberOfRooms EN RESPUESTA:', updated?.numberOfRooms)
           setMultiplexList((prev) =>
             prev.map((p) =>
               p.idMultiplex === editingId ? { ...p, ...updated } : p
             )
           )
       } else {
+      console.log('CREANDO - FORM A ENVIAR:', form)
       const created = await createMultiplex(form)
+      console.log('RESPUESTA DEL CREATE:', created)
+      console.log('numberOfRooms EN RESPUESTA:', created?.numberOfRooms)
 
       setMultiplexList((prev) => [
         ...prev,
@@ -269,7 +257,7 @@ useEffect(() => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                       <Building2 size={14} className="text-magenta flex-shrink-0" />
-                      {roomCounts[plex.idMultiplex] ?? 0} sala{(roomCounts[plex.idMultiplex] ?? 0) !== 1 ? 's' : ''}
+                      {plex.numberOfRooms ?? 0} sala{(plex.numberOfRooms ?? 0) !== 1 ? 's' : ''}
                     </div>
                   </div>
 
