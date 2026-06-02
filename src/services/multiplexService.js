@@ -8,11 +8,11 @@ import { apiFetch } from './api'
 
 /** GET /admin/multiplexes — Lista todos los multiplex */
 export const getAllMultiplexes = () =>
-  apiFetch('/api/admin/multiplexes')
+  apiFetch('/api/multiplexes')
 
 /** GET /admin/multiplexes/{id} — Obtiene un multiplex con sus salas */
 export const getMultiplexById = (id) =>
-  apiFetch(`/api/admin/multiplexes/${id}`)
+  apiFetch(`/api/multiplexes/${id}`)
 
 /**
  * POST /admin/multiplexes — Crea un nuevo multiplex

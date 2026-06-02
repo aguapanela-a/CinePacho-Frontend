@@ -10,25 +10,9 @@ import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
 import { getMovieSelectorsByMultiplex } from '../services/movieService'
+import { getAllMultiplexes } from '../services/multiplexService'
 
-const multiplexes = [
-  'Todos',
-  'Titán',
-  'Unicentro',
-  'Plaza Central',
-  'Gran Estación',
-  'Embajador',
-  'Las Américas',
-]
-
-const MULTIPLEX_IDS = {
-  'Titán': import.meta.env.VITE_MULTIPLEX_TITAN_ID,
-  'Unicentro': import.meta.env.VITE_MULTIPLEX_UNICENTRO_ID,
-  'Plaza Central': import.meta.env.VITE_MULTIPLEX_PLAZA_CENTRAL_ID,
-  'Gran Estación': import.meta.env.VITE_MULTIPLEX_GRAN_ESTACION_ID,
-  'Embajador': import.meta.env.VITE_MULTIPLEX_EMBAJADOR_ID,
-  'Las Américas': import.meta.env.VITE_MULTIPLEX_LAS_AMERICAS_ID,
-}
+const DEFAULT_MULTIPLEX_OPTION = { name: 'Todos', id: null }
 
 export default function Home() {
   const navigate = useNavigate()
@@ -36,7 +20,6 @@ export default function Home() {
   const toast = useToast()
 
   // Estados de Filtros y Búsqueda
-  const [displayMultiplex, setDisplayMultiplex] = useState('Todos')
   const [search, setSearch] = useState('')
   // Nuevo estado para la búsqueda con debounce (retraso)
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -46,13 +29,14 @@ export default function Home() {
   const [featuredMovie, setFeaturedMovie] = useState(null)
   const [isLoading, setIsLoading] = useState(false) // Inicializado en false si 'Todos' es el default
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [multiplexes, setMultiplexes] = useState([DEFAULT_MULTIPLEX_OPTION])
+  const [selectedMultiplexId, setSelectedMultiplexId] = useState(null)
 
-  // Auxiliar para obtener el UUID correspondiente al multiplex seleccionado
-  const getMultiplexId = (name) => {
-    const value = MULTIPLEX_IDS[name]
-    return value && value !== 'null' && value !== 'undefined' ? value : null
-  }
-  const currentMultiplexId = getMultiplexId(displayMultiplex)
+  const currentMultiplexId = selectedMultiplexId
+  const selectedMultiplexName = useMemo(
+    () => multiplexes.find((multiplex) => multiplex.id === selectedMultiplexId)?.name || 'Todos',
+    [multiplexes, selectedMultiplexId]
+  )
 
   // 1. EFECTO: Manejo del Debounce para el input de búsqueda
   useEffect(() => {
@@ -65,9 +49,38 @@ export default function Home() {
     }
   }, [search])
 
+  useEffect(() => {
+    let isMounted = true
+
+    const loadMultiplexes = async () => {
+      try {
+        const data = await getAllMultiplexes()
+        if (!isMounted) return
+        if (Array.isArray(data)) {
+          setMultiplexes([
+            DEFAULT_MULTIPLEX_OPTION,
+            ...data.map((item) => ({
+              name: item.nameMultiplex || item.name || 'Multiplex',
+              id: item.idMultiplex || item.id,
+            })),
+          ])
+        }
+      } catch (error) {
+        console.error('Home: error cargando multiplexes', error)
+        toast.error('No se pudo cargar la lista de multiplex. Intenta de nuevo.')
+      }
+    }
+
+    loadMultiplexes()
+
+    return () => {
+      isMounted = false
+    }
+  }, [toast])
+
   // 2. EFECTO: Cargar películas desde el Backend basándose en multiplex y debouncedSearch
   useEffect(() => {
-    if (displayMultiplex === 'Todos') {
+    if (selectedMultiplexId === null) {
       setMovies([])
       setFeaturedMovie(null)
       setIsLoading(false)
@@ -77,21 +90,7 @@ export default function Home() {
     let isMounted = true
     setIsLoading(true)
 
-    // Usamos directamente el id calculado para evitar añadir funciones u objetos pesados a las dependencias
-    const multiplexId = getMultiplexId(displayMultiplex)
-
-    if (!multiplexId) {
-      console.warn('Home: multiplexId no válido para', displayMultiplex)
-      if (isMounted) {
-        setMovies([])
-        setFeaturedMovie(null)
-        setIsLoading(false)
-      }
-      toast.error('Multiplex no configurado. Selecciona otro o revisa la configuración.')
-      return
-    }
-
-    getMovieSelectorsByMultiplex(multiplexId, debouncedSearch)
+    getMovieSelectorsByMultiplex(selectedMultiplexId, debouncedSearch)
       .then((data) => {
         if (!isMounted) return
 
@@ -142,7 +141,7 @@ export default function Home() {
       isMounted = false
     }
   // Eliminamos currentMultiplexId y cambiamos search por debouncedSearch
-  }, [displayMultiplex, debouncedSearch, toast])
+  }, [selectedMultiplexId, debouncedSearch, toast])
 
   // Filtrado local en el Front sobre el estado actual
   const filteredMovies = useMemo(() => {
@@ -213,7 +212,7 @@ export default function Home() {
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-carbon/50">
             <p className="text-text-secondary font-display tracking-widest text-sm uppercase">
-              {displayMultiplex === 'Todos' ? 'Por favor selecciona un multiplex' : 'No hay películas disponibles'}
+              {selectedMultiplexId === null ? 'Por favor selecciona un multiplex' : 'No hay películas disponibles'}
             </p>
           </div>
         )}
@@ -228,27 +227,30 @@ export default function Home() {
               {t('home.selectMultiplexLabel') || 'Selecciona tu Multiplex'}
             </label>
             <div className="flex flex-wrap gap-2">
-              {multiplexes.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setDisplayMultiplex(m)}
-                  className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
-                    displayMultiplex === m
-                      ? 'bg-magenta border-magenta text-white shadow-lg shadow-magenta/20'
-                      : 'bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white'
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
+            {multiplexes.map((multiplex) => (
+              <button
+                key={multiplex.id ?? 'todos'}
+                type="button"
+                onClick={() => setSelectedMultiplexId(multiplex.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
+                  selectedMultiplexId === multiplex.id
+                    ? 'bg-magenta border-magenta text-white shadow-lg shadow-magenta/20'
+                    : 'bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white'
+                }`}
+              >
+                {multiplex.name}
+              </button>
+            ))}
           </div>
-
-          {/* Barra de Búsqueda */}
           <div className="w-full max-w-md ml-auto">
-            <SearchBar value={search} onChange={setSearch} placeholder={t('home.searchPlaceholder') || "Buscar películas..."} />
+            <SearchBar
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t('home.searchPlaceholder') || "Buscar películas..."}
+            />
           </div>
         </div>
+      </div>
 
         {/* Grid de Películas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
@@ -270,7 +272,7 @@ export default function Home() {
           )}
         </div>
 
-        {!isLoading && filteredMovies.length === 0 && displayMultiplex !== 'Todos' && (
+        {!isLoading && filteredMovies.length === 0 && selectedMultiplexId !== null && (
           <div className="text-center py-24">
             <p className="text-text-secondary text-xl font-display tracking-widest">
               {t('home.noMoviesFound') || 'No se encontraron películas para'} "{' '}
@@ -284,7 +286,7 @@ export default function Home() {
       {selectedMovie && (
         <MovieModal
           movie={selectedMovie}
-          multiplexName={displayMultiplex}
+          multiplexName={selectedMultiplexName}
           multiplexId={currentMultiplexId}
           onClose={() => setSelectedMovie(null)}
         />
