@@ -24,7 +24,7 @@ export default function SeatSelector({
 
   const [backendSeats, setBackendSeats] = useState([])
   const [seatTimers, setSeatTimers] = useState({})
-  const [tick, setTick] = useState(0)
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
   const [isProcessingSeat, setIsProcessingSeat] = useState(false) // Feedback de carga para clics
 
   // Usamos useCallback para evitar recrear la función en cada render
@@ -42,26 +42,30 @@ export default function SeatSelector({
   // Carga inicial de asientos
   useEffect(() => {
     reloadSeats()
-    const interval = setInterval(() => setTick((prev) => prev + 1), 1000)
+    const interval = setInterval(() => setCurrentTime(Date.now()), 1000)
     return () => clearInterval(interval)
   }, [reloadSeats])
 
   // Formatear tiempo restante (Ahora sí se usa abajo)
-  const formatRemainingTime = (expiry) => {
-    if (!expiry) return '--:--'
-    const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000))
+  // Cambia tu función para que acepte "now":
+  const formatRemainingTime = (expiry, now) => {
+    if (!expiry || isNaN(expiry)) return '--:--'
+
+    // Usamos el "now" que viene del estado controlado de React
+    const remaining = Math.max(0, Math.ceil((expiry - now) / 1000))
     const minutes = String(Math.floor(remaining / 60)).padStart(2, '0')
     const seconds = String(remaining % 60).padStart(2, '0')
     return `${minutes}:${seconds}`
   }
 
   // Limpieza de timers expirados corregida (Evita llamadas múltiples al backend)
+  // Cambia tu segundo useEffect por este:
   useEffect(() => {
-    const now = Date.now()
     let hasExpired = false
 
     Object.entries(seatTimers).forEach(([seatId, expiry]) => {
-      if (expiry <= now) {
+      // Usamos currentTime del estado en lugar de Date.now() directo
+      if (expiry <= currentTime) {
         hasExpired = true
         setSeatTimers(prev => {
           const next = { ...prev }
@@ -70,13 +74,13 @@ export default function SeatSelector({
         })
         setSelectedSeats(prev => prev.filter(id => id !== seatId))
       }
-    });
+    })
 
-    // Si al menos uno expiró, recargamos el backend una sola vez
     if (hasExpired) {
       reloadSeats()
     }
-  }, [tick, seatTimers, reloadSeats])
+  }, [currentTime, seatTimers, reloadSeats]) // <-- Cambiado tick por currentTime
+
 
   const toggleSeat = async (seat) => {
     if (!seat || isProcessingSeat) return
@@ -141,7 +145,7 @@ export default function SeatSelector({
           {/* Agregado: Feedback visual del tiempo de reserva */}
           {nextExpiry && (
             <p className="text-xs text-magenta/80 flex items-center justify-end gap-1 mt-1 font-mono">
-              <Clock size={12} /> {t('seats.timer') || 'Tiempo de reserva:'} {formatRemainingTime(nextExpiry)}
+              <Clock size={12} /> {t('seats.timer') || 'Tiempo de reserva:'} {formatRemainingTime(nextExpiry, currentTime)}
             </p>
           )}
         </div>
