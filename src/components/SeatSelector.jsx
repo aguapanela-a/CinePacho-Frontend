@@ -1,5 +1,5 @@
-import { useState, useEffect, Fragment } from 'react'
-import { Monitor, Armchair, ArrowLeft, Star, Loader2 } from 'lucide-react'
+import { useState, useEffect, Fragment, useCallback } from 'react'
+import { Monitor, ArrowLeft, Star, Loader2, Clock } from 'lucide-react' // Eliminado Armchair
 import Button from './Button'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
@@ -25,8 +25,10 @@ export default function SeatSelector({
   const [backendSeats, setBackendSeats] = useState([])
   const [seatTimers, setSeatTimers] = useState({})
   const [tick, setTick] = useState(0)
+  const [isProcessingSeat, setIsProcessingSeat] = useState(false) // Feedback de carga para clics
 
-  const reloadSeats = async () => {
+  // Usamos useCallback para evitar recrear la función en cada render
+  const reloadSeats = useCallback(async () => {
     if (!roomId || !screeningId) return
     try {
       const data = await getSeatsByRoom(roomId, screeningId)
@@ -35,14 +37,16 @@ export default function SeatSelector({
       console.error('Error loading seats:', err)
       toast.error(t('seats.errorLoading') || 'Error al cargar la disponibilidad')
     }
-  }
+  }, [roomId, screeningId, t, toast])
 
+  // Carga inicial de asientos
   useEffect(() => {
     reloadSeats()
     const interval = setInterval(() => setTick((prev) => prev + 1), 1000)
     return () => clearInterval(interval)
-  }, [roomId, screeningId])
+  }, [reloadSeats])
 
+  // Formatear tiempo restante (Ahora sí se usa abajo)
   const formatRemainingTime = (expiry) => {
     if (!expiry) return '--:--'
     const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000))
@@ -51,27 +55,33 @@ export default function SeatSelector({
     return `${minutes}:${seconds}`
   }
 
-  // Limpieza de timers expirados
+  // Limpieza de timers expirados corregida (Evita llamadas múltiples al backend)
   useEffect(() => {
     const now = Date.now()
+    let hasExpired = false
+
     Object.entries(seatTimers).forEach(([seatId, expiry]) => {
       if (expiry <= now) {
+        hasExpired = true
         setSeatTimers(prev => {
           const next = { ...prev }
           delete next[seatId]
           return next
         })
         setSelectedSeats(prev => prev.filter(id => id !== seatId))
-        reloadSeats()
       }
-    })
-  }, [tick])
+    });
+
+    // Si al menos uno expiró, recargamos el backend una sola vez
+    if (hasExpired) {
+      reloadSeats()
+    }
+  }, [tick, seatTimers, reloadSeats])
 
   const toggleSeat = async (seat) => {
-    if (!seat) return
+    if (!seat || isProcessingSeat) return
     const isSelected = selectedSeats.includes(seat.idSeat)
     
-    // Validar estados bloqueados/vendidos por otros
     if (!isSelected && seat.status?.toUpperCase() !== 'AVAILABLE') {
       toast.error(t('seats.occupiedAlert') || 'La silla no está disponible')
       return
@@ -83,30 +93,42 @@ export default function SeatSelector({
     }
 
     try {
-      const result = await toggleSeatStatus(seat.idSeat, screeningId)
+      setIsProcessingSeat(true)
+      await toggleSeatStatus(seat.idSeat, screeningId)
       
       if (!isSelected) {
         setSelectedSeats(prev => [...prev, seat.idSeat])
-        const expiry = Date.now() + 10 * 60 * 1000 // 10 min hardcoded fallback
+        const expiry = Date.now() + 10 * 60 * 1000 // 10 min fallback
         setSeatTimers(prev => ({ ...prev, [seat.idSeat]: expiry }))
       } else {
         setSelectedSeats(prev => prev.filter(id => id !== seat.idSeat))
-        setSeatTimers(prev => { const next = { ...prev }; delete next[seat.idSeat]; return next })
+        setSeatTimers(prev => { 
+          const next = { ...prev }
+          delete next[seat.idSeat]
+          return next 
+        })
       }
       await reloadSeats()
     } catch (err) {
       toast.error(err.message || 'Error al actualizar estado')
+    } finally {
+      setIsProcessingSeat(false)
     }
   }
 
-  const formatPricing = ticketFormats.find(f => f.fmt === selectedFormat) || ticketFormats[0]
+  // Fallback seguro por si ticketFormats viene vacío
+  const formatPricing = ticketFormats?.find(f => f.fmt === selectedFormat) || ticketFormats?.[0] || { generalPrice: 0, preferentialPrice: 0 }
   const generalPrice = formatPricing.generalPrice
   const prefPrice = formatPricing.preferentialPrice
 
   const total = selectedSeats.reduce((acc, id) => {
-  const s = backendSeats.find(seat => seat.idSeat === id)
-  return acc + (s?.type?.toUpperCase() === 'PREFERENTIAL' ? prefPrice : generalPrice)
-}, 0)
+    const s = backendSeats.find(seat => seat.idSeat === id)
+    return acc + (s?.type?.toUpperCase() === 'PREFERENTIAL' ? prefPrice : generalPrice)
+  }, 0)
+
+  // Obtener el timer del asiento más próximo a expirar para mostrarlo en el UI
+  const dynamicTimers = Object.values(seatTimers)
+  const nextExpiry = dynamicTimers.length > 0 ? Math.min(...dynamicTimers) : null
 
   return (
     <div className="flex flex-col h-full animate-[fadeIn_0.3s_ease-out]">
@@ -116,12 +138,20 @@ export default function SeatSelector({
         </button>
         <div className="text-right">
           <h3 className="font-display text-white text-xl tracking-widest uppercase">{t('seats.title')}</h3>
+          {/* Agregado: Feedback visual del tiempo de reserva */}
+          {nextExpiry && (
+            <p className="text-xs text-magenta/80 flex items-center justify-end gap-1 mt-1 font-mono">
+              <Clock size={12} /> {t('seats.timer') || 'Tiempo de reserva:'} {formatRemainingTime(nextExpiry)}
+            </p>
+          )}
         </div>
       </div>
 
       <div className="mb-10 text-center relative px-8">
         <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-magenta to-transparent opacity-50 rounded-full" />
-        <p className="text-[10px] font-bold text-magenta tracking-widest uppercase mt-3"><Monitor size={12} className="inline mr-1" /> {t('seats.screen')}</p>
+        <p className="text-[10px] font-bold text-magenta tracking-widest uppercase mt-3">
+          <Monitor size={12} className="inline mr-1" /> {t('seats.screen')}
+        </p>
       </div>
 
       <div className="flex-1 overflow-x-auto pb-6">
@@ -147,7 +177,7 @@ export default function SeatSelector({
                     <Fragment key={seat.idSeat}>
                       <button
                         onClick={() => toggleSeat(seat)}
-                        disabled={isOccupied}
+                        disabled={isOccupied || isProcessingSeat}
                         className={`w-[44px] h-[44px] rounded-t-xl rounded-b-md border flex items-center justify-center text-xs font-bold transition-all
                           ${isSelected ? 'bg-magenta border-magenta text-white shadow-[0_0_15px_rgba(200,22,122,0.5)]' : 
                             isOccupied ? 'bg-red-500/10 border-red-500/20 text-transparent cursor-not-allowed opacity-50' :
@@ -171,8 +201,8 @@ export default function SeatSelector({
       {/* Footer y Total */}
       <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
          <p className="text-gold font-display text-xl">${total.toLocaleString('es-CO')}</p>
-         <Button onClick={() => onConfirm(selectedSeats, total)} disabled={selectedSeats.length === 0 || isLoading}>
-            {isLoading ? <Loader2 className="animate-spin" /> : t('seats.confirmBtn')}
+         <Button onClick={() => onConfirm(selectedSeats, total)} disabled={selectedSeats.length === 0 || isLoading || isProcessingSeat}>
+            {isLoading || isProcessingSeat ? <Loader2 className="animate-spin" /> : t('seats.confirmBtn')}
          </Button>
       </div>
     </div>
