@@ -141,6 +141,7 @@ const handleEditEmployee = async () => {
     !employeeToEdit.phoneNumber ||
     !employeeToEdit.salary ||
     !employeeToEdit.rol ||
+    !employeeToEdit.startDate ||
     !finalMultiplexId
   ) {
     setErrorForm('Todos los campos son obligatorios')
@@ -152,6 +153,8 @@ const handleEditEmployee = async () => {
 
   try {
     const payload = {
+
+      uniqueCode: employeeToEdit.uniqueCode,
       email: employeeToEdit.email,
       name: employeeToEdit.name,
       password: employeeToEdit.password ?? '', // el service lo actualiza, si no cambia envía el actual o maneja en backend
