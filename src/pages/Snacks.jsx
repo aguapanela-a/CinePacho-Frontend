@@ -116,7 +116,14 @@ export default function Snacks() {
               {/* Imagen/Placeholder */}
               <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center">
                 <div className="absolute inset-0 bg-carbon/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
-                <div className="text-6xl select-none z-0">🍿</div>
+                <img 
+                  src="/comboFamiliar.png" 
+                  alt={snack.nameSnack}
+                  className="w-full h-full object-cover z-0 animate-[fadeIn_0.6s_ease-out_forwards]"
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                  }}
+                />
 
                 {/* Badge de puntos acumulables */}
                 <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
