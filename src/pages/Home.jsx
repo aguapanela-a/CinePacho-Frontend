@@ -91,19 +91,15 @@ export default function Home() {
 
               return {
                 id: movie.idMovie,
-                title: movie.originalTitle || 'Sin Título',
                 originalTitle: movie.originalTitle,
-                overview: movie.overview || '',
                 genre: genresStr,
-                rating: movie.rating || 0.0,
+                rating: movie.rating,
                 year: movie.year || 'N/A',
                 duration: '120 min',
                 posterPath: movie.posterPath,
                 backdropPath: movie.backdropPath,
                 posterUrl: movie.posterPath ? `https://image.tmdb.org/t/p/w500${movie.posterPath}` : '/placeholder.jpg',
                 backdropUrl: movie.backdropPath ? `https://image.tmdb.org/t/p/original${movie.backdropPath}` : '',
-                trailerKey: null,
-                screenings: []
               }
             })
 
@@ -153,29 +149,42 @@ export default function Home() {
 
         if (Array.isArray(data)) {
           const mappedMovies = data.map((selector) => {
-            const info = selector.movieInfo || {}
-            const releaseYear = info.releaseDate ? info.releaseDate.substring(0, 4) : 'N/A'
-            const genresStr = info.genreIds && info.genreIds.length > 0 
-              ? info.genreIds.map(g => g.name).join(', ') 
-              : 'Acción'
+          const info = selector.movieInfo || {}
 
-            return {
-              id: info.id,
-              title: info.originalTitle || 'Sin Título',
-              originalTitle: info.originalTitle,
-              overview: info.overview || '',
-              genre: genresStr,
-              rating: selector.rating || 0.0,
-              year: releaseYear,
-              duration: '120 min',
-              posterPath: info.posterPath,
-              backdropPath: info.backdropPath,
-              posterUrl: info.posterPath ? `https://image.tmdb.org/t/p/w500${info.posterPath}` : '/placeholder.jpg',
-              backdropUrl: info.backdropPath ? `https://image.tmdb.org/t/p/original${info.backdropPath}` : '',
-              trailerKey: selector.key || null,
-              screenings: selector.screenings || []
-            }
-          })
+          // El backend puede devolver snake_case (release_date) o camelCase (releaseDate)
+          const releaseDate = info.release_date || info.releaseDate
+          const releaseYear = releaseDate ? releaseDate.substring(0, 4) : 'N/A'
+
+          // El backend puede devolver genreIds o genres como nombre del campo
+          const genreList = info.genreIds || info.genres || []
+          const genresStr = genreList.length > 0
+            ? genreList.map(g => g.name).join(', ')
+            : 'Acción'
+
+          // El backend puede devolver snake_case (poster_path / backdrop_path) o camelCase
+          const posterPath = info.poster_path || info.posterPath
+          const backdropPath = info.backdrop_path || info.backdropPath
+
+          // El backend puede devolver originalTitle o title
+          const title = info.originalTitle || info.title || 'Sin Título'
+
+          return {
+            id: info.id,
+            title,
+            originalTitle: title,
+            overview: info.overview || '',
+            genre: genresStr,
+            rating: selector.rating || 0.0,
+            year: releaseYear,
+            duration: '120 min',
+            posterPath,
+            backdropPath,
+            posterUrl: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : '/placeholder.jpg',
+            backdropUrl: backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : '',
+            trailerKey: selector.key || null,
+            screenings: selector.screenings || []
+          }
+        })
 
           setMovies(mappedMovies)
 
