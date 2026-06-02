@@ -151,8 +151,12 @@ export default function AdminMovies() {
     try {
       const detail = await getMultiplexById(plex.idMultiplex);
       setRooms(detail?.rooms || []);
-    } catch {
+      const historicalScreenings = await getScreeningsByMultiplex(plex.idMultiplex);
+      setScreenings(historicalScreenings || []);
+    } catch (error) {
+      console.error("Error al cargar la información del multiplex:", error);
       setRooms([]);
+      setScreenings([]);
     }
   };
 
