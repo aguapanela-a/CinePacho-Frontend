@@ -24,7 +24,7 @@ export default function SeatSelector({
 
   const [backendSeats, setBackendSeats] = useState([])
   const [seatTimers, setSeatTimers] = useState({})
-  const [currentTime, setCurrentTime] = useState(() => Date.now())
+  const [currentTime, setCurrentTime] = useState(0)
   const [isProcessingSeat, setIsProcessingSeat] = useState(false) // Feedback de carga para clics
 
   // Usamos useCallback para evitar recrear la función en cada render
@@ -39,9 +39,11 @@ export default function SeatSelector({
     }
   }, [roomId, screeningId, t, toast])
 
-  // Carga inicial de asientos
+    // Carga inicial de asientos
   useEffect(() => {
+    setCurrentTime(Date.now()) // <-- Aquí sí es legal porque es un Efecto
     reloadSeats()
+    
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000)
     return () => clearInterval(interval)
   }, [reloadSeats])
@@ -85,7 +87,7 @@ export default function SeatSelector({
   const toggleSeat = async (seat) => {
     if (!seat || isProcessingSeat) return
     const isSelected = selectedSeats.includes(seat.idSeat)
-    
+
     if (!isSelected && seat.status?.toUpperCase() !== 'AVAILABLE') {
       toast.error(t('seats.occupiedAlert') || 'La silla no está disponible')
       return
@@ -99,10 +101,12 @@ export default function SeatSelector({
     try {
       setIsProcessingSeat(true)
       await toggleSeatStatus(seat.idSeat, screeningId)
-      
+
       if (!isSelected) {
         setSelectedSeats(prev => [...prev, seat.idSeat])
-        const expiry = Date.now() + 10 * 60 * 1000 // 10 min fallback
+
+        // 🔥 CAMBIO AQUÍ: Usamos currentTime del estado en lugar de Date.now()
+        const expiry = currentTime + 10 * 60 * 1000 
         setSeatTimers(prev => ({ ...prev, [seat.idSeat]: expiry }))
       } else {
         setSelectedSeats(prev => prev.filter(id => id !== seat.idSeat))
