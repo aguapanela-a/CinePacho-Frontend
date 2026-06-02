@@ -109,7 +109,7 @@ export default function AdminMovies() {
     roomId: "",
     dateTime: "",
     price: "",
-    format: "_2D",
+    format: "FORMAT_2D",
   });
   const [creatingScreening, setCreatingScreening] = useState(false);
   const [screeningError, setScreeningError] = useState(null);
@@ -487,9 +487,9 @@ export default function AdminMovies() {
                 }
                 className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
               >
-                <option value="_2D">2D</option>
-                <option value="_3D">3D</option>
-                <option value="_IMAX">IMAX</option>
+                <option value="FORMAT_2D">2D</option>
+                <option value="FORMAT_3D">3D</option>
+                <option value="FORMAT_IMAX">IMAX</option>
               </select>
             </div>
 
