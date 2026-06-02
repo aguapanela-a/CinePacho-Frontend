@@ -56,6 +56,100 @@ export default function MultiplexEmployees({
   const [errorForm, setErrorForm] = useState(null)
   const [creating, setCreating] = useState(false)
 
+
+  //confirmar borrar empleados
+  
+  const confirmDeleteEmployee = async () => {
+  if (!employeeToDelete) return
+  try {
+    await deleteEmployee(employeeToDelete.uniqueCode)
+
+    setEmployees(
+      employees.filter(
+        (employee) => employee.uniqueCode !== employeeToDelete.uniqueCode
+      )
+    )
+
+    setIsDeleteModalOpen(false)
+    setEmployeeToDelete(null)
+  } catch (error) {
+    console.error('Error eliminando empleado:', error)
+    // Opcional: Podrías manejar un alert o estado de error aquí
+  }
+}
+  
+  
+  //Editar empleados
+  
+  // AdminEmployees.jsx
+  const handleEditEmployee = async () => {
+  
+    const lockedMultiplexId = multiplexId
+  
+  
+    console.log('Employee to edit:', employeeToEdit)
+    console.log('Final Multiplex ID:', multiplexId)
+    console.log('EmployeeToEdit fields:', {
+      email: employeeToEdit.email,
+      name: employeeToEdit.name,
+      userType: employeeToEdit.userType,
+      indentityCard: employeeToEdit.indentityCard,
+      phoneNumber: employeeToEdit.phoneNumber,
+      salary: employeeToEdit.salary,
+      rol: employeeToEdit.rol,
+      startDate: employeeToEdit.startDate,
+      multiplexId: employeeToEdit.multiplexId,
+    })
+  
+    if (
+      !employeeToEdit.email ||
+      !employeeToEdit.name ||
+      !employeeToEdit.userType ||
+      !employeeToEdit.indentityCard ||
+      !employeeToEdit.phoneNumber ||
+      !employeeToEdit.salary ||
+      !employeeToEdit.rol ||
+      !employeeToEdit.startDate ||
+      !multiplexId
+    ) {
+      setErrorForm('Todos los campos son obligatorios')
+      return
+    }
+  
+    setCreating(true)
+    setErrorForm(null)
+  
+    try {
+      const payload = {
+  
+        uniqueCode: employeeToEdit.uniqueCode,
+        email: employeeToEdit.email,
+        name: employeeToEdit.name,
+        password: employeeToEdit.password ?? '', // el service lo actualiza, si no cambia envía el actual o maneja en backend
+        userType: employeeToEdit.userType,
+        indentityCard: employeeToEdit.indentityCard,
+        phoneNumber: employeeToEdit.phoneNumber,
+        salary: Number(employeeToEdit.salary),
+        rol: employeeToEdit.rol,
+        startDate: `${employeeToEdit.startDate} 00:00:00`,
+        multiplexId: multiplexId,
+      }
+  
+      await updateEmployee(payload)
+
+      await fetchEmployees()
+  
+      setIsEditModalOpen(false)
+      setEmployeeToEdit(null)
+    } catch (error) {
+      console.error('Error actualizando empleado:', error)
+    } finally {
+      setCreating(false)  // ← agregar esto
+    }
+  }
+  
+  
+
   // ---- NUEVOS ESTADOS PARA EDICIÓN Y ELIMINACIÓN ----
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [employeeToEdit, setEmployeeToEdit] = useState(null)
@@ -451,32 +545,252 @@ export default function MultiplexEmployees({
         </div>
       )}
 
-      {/* MODAL MOCKUP DE EDICIÓN (Opcional - Estructura base para cuando se active el estado) */}
-      {isEditModalOpen && employeeToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 space-y-4">
-            <h2 className="text-xl font-bold text-white">Editar: {employeeToEdit.name}</h2>
-            <p className="text-xs text-text-secondary">Aquí puedes renderizar el formulario usando los datos de `employeeToEdit`</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setIsEditModalOpen(false); setEmployeeToEdit(null); }} className="px-4 py-2 border border-border/50 rounded-xl text-white text-xs">Cerrar</button>
-            </div>
-          </div>
+      {/* Modal Editar Empleado */}
+{isEditModalOpen && (
+  <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-display tracking-widest text-white uppercase">
+            Editar <span className="gradient-brand">Empleado</span>
+          </h2>
+          <p className="text-text-secondary text-sm mt-1">
+            Modificar información del empleado
+          </p>
+        </div>
+        <button
+          onClick={() => { setIsEditModalOpen(false); setEmployeeToEdit(null) }}
+          className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Form */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Nombre completo
+          </label>
+          <input
+            type="text"
+            value={employeeToEdit?.name || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, name: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="Juan Pérez"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Correo
+          </label>
+          <input
+            type="email"
+            value={employeeToEdit?.email || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, email: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="empleado@cinepacho.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Teléfono
+          </label>
+          <input
+            type="text"
+            value={employeeToEdit?.phoneNumber || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, phoneNumber: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="3001234567"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Cargo
+          </label>
+          <select
+            value={employeeToEdit?.rol || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, rol: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          >
+            <option value="">Seleccionar cargo</option>
+              {rolesDisponibles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Tipo de usuario
+          </label>
+          <select
+            value={employeeToEdit?.userType || 'EMPLOYEE'}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, userType: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            disabled={employeeToEdit?.rol === 'MANAGER'}          
+          >
+            <option value="EMPLOYEE">EMPLOYEE</option>
+            <option value="MANAGER">MANAGER</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Nueva contraseña <span className="normal-case font-normal text-text-secondary">(dejar vacío para no cambiar)</span>
+          </label>
+          <input
+            type="password"
+            value={employeeToEdit?.password || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, password: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="••••••••"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Cédula
+          </label>
+          <input
+            type="text"
+            value={employeeToEdit?.indentityCard || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, indentityCard: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="Ej: 1010101010"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Salario ($)
+          </label>
+          <input
+            type="number"
+            value={employeeToEdit?.salary || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, salary: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="Ej: 1500000"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Fecha de Contrato
+          </label>
+          <input
+            type="date"
+            value={employeeToEdit.startDate}
+            onChange={(e) => 
+              setEmployeeToEdit({ ...employeeToEdit, startDate: e.target.value })
+            }
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Multiplex Asignado</label>
+                <select
+                  value={multiplexId || ''}
+                  disabled
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none text-text-secondary opacity-70 cursor-not-allowed"
+                >
+                  <option value={multiplexId || ''}>
+                    {multiplex?.nameMultiplex || 'Cargando datos del multiplex...'}
+                  </option>
+                </select>
+        </div>
+      </div>
+
+      {errorForm && (
+        <div className="flex items-center gap-2 text-red-400 text-sm mt-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <AlertCircle size={15} /> {errorForm}
         </div>
       )}
 
-      {/* MODAL MOCKUP DE ELIMINACIÓN REPETIDA */}
-      {isDeleteModalOpen && employeeToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 space-y-4">
-            <h2 className="text-xl font-bold text-white text-red-400">Eliminar permanentemente</h2>
-            <p className="text-sm text-white">¿Estás seguro de que deseas borrar por completo a <span className="font-bold text-magenta">{employeeToDelete.name}</span> del sistema?</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setIsDeleteModalOpen(false); setEmployeeToDelete(null); }} className="px-4 py-2 border border-border/50 rounded-xl text-white text-xs">Cancelar</button>
-              <button onClick={() => { alert('Eliminado de la DB'); setIsDeleteModalOpen(false); }} className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs">Eliminar definitivamente</button>
-            </div>
-          </div>
+      {/* Footer */}
+      <div className="flex items-center justify-end gap-3 mt-8">
+        <button
+          onClick={() => { setIsEditModalOpen(false); setEmployeeToEdit(null) }}
+          className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleEditEmployee}
+          disabled={creating}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60"
+        >
+          {creating && <Loader2 size={16} className="animate-spin" />}
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+      {/* Modal Confirmar Eliminación */}
+    {isDeleteModalOpen && (
+  <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+          <Trash2 className="text-red-400" size={24} />
         </div>
-      )}
+
+        <div>
+          <h2 className="text-2xl font-display tracking-widest text-white uppercase">
+            Confirmar eliminación
+          </h2>
+
+          <p className="text-text-secondary text-sm mt-1">
+            Esta acción no se puede deshacer
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-8">
+        <p className="text-text-secondary text-sm">
+          ¿Deseas eliminar al empleado:
+        </p>
+
+        <p className="text-white font-bold text-lg mt-2">
+          {employeeToDelete?.indentityCard} - {employeeToDelete?.name}?
+        </p>
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          onClick={() => {
+            setIsDeleteModalOpen(false)
+            setEmployeeToDelete(null)
+          }}
+          className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={confirmDeleteEmployee}
+          className="px-6 py-3 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all shadow-lg"
+        >
+          Eliminar empleado
+        </button>
+      </div>
+    </div>
+  </div>
+  
+)}
     </div>
   )
 }
