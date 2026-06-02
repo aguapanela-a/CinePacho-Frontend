@@ -24,7 +24,7 @@ export default function SeatSelector({
 
   const [backendSeats, setBackendSeats] = useState([])
   const [seatTimers, setSeatTimers] = useState({})
-  const [currentTime, setCurrentTime] = useState(0)
+  const [currentTime, setCurrentTime] = useState( () => {Date.now()})
   const [isProcessingSeat, setIsProcessingSeat] = useState(false) // Feedback de carga para clics
 
   // Usamos useCallback para evitar recrear la función en cada render
@@ -41,7 +41,7 @@ export default function SeatSelector({
 
     // Carga inicial de asientos
   useEffect(() => {
-    setCurrentTime(Date.now()) // <-- Aquí sí es legal porque es un Efecto
+    setCurrentTime // <-- Aquí sí es legal porque es un Efecto
     reloadSeats()
     
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000)
