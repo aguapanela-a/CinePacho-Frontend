@@ -1,27 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Search,
-  Film,
-  DollarSign,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Clock,F
-  ChevronDown,
-  Clapperboard,
-} from "lucide-react";
-import AdminLayout from "../../components/admin/AdminLayout";
-import {
-  searchMovies,
-  selectMovie,
-  createScreening,
-  updateScreeningStatus,
-} from "../../services/movieService";
-import {
-  getAllMultiplexes,
-  getMultiplexById,
-} from "../../services/multiplexService";
+  Search, Film, DollarSign, Loader2, AlertCircle,
+  CheckCircle, XCircle, Clock, ChevronDown, Clapperboard,
+} from 'lucide-react'
+import AdminLayout from '../../components/admin/AdminLayout'
+import { searchMovies, selectMovie, createScreening, updateScreeningStatus } from '../../services/movieService'
+import { getAllMultiplexes, getMultiplexById } from '../../services/multiplexService'
 
 // ── Constantes ──────────────────────────────────────────────────────────────
 const TMDB_IMAGE = "https://image.tmdb.org/t/p/w342";

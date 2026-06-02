@@ -102,7 +102,7 @@ export default function ShowtimePicker({
                       </span>
                     </div>
                     <span className="text-[9px] font-semibold uppercase text-magenta/60 group-hover:text-magenta">
-                      {screening.format || '2D'} • Sala {screening.roomNumber}
+                      {screening.format || '_2D'} • Sala {screening.roomNumber}
                     </span>
                   </button>
                 )
@@ -130,7 +130,7 @@ export default function ShowtimePicker({
               <div className="text-right space-y-1">
                 <p className="text-[9px] text-text-secondary font-bold">Formato</p>
                 <p className="text-xs font-semibold text-white">
-                  {selectedScreening.format || '2D'}
+                  {selectedScreening.format || '_2D'}
                 </p>
               </div>
               <div className="text-right space-y-1">
