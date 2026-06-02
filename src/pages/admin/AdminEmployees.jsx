@@ -122,18 +122,56 @@ const confirmDeleteEmployee = async () => {
 
 //Editar empleados
 
+// AdminEmployees.jsx
 const handleEditEmployee = async () => {
+
+  const lockedMultiplexId =
+    user?.userType === 'MANAGER'
+      ? user?.multiplexId
+      : ''
+
+  const finalMultiplexId =
+    lockedMultiplexId || newEmployee.multiplexId
+
+  if (
+    !employeeToEdit.email ||
+    !employeeToEdit.name ||
+    !employeeToEdit.userType ||
+    !employeeToEdit.indentityCard ||
+    !employeeToEdit.phoneNumber ||
+    !employeeToEdit.salary ||
+    !employeeToEdit.rol ||
+    !finalMultiplexId
+  ) {
+    setErrorForm('Todos los campos son obligatorios')
+    return
+  }
+
+  setCreating(true)
+  setErrorForm(null)
+
   try {
-    await updateEmployee(
-      employeeToEdit.uniqueCode,
-    )
+    const payload = {
+      email: employeeToEdit.email,
+      name: employeeToEdit.name,
+      password: employeeToEdit.password ?? '', // el service lo actualiza, si no cambia envía el actual o maneja en backend
+      userType: employeeToEdit.userType,
+      indentityCard: employeeToEdit.indentityCard,
+      phoneNumber: employeeToEdit.phoneNumber,
+      salary: Number(employeeToEdit.salary),
+      rol: employeeToEdit.rol,
+      startDate: employeeToEdit.startDate?.includes('T')
+  ? employeeToEdit.startDate
+  : `${employeeToEdit.startDate} 00:00:00`,
+      multiplexId: employeeToEdit.multiplexId,
+    }
+
+    await updateEmployee(payload)
 
     const data = await getEmployees()
     setEmployees(data)
-
     setIsEditModalOpen(false)
     setEmployeeToEdit(null)
-
   } catch (error) {
     console.error('Error actualizando empleado:', error)
   }
@@ -335,7 +373,7 @@ const handleEditEmployee = async () => {
                   <td className="px-6 py-5">
                     <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 text-gold px-3 py-1.5 rounded-full text-sm font-bold">
                       <BadgeCheck size={14} />
-                      {employee.rol}A{employee.role}B{employee.role}
+                      {employee.rol}
                     </div>
                   </td>
 
@@ -374,9 +412,25 @@ const handleEditEmployee = async () => {
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-center gap-2">
                     <button
+                        // Al abrir el modal de edición
                         onClick={() => {
-                            setEmployeeToEdit(employee)
-                            setIsEditModalOpen(true)
+                      console.log('Employee data:', employee)
+
+                          const multiplex = multiplexes.find(m => m.nameMultiplex === employee.nameMultiplex)
+                          setEmployeeToEdit({
+                            uniqueCode: employee.uniqueCode,
+                            name: employee.name,
+                            email: employee.email,
+                            phoneNumber: employee.phoneNumber,
+                            rol: employee.rol,
+                            userType: employee.userType,
+                            indentityCard: employee.indentityCard,
+                            salary: employee.salary,
+                            startDate: employee.startDate,
+                            password: '',
+                            multiplexId: multiplex?.idMultiplex || multiplex?.id || '',
+                          })
+                          setIsEditModalOpen(true)
                         }}
                         className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white"
                         >
@@ -605,6 +659,7 @@ const handleEditEmployee = async () => {
                 <select
                   value={newEmployee.multiplexId}
                   onChange={(e) => {
+                    
                     const selectedId = e.target.value
                     const selected = multiplexes.find((m) => (m.idMultiplex || m.id) === selectedId)
                     setNewEmployee({
@@ -662,51 +717,42 @@ const handleEditEmployee = async () => {
       )}
 
 
-
-    {/* Modal Editar Empleado */}
+{/* Modal Editar Empleado */}
 {isEditModalOpen && (
   <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
     <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
 
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-display tracking-widest text-white uppercase">
             Editar <span className="gradient-brand">Empleado</span>
           </h2>
-
           <p className="text-text-secondary text-sm mt-1">
             Modificar información del empleado
           </p>
         </div>
-
         <button
-          onClick={() => {
-            setIsEditModalOpen(false)
-            setEmployeeToEdit(null)
-          }}
+          onClick={() => { setIsEditModalOpen(false); setEmployeeToEdit(null) }}
           className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors"
         >
           ✕
         </button>
       </div>
 
+      {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         <div>
           <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
             Nombre completo
           </label>
-
           <input
             type="text"
             value={employeeToEdit?.name || ''}
-            onChange={(e) =>
-              setEmployeeToEdit({
-                ...employeeToEdit,
-                name: e.target.value,
-              })
-            }
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, name: e.target.value })}
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="Juan Pérez"
           />
         </div>
 
@@ -714,17 +760,12 @@ const handleEditEmployee = async () => {
           <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
             Correo
           </label>
-
           <input
             type="email"
             value={employeeToEdit?.email || ''}
-            onChange={(e) =>
-              setEmployeeToEdit({
-                ...employeeToEdit,
-                email: e.target.value,
-              })
-            }
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, email: e.target.value })}
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="empleado@cinepacho.com"
           />
         </div>
 
@@ -732,17 +773,12 @@ const handleEditEmployee = async () => {
           <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
             Teléfono
           </label>
-
           <input
             type="text"
             value={employeeToEdit?.phoneNumber || ''}
-            onChange={(e) =>
-              setEmployeeToEdit({
-                ...employeeToEdit,
-                phoneNumber: e.target.value,
-              })
-            }
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, phoneNumber: e.target.value })}
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="3001234567"
           />
         </div>
 
@@ -750,42 +786,100 @@ const handleEditEmployee = async () => {
           <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
             Cargo
           </label>
-
           <select
-            value={employeeToEdit?.role || ''}
-            onChange={(e) =>
-              setEmployeeToEdit({
-                ...employeeToEdit,
-                rol: e.target.value,
-              })
-            }
+            value={employeeToEdit?.rol || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, rol: e.target.value })}
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           >
+            <option value="">Seleccionar cargo</option>
             <option value="CASHIER">Cajero</option>
             <option value="DISPATCHER">Despachador de comida</option>
-            <option value="MANAGER">Encargado de sala</option>
+            <option value="ROOM_ATTENDANT">Encargado de sala</option>
             <option value="CLEANER">Aseador</option>
           </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Tipo de usuario
+          </label>
+          <select
+            value={employeeToEdit?.userType || 'EMPLOYEE'}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, userType: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            disabled={user?.userType === 'MANAGER'}
+          >
+            <option value="EMPLOYEE">EMPLOYEE</option>
+            <option value="MANAGER">MANAGER</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Nueva contraseña <span className="normal-case font-normal text-text-secondary">(dejar vacío para no cambiar)</span>
+          </label>
+          <input
+            type="password"
+            value={employeeToEdit?.password || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, password: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="••••••••"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Cédula
+          </label>
+          <input
+            type="text"
+            value={employeeToEdit?.indentityCard || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, indentityCard: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="Ej: 1010101010"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Salario ($)
+          </label>
+          <input
+            type="number"
+            value={employeeToEdit?.salary || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, salary: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            placeholder="Ej: 1500000"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+            Fecha de Contrato
+          </label>
+          <input
+            type="date"
+            value={employeeToEdit?.startDate ? employeeToEdit.startDate.split('T')[0] : ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, startDate: e.target.value })}
+            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+          />
         </div>
 
         <div className="md:col-span-2">
           <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
             Multiplex
           </label>
-
           <select
-            value={employeeToEdit?.multiplex || ''}
-            onChange={(e) =>
-              setEmployeeToEdit({
-                ...employeeToEdit,
-                multiplex: e.target.value,
-              })
-            }
+            value={employeeToEdit?.multiplexId || ''}
+            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, multiplexId: e.target.value })}
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+            disabled={user?.userType === 'MANAGER'}
           >
-            <option value="">Seleccionar multiplex</option> {/* Added default option */}
+            <option value="">
+              {loadingMultiplexes ? 'Cargando...' : 'Seleccionar multiplex'}
+            </option>
             {multiplexes.map((m) => (
-              <option key={m.idMultiplex || m.id} value={m.nameMultiplex}>
+              <option key={m.idMultiplex || m.id} value={m.idMultiplex || m.id}>
                 {m.nameMultiplex}
               </option>
             ))}
@@ -793,21 +887,26 @@ const handleEditEmployee = async () => {
         </div>
       </div>
 
+      {errorForm && (
+        <div className="flex items-center gap-2 text-red-400 text-sm mt-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <AlertCircle size={15} /> {errorForm}
+        </div>
+      )}
+
+      {/* Footer */}
       <div className="flex items-center justify-end gap-3 mt-8">
         <button
-          onClick={() => {
-            setIsEditModalOpen(false)
-            setEmployeeToEdit(null)
-          }}
+          onClick={() => { setIsEditModalOpen(false); setEmployeeToEdit(null) }}
           className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
         >
           Cancelar
         </button>
-
         <button
           onClick={handleEditEmployee}
-          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20"
+          disabled={creating}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60"
         >
+          {creating && <Loader2 size={16} className="animate-spin" />}
           Guardar cambios
         </button>
       </div>
