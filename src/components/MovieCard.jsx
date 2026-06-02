@@ -12,7 +12,6 @@ export default function MovieCard({ movie, onClick }) {
     onClick?.()
   }
 
-  // Manejador para soportar navegación por teclado (Accesibilidad)
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
@@ -30,22 +29,34 @@ export default function MovieCard({ movie, onClick }) {
         role="button"
         tabIndex="0"
       >
-        <div className="relative aspect-[2/3] overflow-hidden">
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-carbon">
+          {/* Fondo difuminado de seguridad para evitar saltos visuales */}
+          <img
+            src={posterUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover blur-md opacity-30 scale-110"
+            loading="lazy"
+            aria-hidden="true"
+          />
+          {/* Capa principal del póster */}
           <img
             src={posterUrl}
             alt={title}
-            loading="lazy()"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 p-4 flex flex-col justify-between z-10">
-            <div className="flex justify-between items-start">
-              <span className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-gold font-bold text-xs border border-gold/20">
-                <Star size={12} fill="currentColor" /> {rating}
-              </span>
-              <span className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-text-secondary text-xs">
-                <Clock size={12} /> {duration} min
-              </span>
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/20 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-40" />
+
+          {/* Calificación */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+            <span className="inline-flex items-center gap-1 bg-carbon/80 backdrop-blur-md text-gold text-[11px] font-bold px-2.5 py-1 rounded-lg border border-white/5">
+              <Star size={11} fill="currentColor" />
+              {rating ? rating.toFixed(1) : '0.0'}
+            </span>
+          </div>
+
+          {/* Acciones Rápidas (Hover Overlay) */}
+          <div className="absolute inset-x-0 bottom-0 p-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out z-20 bg-gradient-to-t from-carbon via-carbon/90 to-transparent">
             <div className="flex gap-2">
               <button
                 type="button"
@@ -57,7 +68,10 @@ export default function MovieCard({ movie, onClick }) {
               </button>
               <button
                 type="button"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick?.()
+                }}
                 className="flex items-center justify-center w-10 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 transition-all duration-300 active:scale-95 cursor-pointer"
                 aria-label={t('movieCard.trailer') || 'Ver trailer'}
               >
@@ -66,6 +80,8 @@ export default function MovieCard({ movie, onClick }) {
             </div>
           </div>
         </div>
+        
+        {/* Información del pie de la tarjeta */}
         <div className="p-4 bg-surface">
           <h3 className="font-display tracking-wide text-white text-lg sm:text-xl truncate group-hover:text-magenta transition-colors duration-300">
             {title}
@@ -74,7 +90,7 @@ export default function MovieCard({ movie, onClick }) {
             <p className="text-xs text-text-secondary font-medium uppercase tracking-wider truncate max-w-[70%]">
               {genre}
             </p>
-            <span className="text-xs text-text-secondary/60 font-bold font-display">
+            <span className="text-xs text-text-secondary/70 font-body shrink-0">
               {year}
             </span>
           </div>

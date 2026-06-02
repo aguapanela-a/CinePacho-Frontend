@@ -24,14 +24,21 @@ export default function ShowtimePicker({
   const { t } = useLanguage()
 
   // Extraer horarios reales del backend si hay screenings, sino usar mocks
-  const showtimesList = backendScreenings.length > 0
-    ? [...new Set(
-        backendScreenings
-          .filter(s => s.status === 'ACTIVE')
-          .map(s => s.screeningDate?.substring(11, 16)) // "HH:mm"
-          .filter(Boolean)
-      )].sort()
-    : mockShowtimes
+  const showtimesList = backendScreenings
+  .filter(s => {
+    const sDate = s.screeningDate?.substring(0, 10);
+    const dateKey = typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate;
+    return s.status === 'ACTIVE' && sDate === dateKey && s.format === selectedFormat;
+  })
+  .map(s => s.screeningDate?.substring(11, 16))
+  .sort();
+
+// Y añade este useEffect para limpiar la selección si ya no existe el horario
+useEffect(() => {
+  if (selectedTime && !showtimesList.includes(selectedTime)) {
+    setSelectedTime('');
+  }
+}, [selectedDate, selectedFormat, showtimesList]);
 
   return (
     <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
@@ -54,7 +61,7 @@ export default function ShowtimePicker({
               type="button"
               onClick={() => {
                 setSelectedDate(dayKey)
-                setSelectedTime('')
+                setSelectedTime('') // Limpia el horario al cambiar de día
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 selectedDate === dayKey
@@ -80,7 +87,7 @@ export default function ShowtimePicker({
               type="button"
               onClick={() => {
                 setSelectedFormat(fmt)
-                setSelectedTime('')
+                setSelectedTime('') // Limpia el horario al cambiar de formato
               }}
               className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 selectedFormat === fmt

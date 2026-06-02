@@ -1,12 +1,12 @@
 /**
  * movieService.js
- * Servicios para búsqueda de películas (TMDB), selección y gestión de funciones.
+ * Capa de integración con los endpoints del API Gateway en Spring Boot para películas y salas.
  */
 
 import { apiFetch } from './api'
 
 /**
- * GET cartelera de un multiplex
+ * GET cartelera simplificada de un multiplex con filtros opcionales
  * /api/movie/multiplex/{multiplexId}/selectors
  */
 export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
@@ -18,38 +18,36 @@ export const getMovieSelectorsByMultiplex = (multiplexId, query = '') => {
 }
 
 /**
- * GET /api/movie/multiplex/{multiplexId}/selectors/{movieId}
- * Obtiene las funciones de una película específica en un multiplex.
+ * GET detalles y funciones estructuradas de una película específica dentro de un complejo
+ * /api/movie/multiplex/{multiplexId}/selectors/{movieId}
  */
 export const getMovieSelectorsById = (multiplexId, movieId) =>
   apiFetch(`/api/movie/multiplex/${multiplexId}/selectors/${movieId}`)
 
 /**
- * GET /api/topRatedMovies
- * Obtiene las 10 mejores películas (Público)
+ * GET listado global de películas con las calificaciones más altas
+ * /api/topRatedMovies
  */
 export const getTopRatedMovies = () =>
   apiFetch('/api/topRatedMovies')
 
 /**
- * GET /api/movie/trailer/{movieId}
- * Obtiene el key de YouTube del tráiler de la película.
+ * GET identificador del recurso de video en YouTube para trailers de TMDB
+ * /api/movie/trailer/${movieId}
  */
 export const getMovieTrailer = (movieId) =>
   apiFetch(`/api/movie/trailer/${movieId}`)
 
 /**
- * GET /api/movie/multiplex/{multiplexId}
- * Obtiene la cartelera de un multiplex (8 películas) para buyer.
+ * GET listado crudo de cartelera para compradores de boletos
+ * /api/movie/multiplex/{multiplexId}
  */
 export const getMovieListingByMultiplex = (multiplexId) =>
   apiFetch(`/api/movie/multiplex/${multiplexId}`)
 
 /**
- * GET búsqueda de películas (TMDB backend)
+ * GET búsqueda de películas directo en el módulo administrativo conectado con TMDB
  * /api/admin/movie/search
- * @param {string} query - Texto de búsqueda
- * @param {number} page - Número de página para la paginación
  */
 export const searchMovies = (query, page = 1) => {
   const params = new URLSearchParams({
@@ -60,7 +58,7 @@ export const searchMovies = (query, page = 1) => {
 }
 
 /**
- * POST seleccionar película
+ * POST selección e indexación de una película externa hacia la base de datos local de la aplicación
  * /api/admin/movie/select/{movieId}
  */
 export const selectMovie = (movieId) =>
@@ -69,7 +67,7 @@ export const selectMovie = (movieId) =>
   })
 
 /**
- * POST crear función (screening)
+ * POST programar y crear una nueva proyección de función cinematográfica
  * /api/admin/movie/createScreening
  */
 export const createScreening = (data) =>
@@ -77,15 +75,3 @@ export const createScreening = (data) =>
     method: 'POST',
     body: JSON.stringify(data),
   })
-
-/**
- * PUT cambiar estado de función
- * /api/admin/movie/changeStatus/{idScreening}
- */
-export const updateScreeningStatus = (screeningId, status) =>
-  apiFetch(
-    `/api/admin/movie/changeStatus/${screeningId}?status=${status}`,
-    {
-      method: 'PUT',
-    }
-  )
