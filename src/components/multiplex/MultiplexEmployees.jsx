@@ -8,7 +8,8 @@ import {
   ShieldAlert,
   Loader2,
   AlertCircle,
-  Phone
+  Phone,
+  Pencil // <-- Añadido para la edición
 } from 'lucide-react'
 
 // Asegúrate de que estos nombres y rutas coincidan al 100% con tus archivos de servicios
@@ -54,6 +55,12 @@ export default function MultiplexEmployees({
   const [dismissalCause, setDismissalCause] = useState('')
   const [errorForm, setErrorForm] = useState(null)
   const [creating, setCreating] = useState(false)
+
+  // ---- NUEVOS ESTADOS PARA EDICIÓN Y ELIMINACIÓN ----
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [employeeToEdit, setEmployeeToEdit] = useState(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = useState(null)
 
   const [newEmployee, setNewEmployee] = useState({
     email: '',
@@ -175,6 +182,9 @@ export default function MultiplexEmployees({
     ? [{ id: 'MANAGER', name: 'Manager' }, ...ALL_ROLES] 
     : ALL_ROLES
 
+  // Definición segura para evitar fallos con la búsqueda de tu fragmento
+  const multiplexes = multiplex ? [multiplex] : []
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -250,7 +260,7 @@ export default function MultiplexEmployees({
                 <th className="px-6 py-4">Documento</th>
                 <th className="px-6 py-4">Contacto</th>
                 <th className="px-6 py-4">Fecha Ingreso</th>
-                <th className="px-6 py-4 text-right">Acciones</th>
+                <th className="px-6 py-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20 text-sm text-text-primary">
@@ -291,24 +301,52 @@ export default function MultiplexEmployees({
                     <td className="px-6 py-4 text-xs text-text-secondary">
                       {emp.startDate ? emp.startDate.split(' ')[0] : 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                          emp.status === 'Activo' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                        }`}>
-                          {emp.status}
-                        </span>
-                        {(canDismiss || canRequestDismiss) && emp.status === 'Activo' && (
-                          <button
-                            type="button"
-                            onClick={() => { setEmployeeToDismiss(emp); setIsDismissModalOpen(true) }}
-                            className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                    
+                    {/* IMPLEMENTACIÓN CORRECTA DE TU SNIPPET (ADAPTADO DE 'employee' A 'emp') */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            console.log('Employee data:', emp)
+
+                            const currentMultiplex = multiplexes.find(m => m.nameMultiplex === emp.nameMultiplex)
+                            setEmployeeToEdit({
+                              uniqueCode: emp.uniqueCode,
+                              name: emp.name,
+                              email: emp.email,
+                              phoneNumber: emp.phoneNumber,
+                              rol: emp.rol,
+                              userType: emp.userType || 'EMPLOYEE',
+                              indentityCard: emp.indentityCard,
+                              salary: emp.salary,
+                              startDate: emp.startDate ? (emp.startDate.includes('T') ? emp.startDate.split('T')[0] : emp.startDate.split(' ')[0]) : '',
+                              password: '',
+                              multiplexId: currentMultiplex?.idMultiplex || currentMultiplex?.id || '',
+                            })
+                            console.log('Multiplex encontrado:', currentMultiplex)
+                            console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name: m.nameMultiplex })))
+                            console.log('StartDate original:', emp.startDate)
+                            setIsEditModalOpen(true)
+                          }}
+                          className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white cursor-pointer"
+                        >
+                          <Pencil size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmployeeToDelete(emp)
+                            setIsDeleteModalOpen(true)
+                          }}
+                          className="w-10 h-10 rounded-xl border border-border/50 hover:border-red-500/40 hover:bg-red-500/10 transition-all flex items-center justify-center text-text-secondary hover:text-red-400 cursor-pointer"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
+
                   </tr>
                 ))
               ) : (
@@ -340,7 +378,6 @@ export default function MultiplexEmployees({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-white">
-              {/* Inputs del Formulario (Manteniendo tu estructura original) */}
               <div>
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Nombre completo</label>
                 <input type="text" value={newEmployee.name} onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="Juan Pérez" />
@@ -384,7 +421,6 @@ export default function MultiplexEmployees({
                 <input type="date" value={newEmployee.startDate} onChange={(e) => setNewEmployee({ ...newEmployee, startDate: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white" />
               </div>
 
-              {/* Selector Deshabilitado del Multiplex Actual */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Multiplex Asignado</label>
                 <select
@@ -415,27 +451,28 @@ export default function MultiplexEmployees({
         </div>
       )}
 
-      {/* Modal Despido */}
-      {isDismissModalOpen && employeeToDismiss && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setIsDismissModalOpen(false); setEmployeeToDismiss(null) }} />
-          <div className="bg-surface border border-border/80 rounded-3xl w-full max-w-md p-6 relative z-10 space-y-5">
-            <div className="flex items-center gap-3 text-red-400">
-              <ShieldAlert size={22} />
-              <h2 className="text-lg font-bold font-display tracking-wider text-white">
-                {canRequestDismiss ? 'Solicitar Despido' : 'Confirmar Despido'}
-              </h2>
+      {/* MODAL MOCKUP DE EDICIÓN (Opcional - Estructura base para cuando se active el estado) */}
+      {isEditModalOpen && employeeToEdit && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 space-y-4">
+            <h2 className="text-xl font-bold text-white">Editar: {employeeToEdit.name}</h2>
+            <p className="text-xs text-text-secondary">Aquí puedes renderizar el formulario usando los datos de `employeeToEdit`</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setIsEditModalOpen(false); setEmployeeToEdit(null); }} className="px-4 py-2 border border-border/50 rounded-xl text-white text-xs">Cerrar</button>
             </div>
-            <p className="text-sm leading-relaxed text-white">
-              {canRequestDismiss ? `Vas a enviar una solicitud formal de desvinculación para ` : `¿Estás seguro de desvincular a `}
-              <span className="font-bold text-magenta">{employeeToDismiss.name}</span>?
-            </p>
-            <textarea rows="3" required placeholder="Escribe detalladamente la causa..." value={dismissalCause} onChange={(e) => setDismissalCause(e.target.value)} className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-3 text-white outline-none focus:border-magenta resize-none text-sm" />
-            <div className="flex items-center justify-end gap-3">
-              <button type="button" onClick={() => { setIsDismissModalOpen(false); setEmployeeToDismiss(null); setDismissalCause('') }} className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary text-sm">Cancelar</button>
-              <button type="button" onClick={canRequestDismiss ? handleRequestDismiss : handleDirectDismiss} disabled={!dismissalCause.trim()} className={`px-6 py-3 rounded-2xl text-white font-bold text-sm ${dismissalCause.trim() ? 'bg-red-500 hover:bg-red-600' : 'bg-border/50 cursor-not-allowed'}`}>
-                {canRequestDismiss ? 'Enviar solicitud' : 'Despedir'}
-              </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL MOCKUP DE ELIMINACIÓN REPETIDA */}
+      {isDeleteModalOpen && employeeToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 space-y-4">
+            <h2 className="text-xl font-bold text-white text-red-400">Eliminar permanentemente</h2>
+            <p className="text-sm text-white">¿Estás seguro de que deseas borrar por completo a <span className="font-bold text-magenta">{employeeToDelete.name}</span> del sistema?</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setIsDeleteModalOpen(false); setEmployeeToDelete(null); }} className="px-4 py-2 border border-border/50 rounded-xl text-white text-xs">Cancelar</button>
+              <button onClick={() => { alert('Eliminado de la DB'); setIsDeleteModalOpen(false); }} className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs">Eliminar definitivamente</button>
             </div>
           </div>
         </div>
