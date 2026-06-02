@@ -11,7 +11,7 @@ import {
   Phone // Corregido: Importación y nombre correcto del ícono
 } from 'lucide-react'
 
-import { getEmployeesByMultiplexId, registerEmployee } from '../../services/employeeService'
+import { getEmployeesByMultiplexId, registerEmployee } from '../../services/multiplexService'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
 
