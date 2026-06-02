@@ -7,7 +7,7 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Clock,
+  Clock,F
   ChevronDown,
   Clapperboard,
 } from "lucide-react";
@@ -125,7 +125,7 @@ export default function AdminMovies() {
     roomId: "",
     dateTime: "",
     price: "",
-    format: "2D",
+    format: "_2D",
   });
   const [creatingScreening, setCreatingScreening] = useState(false);
   const [screeningError, setScreeningError] = useState(null);
@@ -503,9 +503,9 @@ export default function AdminMovies() {
                 }
                 className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
               >
-                <option value="2D">2D</option>
-                <option value="3D">3D</option>
-                <option value="IMAX">IMAX</option>
+                <option value="_2D">2D</option>
+                <option value="_3D">3D</option>
+                <option value="_IMAX">IMAX</option>
               </select>
             </div>
 
