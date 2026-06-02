@@ -163,9 +163,7 @@ const handleEditEmployee = async () => {
       phoneNumber: employeeToEdit.phoneNumber,
       salary: Number(employeeToEdit.salary),
       rol: employeeToEdit.rol,
-      startDate: employeeToEdit.startDate?.includes('T')
-  ? employeeToEdit.startDate
-  : `${employeeToEdit.startDate} 00:00:00`,
+      startDate: `${employeeToEdit.startDate} 00:00:00`,
       multiplexId: employeeToEdit.multiplexId,
     }
 
@@ -431,12 +429,13 @@ const handleEditEmployee = async () => {
                             userType: employee.userType,
                             indentityCard: employee.indentityCard,
                             salary: employee.salary,
-                            startDate: employee.startDate,
+                            startDate: employee.startDate ? employee.startDate.split('T')[0] : '',
                             password: '',
                             multiplexId: multiplex?.idMultiplex || multiplex?.id || '',
                           })
-                          console.log('Multiplex encontrado:', multiplex)
-console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name: m.nameMultiplex })))
+                                  console.log('Multiplex encontrado:', multiplex)
+                                  console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name: m.nameMultiplex })))
+                                  console.log('StartDate original:', employee.startDate)
                           setIsEditModalOpen(true)
                         }}
                         className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white"
@@ -866,8 +865,10 @@ console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name:
           </label>
           <input
             type="date"
-            value={employeeToEdit?.startDate ? employeeToEdit.startDate.split('T')[0] : ''}
-            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, startDate: e.target.value })}
+            value={employeeToEdit.startDate}
+            onChange={(e) => 
+              setEmployeeToEdit({ ...employeeToEdit, startDate: e.target.value })
+            }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
           />
         </div>
