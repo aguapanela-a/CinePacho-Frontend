@@ -2,6 +2,7 @@ import { MapPin, Clock4 } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
 import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
+//import { useState, useEffect, useCallback } from 'react'
 import { useState, useEffect, useCallback } from 'react'
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
