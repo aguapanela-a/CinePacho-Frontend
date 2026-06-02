@@ -124,6 +124,24 @@ const confirmDeleteEmployee = async () => {
 
 // AdminEmployees.jsx
 const handleEditEmployee = async () => {
+
+  if (
+    !employeeToEdit.email ||
+    !employeeToEdit.name ||
+    !employeeToEdit.userType ||
+    !employeeToEdit.indentityCard ||
+    !employeeToEdit.phoneNumber ||
+    !employeeToEdit.salary ||
+    !employeeToEdit.rol ||
+    !employeeToEdit.multiplexId
+  ) {
+    setErrorForm('Todos los campos son obligatorios')
+    return
+  }
+
+  setCreating(true)
+  setErrorForm(null)
+
   try {
     const payload = {
       email: employeeToEdit.email,
@@ -386,9 +404,23 @@ const handleEditEmployee = async () => {
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-center gap-2">
                     <button
+                        // Al abrir el modal de edición
                         onClick={() => {
-                            setEmployeeToEdit(employee)
-                            setIsEditModalOpen(true)
+                          const multiplex = multiplexes.find(m => m.nameMultiplex === employee.nameMultiplex)
+                          setEmployeeToEdit({
+                            uniqueCode: employee.uniqueCode,
+                            name: employee.name,
+                            email: employee.email,
+                            phoneNumber: employee.phoneNumber,
+                            rol: employee.rol,
+                            userType: employee.userType,
+                            indentityCard: employee.indentityCard,
+                            salary: employee.salary,
+                            startDate: employee.startDate,
+                            password: '',
+                            multiplexId: multiplex?.idMultiplex || multiplex?.id || '',
+                          })
+                          setIsEditModalOpen(true)
                         }}
                         className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white"
                         >
