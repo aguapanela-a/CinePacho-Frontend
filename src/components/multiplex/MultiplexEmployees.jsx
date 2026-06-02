@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 
 import { getEmployeesByMultiplexId} from '../../services/multiplexService'
-import { registerEmployee, updateEmployee, dismissEmployee } from '../../services/employeeService'
+import { registerEmployee, updateEmployee, deleteEmployee } from '../../services/employeeService'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
 
