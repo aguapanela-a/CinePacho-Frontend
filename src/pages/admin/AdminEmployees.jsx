@@ -131,7 +131,7 @@ const handleEditEmployee = async () => {
       : ''
 
   const finalMultiplexId =
-    lockedMultiplexId || newEmployee.multiplexId
+    lockedMultiplexId || employeeToEdit.multiplexId
 
   if (
     !employeeToEdit.email ||
@@ -174,6 +174,8 @@ const handleEditEmployee = async () => {
     setEmployeeToEdit(null)
   } catch (error) {
     console.error('Error actualizando empleado:', error)
+  } finally {
+    setCreating(false)  // ← agregar esto
   }
 }
 
