@@ -17,7 +17,8 @@ function mapCartToPaymentData(cart, defaultMultiplexId = null) {
   let screeningId = null
 
   cart.forEach((item) => {
-    if (item.type === 'ticket') {
+    const itemType = (item.type || '').toLowerCase()
+    if (itemType === 'ticket') {
       // Usar el screeningId real del backend almacenado en el item
       if (!screeningId && item.screeningId) {
         screeningId = item.screeningId
@@ -26,7 +27,11 @@ function mapCartToPaymentData(cart, defaultMultiplexId = null) {
       if (Array.isArray(item.seatIds) && item.seatIds.length > 0) {
         item.seatIds.forEach((seatId) => seats.push({ seatId }))
       }
-    } else if (item.type === 'snack') {
+      // MovieModal guarda los asientos seleccionados en item.seats como array de strings
+      if (Array.isArray(item.seats) && item.seats.length > 0 && seats.length === 0) {
+        item.seats.forEach((seatId) => seats.push({ seatId }))
+      }
+    } else if (itemType === 'snack') {
       const snackMultiplexId = item.multiplexId || defaultMultiplexId
       if (snacksMap.has(item.id)) {
         const existing = snacksMap.get(item.id)
@@ -75,7 +80,7 @@ export default function Checkout() {
       const buyerEmailToSend = isEmployeeOrManager ? buyerEmail.trim() : null
 
       if (!paymentData.screeningId) {
-        setIntentError('No se encontró la función de la compra. Por favor revisa el carrito.')
+        setIntentError('Tu carrito no tiene boletas con una función seleccionada. Agrega al menos una boleta desde el catálogo de películas antes de pagar.')
         setIsProcessing(false)
         return
       }

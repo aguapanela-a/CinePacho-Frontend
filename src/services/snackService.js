@@ -30,11 +30,11 @@ export const getAllSnacks = async (multiplexId) => {
 export const getAdminSnacks = () =>
   apiFetch('/api/admin/snacks')
 
-/** * GET /api/admin/snacks/multiplex/{multiplexId}
+/** * GET /api/admin/multiplexes/{multiplexId}/snacks
  * (ADMIN/MANAGER) Lista el inventario completo (con o sin stock) de un multiplex específico.
  */
 export const getAdminSnacksByMultiplex = (multiplexId) =>
-  apiFetch(`/api/admin/snacks/multiplex/${multiplexId}`)
+  apiFetch(`/api/admin/multiplexes/${multiplexId}/snacks`)
 
 /** * GET /api/admin/snacks/{id}
  * (ADMIN) Obtiene un snack por ID para editarlo.
