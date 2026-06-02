@@ -190,7 +190,7 @@ const handleEditEmployee = async () => {
       phoneNumber: newEmployee.phoneNumber,
       salary: Number(newEmployee.salary),
       rol: newEmployee.rol,
-      startDate: `${newEmployee.startDate} 00:00:00`, // Convertir a formato ISO
+      startDate: `${newEmployee.startDate}T00:00:00`, // Convertir a formato ISO
       multiplexId: finalMultiplexId
     }
 
