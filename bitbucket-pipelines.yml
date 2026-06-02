@@ -1,7 +1,6 @@
 image: atlassian/default-image:3
 
 pipelines:
-  # Automated pipeline for syncing Bitbucket repository with its GitHub mirror, ensuring real-time updates across platforms
   branches:
     '*':
       - step:
@@ -10,6 +9,17 @@ pipelines:
           clone:
             enabled: false
           script:
+            # Setup SSH
+            - mkdir -p ~/.ssh
+            - ssh-keygen -R bitbucket.org || true
+            - ssh-keygen -R github.com || true
+            - ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+            - ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+            # Clone desde Bitbucket
             - git clone --bare git@bitbucket.org:camilomardu/frontcinepacho.git
+
             - cd frontcinepacho.git
+
+            # Push a GitHub mirror
             - git push --mirror git@github.com:aguapanela-a/CinePacho-Frontend.git
