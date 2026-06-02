@@ -4,7 +4,7 @@ import {
   CheckCircle, XCircle, Clock, ChevronDown, Clapperboard,
 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { searchMovies, selectMovie, createScreening, updateScreeningStatus } from '../../services/movieService'
+import { searchMovies, selectMovie, createScreening, updateScreeningStatus, getMovieSelectorsByMultiplex} from '../../services/movieService'
 import { getAllMultiplexes, getMultiplexById } from '../../services/multiplexService'
 
 // ── Constantes ──────────────────────────────────────────────────────────────
