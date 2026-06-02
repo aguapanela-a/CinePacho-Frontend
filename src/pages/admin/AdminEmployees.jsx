@@ -125,6 +125,14 @@ const confirmDeleteEmployee = async () => {
 // AdminEmployees.jsx
 const handleEditEmployee = async () => {
 
+  const lockedMultiplexId =
+    user?.userType === 'MANAGER'
+      ? user?.multiplexId
+      : ''
+
+  const finalMultiplexId =
+    lockedMultiplexId || newEmployee.multiplexId
+
   if (
     !employeeToEdit.email ||
     !employeeToEdit.name ||
@@ -133,7 +141,7 @@ const handleEditEmployee = async () => {
     !employeeToEdit.phoneNumber ||
     !employeeToEdit.salary ||
     !employeeToEdit.rol ||
-    !employeeToEdit.multiplexId
+    !finalMultiplexId
   ) {
     setErrorForm('Todos los campos son obligatorios')
     return
