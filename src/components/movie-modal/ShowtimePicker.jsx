@@ -2,8 +2,8 @@ import { MapPin, Clock4 } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
 import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
-//import { useState, useEffect, useCallback } from 'react'
 import { useState, useEffect, useCallback } from 'react'
+
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
   return `$${price.toLocaleString('es-CO')}`
@@ -11,35 +11,31 @@ const formatPriceLabel = (price) => {
 
 export default function ShowtimePicker({
   multiplexName = 'Titán',
-  selectedDate,
-  setSelectedDate,
-  selectedFormat,
-  setSelectedFormat,
-  selectedTime,
-  setSelectedTime,
-  selectedRoom,
+  selectedScreening,
+  setSelectedScreening,
   canProceedToSeats,
   handleProceedToSeats,
   backendScreenings = [],
 }) {
   const { t } = useLanguage()
 
-  // Extraer horarios reales del backend si hay screenings, sino usar mocks
-  const showtimesList = backendScreenings
-  .filter(s => {
-    const sDate = s.screeningDate?.substring(0, 10);
-    const dateKey = typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate;
-    return s.status === 'ACTIVE' && sDate === dateKey && s.format === selectedFormat;
-  })
-  .map(s => s.screeningDate?.substring(11, 16))
-  .sort();
+  // Agrupar funciones por película (en caso de múltiples películas en el modal)
+  // y ordenar por fecha + hora
+  const availableScreenings = [...backendScreenings]
+    .filter(s => s.status === 'ACTIVE')
+    .sort((a, b) => new Date(a.screeningDate) - new Date(b.screeningDate))
 
-// Y añade este useEffect para limpiar la selección si ya no existe el horario
-useEffect(() => {
-  if (selectedTime && !showtimesList.includes(selectedTime)) {
-    setSelectedTime('');
+  // Formatear fecha + hora para mostrar
+  const formatScreeningDisplay = (screening) => {
+    const date = new Date(screening.screeningDate)
+    const dateStr = date.toLocaleDateString('es-CO', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+    const timeStr = screening.screeningDate?.substring(11, 16)
+    return { dateStr, timeStr }
   }
-}, [selectedDate, selectedFormat, showtimesList]);
 
   return (
     <div className="bg-carbon/30 rounded-xl p-4 border border-white/5 space-y-3.5">
@@ -50,107 +46,97 @@ useEffect(() => {
         </span>
       </div>
 
-      {/* 1. Selección de Fecha */}
-      <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
-          {t('movie.dateLabel') || 'Selecciona el Día'}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {showtimeDates.map(({ dayKey, date }) => (
-            <button
-              key={dayKey}
-              type="button"
-              onClick={() => {
-                setSelectedDate(dayKey)
-                setSelectedTime('') // Limpia el horario al cambiar de día
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                selectedDate === dayKey
-                  ? 'border-magenta bg-magenta/10 text-white'
-                  : 'border-border/45 bg-carbon/50 text-text-secondary hover:text-white'
-              }`}
-            >
-              {date}
-            </button>
-          ))}
+      {!selectedScreening ? (
+        // MODO 1: Mostrar lista de funciones disponibles para elegir
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
+            {t('movie.availableShowtimes') || 'Funciones disponibles'}
+          </p>
+          
+          {availableScreenings.length === 0 ? (
+            <p className="text-xs text-text-secondary italic">
+              No hay funciones disponibles en este momento
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {availableScreenings.map((screening) => {
+                const { dateStr, timeStr } = formatScreeningDisplay(screening)
+                return (
+                  <button
+                    key={screening.screeningId}
+                    onClick={() => setSelectedScreening(screening)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border/40 bg-carbon/40 text-text-secondary hover:text-white hover:bg-carbon hover:border-magenta/50 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Clock4 size={14} className="group-hover:text-magenta" />
+                      <span className="font-display text-xs tracking-wider">
+                        {dateStr} • {timeStr}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-semibold uppercase text-magenta/60 group-hover:text-magenta">
+                      {screening.format || '2D'} • Sala {screening.roomNumber}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* 2. Selección de Formato */}
-      <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
-          {t('movie.formatLabel') || 'Formato'}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {ticketFormats.map(({ fmt, generalPrice }) => (
-            <button
-              key={fmt}
-              type="button"
-              onClick={() => {
-                setSelectedFormat(fmt)
-                setSelectedTime('') // Limpia el horario al cambiar de formato
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                selectedFormat === fmt
-                  ? 'border-magenta bg-magenta/10 text-white'
-                  : 'border-border/45 bg-carbon/50 text-text-secondary hover:text-white'
-              }`}
-            >
-              {fmt} · {formatPriceLabel(generalPrice)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 3. Selección de Horario */}
-      <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
-          {t('movie.timeLabel') || 'Horarios Disponibles'}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {showtimesList.map((time) => (
-            <button
-              key={time}
-              type="button"
-              onClick={() => setSelectedTime(time)}
-              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer ${
-                selectedTime === time
-                  ? 'bg-gradient-to-r from-magenta to-vinotinto border-transparent text-white shadow-md shadow-magenta/10'
-                  : 'border-border/40 bg-carbon/40 text-text-secondary hover:text-white hover:bg-carbon'
-              }`}
-            >
-              <Clock4 size={12} />
-              <span className="font-display text-xs tracking-wider">{time}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Banner Informativo y Botón de Continuar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-        {canProceedToSeats && (
-          <div className="flex-1 bg-carbon/40 border border-border/30 rounded-xl px-4 py-2 animate-[fadeIn_0.2s_ease-out]">
+      ) : (
+        // MODO 2: Mostrar selección fija de la función elegida
+        <div className="space-y-3.5">
+          <div className="bg-carbon/40 border border-magenta/30 rounded-xl px-4 py-3 space-y-2">
             <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">
-              {t('movie.selectionLabel') || 'Tu selección'}
+              {t('movie.selectedShowtime') || 'Función seleccionada'}
             </p>
-            <p className="text-white text-xs font-medium leading-relaxed">
-              {typeof selectedDate === 'object' ? selectedDate.date : selectedDate} • {selectedTime} • {selectedFormat} •{' '}
-              <span className="text-magenta font-semibold">{selectedRoom}</span>
-            </p>
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-xs text-white font-medium">
+                  {formatScreeningDisplay(selectedScreening).dateStr}
+                </p>
+                <p className="text-sm font-display tracking-wider text-magenta">
+                  {formatScreeningDisplay(selectedScreening).timeStr}
+                </p>
+              </div>
+              <div className="text-right space-y-1">
+                <p className="text-[9px] text-text-secondary font-bold">Formato</p>
+                <p className="text-xs font-semibold text-white">
+                  {selectedScreening.format || '2D'}
+                </p>
+              </div>
+              <div className="text-right space-y-1">
+                <p className="text-[9px] text-text-secondary font-bold">Sala</p>
+                <p className="text-xs font-semibold text-white">
+                  {selectedScreening.roomNumber}
+                </p>
+              </div>
+            </div>
           </div>
-        )}
-        <Button
-          onClick={handleProceedToSeats}
-          variant="primary"
-          size="md"
-          disabled={!canProceedToSeats}
-          className={`w-full sm:w-auto px-8 rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)] ${
-            !canProceedToSeats ? 'opacity-40 cursor-not-allowed' : ''
-          }`}
-        >
-          {t('movie.proceedToSeats') || 'Elegir Asientos'}
-        </Button>
-      </div>
+
+          {/* Botón para volver a elegir otra función */}
+          <button
+            onClick={() => setSelectedScreening(null)}
+            className="w-full text-[9px] font-bold text-text-secondary hover:text-magenta transition-colors uppercase tracking-widest"
+          >
+            ← Elegir otra función
+          </button>
+        </div>
+      )}
+
+      {/* Botón de continuar (solo visible cuando hay screening seleccionada) */}
+      {selectedScreening && (
+        <div className="pt-2">
+          <Button
+            onClick={handleProceedToSeats}
+            variant="primary"
+            size="md"
+            className="w-full rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)]"
+          >
+            {t('movie.proceedToSeats') || 'Elegir Asientos'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

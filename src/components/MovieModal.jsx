@@ -7,16 +7,12 @@ import MovieSummary from './movie-modal/MovieSummary'
 import ShowtimePicker from './movie-modal/ShowtimePicker'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
-import { showtimeDates, ticketFormats } from '../data/mockMoviesData'
 import { getMovieTrailer, getMovieSelectorsById } from '../services/movieService'
 import { getMovieReviews } from '../services/reviewService'
 
 export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex', multiplexId }) {
   const [step, setStep] = useState(1)
   
-  const [selectedDate, setSelectedDate] = useState(showtimeDates[0] || { dayKey: '', date: '' })
-  const [selectedFormat, setSelectedFormat] = useState(ticketFormats[0]?.fmt || '2D')
-  const [selectedTime, setSelectedTime] = useState('')
   const [selectedScreening, setSelectedScreening] = useState(null)
 
   const { addToCart } = useApp()
@@ -69,22 +65,12 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   if (!movie) return null
 
   const backendScreenings = liveScreenings || movie.screenings || []
-  const canProceedToSeats = selectedDate && selectedFormat && selectedTime
+  
+  // Puede proceder a asientos solo si hay screening seleccionada
+  const canProceedToSeats = selectedScreening !== null
 
   const handleProceedToSeats = () => {
-    if (canProceedToSeats) {
-      const targetDateStr = typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate
-      const screening = backendScreenings.find(s => {
-        if (!s.screeningDate || s.status !== 'ACTIVE') return false
-        return s.screeningDate.substring(0, 10) === targetDateStr && 
-               s.screeningDate.substring(11, 16) === selectedTime
-      })
-
-      if (!screening) {
-        toast.error('No se encontró una función activa para esta hora.')
-        return
-      }
-      setSelectedScreening(screening)
+    if (selectedScreening) {
       setStep(2)
     }
   }
@@ -92,16 +78,17 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   const handleConfirmSeats = (selectedSeatIds, total) => {
     setIsAddingToCart(true)
     
-    // Construcción del objeto para el carrito
-    const dateKeyStr = typeof selectedDate === 'object' ? selectedDate.dayKey : selectedDate
-    const dateDisplayStr = typeof selectedDate === 'object' ? selectedDate.date : selectedDate
+    // La información viene de la screening seleccionada
+    const screeningDate = selectedScreening.screeningDate
+    const dateDisplayStr = screeningDate?.substring(0, 10) || 'N/A'
+    const timeDisplayStr = screeningDate?.substring(11, 16) || 'N/A'
     
     addToCart({
       id: `${movie.id}-${selectedScreening.screeningId}`,
       title: movie.title,
       type: 'TICKET',
-      showtime: `${dateDisplayStr} — ${selectedTime}`,
-      seats: selectedSeatIds, // Se envían los IDs tal cual
+      showtime: `${dateDisplayStr} — ${timeDisplayStr}`,
+      seats: selectedSeatIds,
       qty: selectedSeatIds.length,
       unitPrice: total / selectedSeatIds.length,
       screeningId: selectedScreening.screeningId,
@@ -146,13 +133,8 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
                   <MovieSummary movie={movie} />
                   <ShowtimePicker
                     multiplexName={multiplexName}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
-                    selectedFormat={selectedFormat}
-                    setSelectedFormat={setSelectedFormat}
-                    selectedTime={selectedTime}
-                    setSelectedTime={setSelectedTime}
-                    selectedRoom={selectedScreening?.roomNumber}
+                    selectedScreening={selectedScreening}
+                    setSelectedScreening={setSelectedScreening}
                     canProceedToSeats={canProceedToSeats}
                     handleProceedToSeats={handleProceedToSeats}
                     backendScreenings={backendScreenings}
