@@ -125,8 +125,7 @@ const confirmDeleteEmployee = async () => {
 const handleEditEmployee = async () => {
   try {
     await updateEmployee(
-      employeeToEdit.email,
-      employeeToEdit
+      employeeToEdit.uniqueCode,
     )
 
     const data = await getEmployees()
