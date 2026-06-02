@@ -134,7 +134,9 @@ const handleEditEmployee = async () => {
       phoneNumber: employeeToEdit.phoneNumber,
       salary: Number(employeeToEdit.salary),
       rol: employeeToEdit.rol,
-      startDate: employeeToEdit.startDate,
+      startDate: employeeToEdit.startDate?.includes('T')
+  ? employeeToEdit.startDate
+  : `${employeeToEdit.startDate}T00:00:00`,
       multiplexId: employeeToEdit.multiplexId,
     }
 
