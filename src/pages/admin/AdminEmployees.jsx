@@ -154,7 +154,7 @@ const handleEditEmployee = async () => {
       rol: employeeToEdit.rol,
       startDate: employeeToEdit.startDate?.includes('T')
   ? employeeToEdit.startDate
-  : `${employeeToEdit.startDate}T00:00:00`,
+  : `${employeeToEdit.startDate} 00:00:00`,
       multiplexId: employeeToEdit.multiplexId,
     }
 
@@ -210,7 +210,7 @@ const handleEditEmployee = async () => {
       phoneNumber: newEmployee.phoneNumber,
       salary: Number(newEmployee.salary),
       rol: newEmployee.rol,
-      startDate: `${newEmployee.startDate}T00:00:00`, // Convertir a formato ISO
+      startDate: `${newEmployee.startDate} 00:00:00`, // Convertir a formato ISO
       multiplexId: finalMultiplexId
     }
 
