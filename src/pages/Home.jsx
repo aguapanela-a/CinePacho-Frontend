@@ -212,7 +212,7 @@ export default function Home() {
   // Filtrado local en el Front sobre el estado actual
   const filteredMovies = useMemo(() => {
     return movies.filter((movie) =>
-      movie.title.toLowerCase().includes(search.toLowerCase())
+      (movie.title || movie.originalTitle || '').toLowerCase().includes(search.toLowerCase())
     )
   }, [movies, search])
 
