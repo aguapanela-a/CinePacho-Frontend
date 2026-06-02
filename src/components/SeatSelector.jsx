@@ -72,7 +72,7 @@ export default function SeatSelector({
     const isSelected = selectedSeats.includes(seat.idSeat)
     
     // Validar estados bloqueados/vendidos por otros
-    if (!isSelected && seat.status !== 'AVAILABLE') {
+    if (!isSelected && seat.status?.toUpperCase() !== 'AVAILABLE') {
       toast.error(t('seats.occupiedAlert') || 'La silla no está disponible')
       return
     }
@@ -104,9 +104,9 @@ export default function SeatSelector({
   const prefPrice = formatPricing.preferentialPrice
 
   const total = selectedSeats.reduce((acc, id) => {
-    const s = backendSeats.find(seat => seat.idSeat === id)
-    return acc + (s?.type === 'PREFERENTIAL' ? prefPrice : generalPrice)
-  }, 0)
+  const s = backendSeats.find(seat => seat.idSeat === id)
+  return acc + (s?.type?.toUpperCase() === 'PREFERENTIAL' ? prefPrice : generalPrice)
+}, 0)
 
   return (
     <div className="flex flex-col h-full animate-[fadeIn_0.3s_ease-out]">
@@ -137,8 +137,11 @@ export default function SeatSelector({
                   if (!seat) return <div key={i} className="w-[44px]" />
                   
                   const isSelected = selectedSeats.includes(seat.idSeat)
-                  const isOccupied = seat.status === 'SOLD' || (seat.status === 'BLOCKED' && !isSelected)
-                  const isPref = seat.type === 'PREFERENTIAL'
+                  const seatStatus = seat.status?.toUpperCase()
+                  const seatType = seat.type?.toUpperCase()
+
+                  const isOccupied = seatStatus === 'SOLD' || (seatStatus === 'BLOCKED' && !isSelected)
+                  const isPref = seatType === 'PREFERENTIAL'
 
                   return (
                     <Fragment key={seat.idSeat}>

@@ -24,7 +24,9 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   const [showTrailer, setShowTrailer] = useState(false)
   const [reviews, setReviews] = useState([])
   const [liveScreenings, setLiveScreenings] = useState(null)
+  const [fetchedMovieInfo, setFetchedMovieInfo] = useState(null)
   const [loadingScreenings, setLoadingScreenings] = useState(false)
+
 
   const handleEscape = useCallback((e) => {
     if (e.key === 'Escape') onClose()
@@ -56,10 +58,16 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
           setLoadingScreenings(true)
           const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
           if (freshData) {
-            // freshData es un MovieSelectorDTO con screenings array
             console.log('MovieSelectorDTO:', freshData)
+
+            // 1. Guardar funciones
             const screenings = Array.isArray(freshData.screenings) ? freshData.screenings : []
             setLiveScreenings(screenings)
+
+            // 2. Guardar la info de la película (overview, géneros, etc.)
+            if (freshData.movieInfo) {
+              setFetchedMovieInfo(freshData.movieInfo)
+            }
           }
           setLoadingScreenings(false)
         }
@@ -74,9 +82,17 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   if (!movie) return null
 
   const backendScreenings = liveScreenings || movie.screenings || []
-  
+
+  // Fusionamos el movie original con los datos nuevos del backend si existen
+  const enrichedMovie = {
+    ...movie,
+    overview: fetchedMovieInfo?.overview || movie.overview,
+    genres: fetchedMovieInfo?.genres || movie.genres
+  }
+
   // Puede proceder a asientos solo si hay screening seleccionada
   const canProceedToSeats = selectedScreening !== null
+  
 
   const handleProceedToSeats = () => {
     if (selectedScreening) {
@@ -96,7 +112,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
       id: `${movie.id}-${selectedScreening.screeningId}`,
       title: movie.title,
       type: 'TICKET',
-      showtime: `${dateDisplayStr} — ${timeDisplayStr}`,
+      showtime: `${dateDisplayStr} — ${timeDisplayStr}`
       seats: selectedSeatIds,
       qty: selectedSeatIds.length,
       unitPrice: total / selectedSeatIds.length,
@@ -137,9 +153,10 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
                   selectedFormat={selectedScreening?.format}
                   isLoading={isAddingToCart}
                 />
+              // ... dentro del return
               ) : (
                 <>
-                  <MovieSummary movie={movie} />
+                  <MovieSummary movie={enrichedMovie} /> {/* <-- Cambiado aquí */}
                   <ShowtimePicker
                     multiplexName={multiplexName}
                     selectedScreening={selectedScreening}
