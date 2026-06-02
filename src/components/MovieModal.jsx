@@ -24,6 +24,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   const [showTrailer, setShowTrailer] = useState(false)
   const [reviews, setReviews] = useState([])
   const [liveScreenings, setLiveScreenings] = useState(null)
+  const [loadingScreenings, setLoadingScreenings] = useState(false)
 
   const handleEscape = useCallback((e) => {
     if (e.key === 'Escape') onClose()
@@ -52,11 +53,19 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
         if (Array.isArray(reviewsData)) setReviews(reviewsData)
 
         if (multiplexId) {
+          setLoadingScreenings(true)
           const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
-          if (freshData?.screenings) setLiveScreenings(freshData.screenings)
+          if (freshData) {
+            // freshData es un MovieSelectorDTO con screenings array
+            console.log('MovieSelectorDTO:', freshData)
+            const screenings = Array.isArray(freshData.screenings) ? freshData.screenings : []
+            setLiveScreenings(screenings)
+          }
+          setLoadingScreenings(false)
         }
       } catch (err) {
         console.error('Error fetching movie extra data', err)
+        setLoadingScreenings(false)
       }
     }
     fetchFreshData()
@@ -138,6 +147,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
                     canProceedToSeats={canProceedToSeats}
                     handleProceedToSeats={handleProceedToSeats}
                     backendScreenings={backendScreenings}
+                    loadingScreenings={loadingScreenings}
                   />
                 </>
               )}

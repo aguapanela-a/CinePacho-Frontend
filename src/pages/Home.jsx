@@ -34,7 +34,9 @@ export default function Home() {
 
   // Auxiliar para obtener el UUID correspondiente al multiplex seleccionado
   const getMultiplexId = (id) => {
-    return id && id !== 'Todos' ? id : null
+    if (id && id !== 'Todos') return id
+    // Si es 'Todos', usar el primer multiplex como fallback para cargar funciones
+    return multiplexesList.length > 0 ? multiplexesList[0].idMultiplex : null
   }
   const currentMultiplexId = getMultiplexId(displayMultiplex)
 

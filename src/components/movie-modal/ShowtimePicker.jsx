@@ -1,4 +1,4 @@
-import { MapPin, Clock4 } from 'lucide-react'
+import { MapPin, Clock4, Loader } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
 import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
@@ -16,6 +16,7 @@ export default function ShowtimePicker({
   canProceedToSeats,
   handleProceedToSeats,
   backendScreenings = [],
+  loadingScreenings = false,
 }) {
   const { t } = useLanguage()
 
@@ -23,18 +24,40 @@ export default function ShowtimePicker({
   // y ordenar por fecha + hora
   const availableScreenings = [...backendScreenings]
     .filter(s => s.status === 'ACTIVE')
-    .sort((a, b) => new Date(a.screeningDate) - new Date(b.screeningDate))
+    .sort((a, b) => new Date(a.screeningDate.substring(0, 10)) - new Date(b.screeningDate.substring(0, 10)))
+
+  // Debug logging
+  useEffect(() => {
+    console.log('ShowtimePicker - backendScreenings:', backendScreenings)
+    console.log('ShowtimePicker - availableScreenings (filtered ACTIVE):', availableScreenings)
+  }, [backendScreenings, availableScreenings])
 
   // Formatear fecha + hora para mostrar
   const formatScreeningDisplay = (screening) => {
-    const date = new Date(screening.screeningDate)
-    const dateStr = date.toLocaleDateString('es-CO', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
-    })
-    const timeStr = screening.screeningDate?.substring(11, 16)
-    return { dateStr, timeStr }
+    try {
+      // screeningDate viene en formato "yyyy-MM-dd HH:mm:ss"
+      const dateString = screening.screeningDate
+      if (!dateString) return { dateStr: 'Fecha desconocida', timeStr: 'Hora desconocida' }
+      
+      // Extraer hora directamente del string (posiciones 11-16)
+      const timeStr = dateString.substring(11, 16)
+      
+      // Extraer y parsear fecha (posiciones 0-10)
+      const dateStr = dateString.substring(0, 10)
+      const date = new Date(dateStr)
+      
+      // Formatear la fecha localmente
+      const formatted = date.toLocaleDateString('es-CO', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+      
+      return { dateStr: formatted, timeStr }
+    } catch (err) {
+      console.error('Error formatting screening display:', err, screening)
+      return { dateStr: 'Fecha', timeStr: 'Hora' }
+    }
   }
 
   return (
@@ -53,7 +76,12 @@ export default function ShowtimePicker({
             {t('movie.availableShowtimes') || 'Funciones disponibles'}
           </p>
           
-          {availableScreenings.length === 0 ? (
+          {loadingScreenings ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader size={16} className="text-magenta animate-spin mr-2" />
+              <p className="text-xs text-text-secondary">Cargando funciones...</p>
+            </div>
+          ) : availableScreenings.length === 0 ? (
             <p className="text-xs text-text-secondary italic">
               No hay funciones disponibles en este momento
             </p>
