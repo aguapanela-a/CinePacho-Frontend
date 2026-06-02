@@ -1,6 +1,6 @@
 import { useState, useEffect, Fragment, useCallback } from 'react'
 import { Monitor, ArrowLeft, Star, Loader2, Clock } from 'lucide-react' // Eliminado Armchair
-import Button from './Button'
+import Button from '../Button'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 import { getSeatsByRoom, toggleSeatStatus } from '../services/seatService'
