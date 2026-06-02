@@ -76,6 +76,15 @@ export default function AdminMovies() {
   const [selectedMovie, setSelectedMovie] = useState(null); // película confirmada
   const [selectingId, setSelectingId] = useState(null);
   const debounceRef = useRef(null);
+  const [screeningForm, setScreeningForm] = useState(() => {
+    const saved = localStorage.getItem("screeningForm");
+    return saved
+      ? JSON.parse(saved)
+      : { multiplexName: "", multiplexId: "", roomId: "" };
+    });
+  useEffect(() => {
+    localStorage.setItem("screeningForm", JSON.stringify(screeningForm));
+  }, [screeningForm]);
 
   const handleSearch = useCallback(async (q) => {
     if (!q.trim()) {
