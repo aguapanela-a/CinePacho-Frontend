@@ -8,15 +8,15 @@ import {
   ShieldAlert,
   Loader2,
   AlertCircle,
-  Phone // Corregido: Importación y nombre correcto del ícono
+  Phone
 } from 'lucide-react'
 
-import { getEmployeesByMultiplexId} from '../../services/multiplexService'
+// Asegúrate de que estos nombres y rutas coincidan al 100% con tus archivos de servicios
+import { getEmployeesByMultiplexId } from '../../services/multiplexService' 
 import { registerEmployee, updateEmployee, deleteEmployee } from '../../services/employeeService'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
 
-// Diccionario para mostrar nombres legibles en la interfaz basándose en lo que viene de la BD
 const ROLE_LABELS = {
   CASHIER: 'Cajero',
   DISPATCHER: 'Despachador de comida',
@@ -33,7 +33,7 @@ const ALL_ROLES = [
 ]
 
 export default function MultiplexEmployees({
-  multiplexId,
+  multiplexId, // <-- REVISA QUE EL PADRE PASE ESTO CORRECTAMENTE
   canAssignManager = false,
   canDismiss = false,
   canRequestDismiss = false,
@@ -48,7 +48,6 @@ export default function MultiplexEmployees({
   const [roleFilter, setRoleFilter] = useState('Todos')
   const [statusFilter, setStatusFilter] = useState('Activos')
   
-  // Modales
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDismissModalOpen, setIsDismissModalOpen] = useState(false)
   const [employeeToDismiss, setEmployeeToDismiss] = useState(null)
@@ -60,7 +59,7 @@ export default function MultiplexEmployees({
     email: '',
     name: '',
     password: '',
-    userType: 'EMPLOYEE', // Corregido: Valor por defecto consistente
+    userType: 'EMPLOYEE',
     indentityCard: '',
     phoneNumber: '',
     salary: '',
@@ -69,47 +68,51 @@ export default function MultiplexEmployees({
     multiplexId: ''
   })
 
-  // Memorizamos la función con useCallback
+  // Carga de empleados optimizada
   const fetchEmployees = useCallback(async () => {
     if (!multiplexId) return
     try {
-      Promise.resolve().then(() => setLoading(true))
+      setLoading(true)
+      console.log(`[API] Solicitando empleados para el multiplex ID: ${multiplexId}`)
       const data = await getEmployeesByMultiplexId(multiplexId)
-      setEmployees(data)
+      console.log('[API] Respuesta de empleados recibida:', data)
+      setEmployees(data || [])
     } catch (error) {
-      console.error("Error al cargar empleados", error)
+      console.error("[ERROR API] Error al cargar empleados:", error)
     } finally {
       setLoading(false)
     }
   }, [multiplexId])
 
-  // Carga inicial y sincronización
+  // Hook de sincronización principal
   useEffect(() => {
-    if (!multiplexId) return
+    console.log(`[Componente] Renderizado o cambio detectado en multiplexId: "${multiplexId}"`)
     
+    if (!multiplexId) {
+      console.warn("[Advertencia] multiplexId es undefined o nulo. Las peticiones a la API están bloqueadas.")
+      return
+    }
+    
+    // Cargar datos de la sede
+    console.log(`[API] Solicitando info del multiplex ID: ${multiplexId}`)
     getMultiplexById(multiplexId)
-      .then(data => setMultiplex(data))
-      .catch(() => setMultiplex(null))
+      .then(data => {
+        console.log('[API] Datos del multiplex cargados:', data)
+        setMultiplex(data)
+      })
+      .catch(err => {
+        console.error("[ERROR API] Error al obtener multiplex por ID:", err)
+        setMultiplex(null)
+      })
 
     fetchEmployees()
   }, [multiplexId, fetchEmployees])
 
-
-
-
-  // Crear empleado
   const handleCreateEmployee = async () => {
     if (
-      !newEmployee.email ||
-      !newEmployee.name ||
-      !newEmployee.password ||
-      !newEmployee.userType ||
-      !newEmployee.indentityCard ||
-      !newEmployee.phoneNumber ||
-      !newEmployee.salary ||
-      !newEmployee.rol ||
-      !newEmployee.startDate ||
-      !multiplexId
+      !newEmployee.email || !newEmployee.name || !newEmployee.password || 
+      !newEmployee.userType || !newEmployee.indentityCard || !newEmployee.phoneNumber || 
+      !newEmployee.salary || !newEmployee.rol || !newEmployee.startDate || !multiplexId
     ) {
       setErrorForm('Todos los campos son obligatorios')
       return
@@ -120,34 +123,20 @@ export default function MultiplexEmployees({
 
     try {
       const payload = {
-        email: newEmployee.email,
-        name: newEmployee.name,
-        password: newEmployee.password,
-        userType: newEmployee.userType,
-        indentityCard: newEmployee.indentityCard,
-        phoneNumber: newEmployee.phoneNumber,
+        ...newEmployee,
         salary: Number(newEmployee.salary),
-        rol: newEmployee.rol,
         startDate: `${newEmployee.startDate} 00:00:00`,
         multiplexId: multiplexId
       }
 
       await registerEmployee(payload)
-      await fetchEmployees() // Recarga la tabla inmediatamente
+      await fetchEmployees()
 
       setNewEmployee({
-        email: '',
-        name: '',
-        password: '',
-        userType: 'EMPLOYEE',
-        indentityCard: '',
-        phoneNumber: '',
-        salary: '',
-        rol: '',
-        startDate: '',
-        multiplexId: multiplexId
+        email: '', name: '', password: '', userType: 'EMPLOYEE',
+        indentityCard: '', phoneNumber: '', salary: '', rol: '',
+        startDate: '', multiplexId: multiplexId
       })
-
       setIsModalOpen(false)
     } catch (err) {
       console.error(err)
@@ -157,10 +146,9 @@ export default function MultiplexEmployees({
     }
   }
 
-  // Filtrado optimizado con mapeo de roles de BD
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase()) || 
-                          emp.indentityCard.includes(search)
+    const matchesSearch = emp.name?.toLowerCase().includes(search.toLowerCase()) || 
+                          emp.indentityCard?.includes(search)
     const matchesRole = roleFilter === 'Todos' || emp.rol === roleFilter
     const matchesStatus = statusFilter === 'Todos' || 
                           (statusFilter === 'Activos' && emp.status === 'Activo') ||
@@ -180,7 +168,7 @@ export default function MultiplexEmployees({
   }
 
   const handleRequestDismiss = () => {
-    alert(`Solicitud de despido enviada a administración central para: ${employeeToDismiss.name}.\nMotivo: ${dismissalCause}`)
+    alert(`Solicitud enviada para: ${employeeToDismiss.name}.`)
     setIsDismissModalOpen(false)
     setEmployeeToDismiss(null)
     setDismissalCause('')
@@ -203,7 +191,7 @@ export default function MultiplexEmployees({
               {t('admin.employees') || 'Empleados'}
             </h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Sede: {multiplex?.name || 'Cargando...'}
+              Sede: {multiplex?.name || (loading ? 'Cargando sede...' : 'No disponible')}
             </p>
           </div>
         </div>
@@ -269,7 +257,15 @@ export default function MultiplexEmployees({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20 text-sm text-text-primary">
-              {filteredEmployees.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-text-secondary">
+                    <div className="flex items-center justify-center gap-2 text-magenta">
+                      <Loader2 size={18} className="animate-spin" /> Cargando listado de empleados...
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp) => (
                   <tr key={emp.indentityCard} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4">
@@ -296,7 +292,7 @@ export default function MultiplexEmployees({
                       )}
                     </td>
                     <td className="px-6 py-4 text-xs text-text-secondary">
-                      {emp.startDate ? emp.startDate.split(' ')[0] : 'N/A'} {/* Corregido: Uso de startDate */}
+                      {emp.startDate ? emp.startDate.split(' ')[0] : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -305,13 +301,11 @@ export default function MultiplexEmployees({
                         }`}>
                           {emp.status}
                         </span>
-
                         {(canDismiss || canRequestDismiss) && emp.status === 'Activo' && (
                           <button
                             type="button"
                             onClick={() => { setEmployeeToDismiss(emp); setIsDismissModalOpen(true) }}
                             className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
-                            title={canDismiss ? 'Despedir' : 'Solicitar Despido'}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -323,7 +317,7 @@ export default function MultiplexEmployees({
               ) : (
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-text-secondary">
-                    No se encontraron empleados con los filtros activos.
+                    No se encontraron empleados en esta sede.
                   </td>
                 </tr>
               )}
@@ -345,146 +339,64 @@ export default function MultiplexEmployees({
                   Registrar nuevo empleado del sistema
                 </p>
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon text-white transition-colors"
-              >
-                ✕
-              </button>
+              <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon text-white">✕</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-white">
+              {/* Inputs del Formulario (Manteniendo tu estructura original) */}
               <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Nombre completo
-                </label>
-                <input
-                  type="text"
-                  value={newEmployee.name}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-                  placeholder="Juan Pérez"
-                />
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Nombre completo</label>
+                <input type="text" value={newEmployee.name} onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="Juan Pérez" />
               </div>
-
               <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Correo
-                </label>
-                <input
-                  type="email"
-                  value={newEmployee.email}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-                  placeholder="empleado@cinepacho.com"
-                />
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Correo</label>
+                <input type="email" value={newEmployee.email} onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="empleado@cinepacho.com" />
               </div>
-
               <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Teléfono
-                </label>
-                <input
-                  type="text"
-                  value={newEmployee.phoneNumber}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, phoneNumber: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-                  placeholder="3001234567"
-                />
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Teléfono</label>
+                <input type="text" value={newEmployee.phoneNumber} onChange={(e) => setNewEmployee({ ...newEmployee, phoneNumber: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="3001234567" />
               </div>
-
               <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Cargo
-                </label>
-                <select
-                  value={newEmployee.rol}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, rol: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer"
-                >
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Cargo</label>
+                <select value={newEmployee.rol} onChange={(e) => setNewEmployee({ ...newEmployee, rol: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer">
                   <option value=""></option>
-                  {ALL_ROLES.map(role => (
-                    <option key={role.id} value={role.id}>{role.name}</option>
-                  ))}
+                  {ALL_ROLES.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Tipo de usuario
-                </label>
-                <select
-                  value={newEmployee.userType}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, userType: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer"
-                >
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Tipo de usuario</label>
+                <select value={newEmployee.userType} onChange={(e) => setNewEmployee({ ...newEmployee, userType: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer">
                   <option value="EMPLOYEE">EMPLOYEE</option>
                   <option value="MANAGER">MANAGER</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Contraseña
-                </label>
-                <input
-                  type="password"
-                  value={newEmployee.password}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-                  placeholder="Min. 8 caracteres"
-                />
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Contraseña</label>
+                <input type="password" value={newEmployee.password} onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="Min. 8 caracteres" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Cédula</label>
+                <input type="text" value={newEmployee.indentityCard} onChange={(e) => setNewEmployee({ ...newEmployee, indentityCard: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="Ej: 1010101010" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Salario ($)</label>
+                <input type="number" value={newEmployee.salary} onChange={(e) => setNewEmployee({ ...newEmployee, salary: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="Ej: 1500000" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Fecha de Contrato</label>
+                <input type="date" value={newEmployee.startDate} onChange={(e) => setNewEmployee({ ...newEmployee, startDate: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white" />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Cédula
-                </label>
-                <input
-                  type="text"
-                  value={newEmployee.indentityCard}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, indentityCard: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-                  placeholder="Ej: 1010101010"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Salario ($)
-                </label>
-                <input
-                  type="number"
-                  value={newEmployee.salary}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, salary: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-                  placeholder="Ej: 1500000"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Fecha de Contrato
-                </label>
-                <input
-                  type="date"
-                  value={newEmployee.startDate} 
-                  onChange={(e) => setNewEmployee({ ...newEmployee, startDate: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white"
-                />
-              </div>
-
+              {/* Selector Deshabilitado del Multiplex Actual */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-                  Multiplex
-                </label>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Multiplex Asignado</label>
                 <select
-                  value={multiplexId}
+                  value={multiplexId || ''}
                   disabled
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none text-text-secondary opacity-70 cursor-not-allowed"
                 >
-                  <option value={multiplexId}>
-                    {multiplex?.name || 'Cargando...'}
+                  <option value={multiplexId || ''}>
+                    {multiplex?.name || 'Cargando datos del multiplex...'}
                   </option>
                 </select>
               </div>
@@ -497,19 +409,9 @@ export default function MultiplexEmployees({
             )}
 
             <div className="flex items-center justify-end gap-3 mt-8">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreateEmployee}
-                disabled={creating}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60 cursor-pointer"
-              >
-                {creating && <Loader2 size={16} className="animate-spin" />}
-                Guardar empleado
+              <button onClick={() => setIsModalOpen(false)} className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer">Cancelar</button>
+              <button onClick={handleCreateEmployee} disabled={creating} className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 disabled:opacity-60 cursor-pointer">
+                {creating && <Loader2 size={16} className="animate-spin" />} Guardar empleado
               </button>
             </div>
           </div>
@@ -517,7 +419,7 @@ export default function MultiplexEmployees({
       )}
 
       {/* Modal Despido */}
-      {isDismissModalOpen && (
+      {isDismissModalOpen && employeeToDismiss && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setIsDismissModalOpen(false); setEmployeeToDismiss(null) }} />
           <div className="bg-surface border border-border/80 rounded-3xl w-full max-w-md p-6 relative z-10 space-y-5">
@@ -527,55 +429,17 @@ export default function MultiplexEmployees({
                 {canRequestDismiss ? 'Solicitar Despido' : 'Confirmar Despido'}
               </h2>
             </div>
-            
-            {employeeToDismiss && (
-              <>
-                <p className="text-sm text-text-primary leading-relaxed text-white">
-                  {canRequestDismiss 
-                    ? `Vas a enviar una solicitud formal de terminación de contrato para `
-                    : `¿Estás seguro de que deseas desvincular inmediatamente de la empresa a `}
-                  <span className="font-bold text-magenta">{employeeToDismiss.name}</span> ({ROLE_LABELS[employeeToDismiss.rol] || employeeToDismiss.rol})?
-                </p>
-
-                <div>
-                  <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">
-                    Justificación / Motivo del Despido
-                  </label>
-                  <textarea
-                    rows="3"
-                    required
-                    placeholder="Escribe detalladamente la causa..."
-                    value={dismissalCause}
-                    onChange={(e) => setDismissalCause(e.target.value)}
-                    className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-3 text-white outline-none focus:border-magenta resize-none text-sm"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => { setIsDismissModalOpen(false); setEmployeeToDismiss(null); setDismissalCause('') }}
-                    className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer text-sm"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={canRequestDismiss ? handleRequestDismiss : handleDirectDismiss}
-                    disabled={!dismissalCause.trim()}
-                    className={`px-6 py-3 rounded-2xl text-white font-bold transition-all shadow-lg text-sm cursor-pointer ${
-                      dismissalCause.trim()
-                        ? canRequestDismiss
-                          ? 'bg-gradient-to-r from-yellow-600 to-yellow-700 shadow-yellow-500/20 hover:opacity-90'
-                          : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
-                        : 'bg-border/50 cursor-not-allowed'
-                    }`}
-                  >
-                    {canRequestDismiss ? 'Enviar solicitud' : 'Despedir empleado'}
-                  </button>
-                </div>
-              </>
-            )}
+            <p className="text-sm leading-relaxed text-white">
+              {canRequestDismiss ? `Vas a enviar una solicitud formal de desvinculación para ` : `¿Estás seguro de desvincular a `}
+              <span className="font-bold text-magenta">{employeeToDismiss.name}</span>?
+            </p>
+            <textarea rows="3" required placeholder="Escribe detalladamente la causa..." value={dismissalCause} onChange={(e) => setDismissalCause(e.target.value)} className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-3 text-white outline-none focus:border-magenta resize-none text-sm" />
+            <div className="flex items-center justify-end gap-3">
+              <button type="button" onClick={() => { setIsDismissModalOpen(false); setEmployeeToDismiss(null); setDismissalCause('') }} className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary text-sm">Cancelar</button>
+              <button type="button" onClick={canRequestDismiss ? handleRequestDismiss : handleDirectDismiss} disabled={!dismissalCause.trim()} className={`px-6 py-3 rounded-2xl text-white font-bold text-sm ${dismissalCause.trim() ? 'bg-red-500 hover:bg-red-600' : 'bg-border/50 cursor-not-allowed'}`}>
+                {canRequestDismiss ? 'Enviar solicitud' : 'Despedir'}
+              </button>
+            </div>
           </div>
         </div>
       )}
