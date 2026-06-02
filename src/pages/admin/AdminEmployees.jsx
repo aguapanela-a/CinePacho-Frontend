@@ -122,18 +122,28 @@ const confirmDeleteEmployee = async () => {
 
 //Editar empleados
 
+// AdminEmployees.jsx
 const handleEditEmployee = async () => {
   try {
-    await updateEmployee(
-      employeeToEdit.uniqueCode,
-    )
+    const payload = {
+      email: employeeToEdit.email,
+      name: employeeToEdit.name,
+      password: employeeToEdit.password ?? '', // el service lo actualiza, si no cambia envía el actual o maneja en backend
+      userType: employeeToEdit.userType,
+      indentityCard: employeeToEdit.indentityCard,
+      phoneNumber: employeeToEdit.phoneNumber,
+      salary: Number(employeeToEdit.salary),
+      rol: employeeToEdit.rol,
+      startDate: employeeToEdit.startDate,
+      multiplexId: employeeToEdit.multiplexId,
+    }
+
+    await updateEmployee(payload)
 
     const data = await getEmployees()
     setEmployees(data)
-
     setIsEditModalOpen(false)
     setEmployeeToEdit(null)
-
   } catch (error) {
     console.error('Error actualizando empleado:', error)
   }
@@ -335,7 +345,7 @@ const handleEditEmployee = async () => {
                   <td className="px-6 py-5">
                     <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 text-gold px-3 py-1.5 rounded-full text-sm font-bold">
                       <BadgeCheck size={14} />
-                      {employee.rol}A{employee.role}B{employee.role}
+                      {employee.rol}
                     </div>
                   </td>
 
@@ -752,7 +762,7 @@ const handleEditEmployee = async () => {
           </label>
 
           <select
-            value={employeeToEdit?.role || ''}
+            value={employeeToEdit?.rol || ''}
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
@@ -763,7 +773,7 @@ const handleEditEmployee = async () => {
           >
             <option value="CASHIER">Cajero</option>
             <option value="DISPATCHER">Despachador de comida</option>
-            <option value="MANAGER">Encargado de sala</option>
+            <option value="ROOM_ATTENDANT">Encargado de sala</option>
             <option value="CLEANER">Aseador</option>
           </select>
         </div>
