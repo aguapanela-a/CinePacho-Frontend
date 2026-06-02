@@ -10,25 +10,7 @@ import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
 import { getMovieSelectorsByMultiplex, getTopRatedMovies } from '../services/movieService'
-
-const multiplexes = [
-  'Todos',
-  'Titán',
-  'Unicentro',
-  'Plaza Central',
-  'Gran Estación',
-  'Embajador',
-  'Las Américas',
-]
-
-const MULTIPLEX_IDS = {
-  'Titán': import.meta.env.VITE_MULTIPLEX_TITAN_ID,
-  'Unicentro': import.meta.env.VITE_MULTIPLEX_UNICENTRO_ID,
-  'Plaza Central': import.meta.env.VITE_MULTIPLEX_PLAZA_CENTRAL_ID,
-  'Gran Estación': import.meta.env.VITE_MULTIPLEX_GRAN_ESTACION_ID,
-  'Embajador': import.meta.env.VITE_MULTIPLEX_EMBAJADOR_ID,
-  'Las Américas': import.meta.env.VITE_MULTIPLEX_LAS_AMERICAS_ID,
-}
+import { getAllMultiplexes } from '../services/multiplexService'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -44,15 +26,40 @@ export default function Home() {
   // Estados para datos de la API
   const [movies, setMovies] = useState([])
   const [featuredMovie, setFeaturedMovie] = useState(null)
-  const [isLoading, setIsLoading] = useState(false) // Inicializado en false si 'Todos' es el default
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [multiplexesList, setMultiplexesList] = useState([])
+  const [multiplexesLoading, setMultiplexesLoading] = useState(true)
+  const [multiplexesError, setMultiplexesError] = useState(null)
 
   // Auxiliar para obtener el UUID correspondiente al multiplex seleccionado
-  const getMultiplexId = (name) => {
-    const value = MULTIPLEX_IDS[name]
-    return value && value !== 'null' && value !== 'undefined' ? value : null
+  const getMultiplexId = (id) => {
+    return id && id !== 'Todos' ? id : null
   }
   const currentMultiplexId = getMultiplexId(displayMultiplex)
+
+  // 0. EFECTO: Cargar multiplexes desde el backend
+  useEffect(() => {
+    const loadMultiplexes = async () => {
+      setMultiplexesLoading(true)
+      setMultiplexesError(null)
+      try {
+        const data = await getAllMultiplexes()
+        if (Array.isArray(data)) {
+          setMultiplexesList(data)
+        } else {
+          setMultiplexesError('No se pudieron cargar los multiplexes')
+        }
+      } catch (err) {
+        setMultiplexesError(err.message)
+        console.error('Error cargando multiplexes:', err)
+      } finally {
+        setMultiplexesLoading(false)
+      }
+    }
+
+    loadMultiplexes()
+  }, [])
 
   // 1. EFECTO: Manejo del Debounce para el input de búsqueda
   useEffect(() => {
@@ -68,7 +75,7 @@ export default function Home() {
   // 2. EFECTO: Cargar películas desde el Backend basándose en multiplex y debouncedSearch
   useEffect(() => {
     let isMounted = true
-    setIsLoading(true)
+
 
     if (displayMultiplex === 'Todos') {
       // Cargar películas top-rated sin multiplex específico
@@ -262,7 +269,7 @@ export default function Home() {
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-carbon/50">
             <p className="text-text-secondary font-display tracking-widest text-sm uppercase">
-              {isLoading ? 'Cargando películas...' : 'No hay películas disponibles'}
+              {displayMultiplex === 'Todos' ? 'Por favor selecciona un multiplex' : 'No hay películas disponibles'}
             </p>
           </div>
         )}
@@ -277,19 +284,35 @@ export default function Home() {
               {t('home.selectMultiplexLabel') || 'Selecciona tu Multiplex'}
             </label>
             <div className="flex flex-wrap gap-2">
-              {multiplexes.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setDisplayMultiplex(m)}
-                  className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
-                    displayMultiplex === m
-                      ? 'bg-magenta border-magenta text-white shadow-lg shadow-magenta/20'
-                      : 'bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white'
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
+              <button
+                onClick={() => setDisplayMultiplex('Todos')}
+                className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
+                  displayMultiplex === 'Todos'
+                    ? 'bg-magenta border-magenta text-white shadow-lg shadow-magenta/20'
+                    : 'bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white'
+                }`}
+              >
+                Todos
+              </button>
+              {multiplexesLoading ? (
+                <p className="text-text-secondary text-xs py-2">Cargando multiplexes...</p>
+              ) : multiplexesError ? (
+                <p className="text-red-400 text-xs py-2">Error: {multiplexesError}</p>
+              ) : (
+                multiplexesList.map((plex) => (
+                  <button
+                    key={plex.idMultiplex}
+                    onClick={() => setDisplayMultiplex(plex.idMultiplex)}
+                    className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
+                      displayMultiplex === plex.idMultiplex
+                        ? 'bg-magenta border-magenta text-white shadow-lg shadow-magenta/20'
+                        : 'bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white'
+                    }`}
+                  >
+                    {plex.nameMultiplex}
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
