@@ -36,7 +36,7 @@ function StarRating({ value, onChange, label }) {
   )
 }
 
-export default function ReviewModal({ order, onClose }) {
+export default function ReviewModal({ order, onClose, buyerId }) {
   const [movieRating, setMovieRating] = useState(0)
   const [serviceRating, setServiceRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -52,8 +52,10 @@ export default function ReviewModal({ order, onClose }) {
       return
     }
 
-    // El buyerId real vendría del auth context, usando un fallback para testing
-    const buyerId = localStorage.getItem('cinepacho_buyer_id') || '450e8400-e29b-41d4-a716-446655440000'
+    if (!buyerId) {
+      toast.error(t('review.missingBuyerId') || 'No se encontró el ID de comprador. Inicia sesión nuevamente.')
+      return
+    }
 
     try {
       // 1. Enviar reseña de película si hay calificación
@@ -155,7 +157,7 @@ export default function ReviewModal({ order, onClose }) {
           </div>
 
           {/* Submit */}
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={!buyerId}>
             <Send size={16} />
             {t('review.submit') || 'Enviar Evaluación'}
           </Button>

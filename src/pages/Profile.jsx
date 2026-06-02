@@ -13,6 +13,7 @@ import { getMyPoints, redeemPoints } from '../services/pointsService';
 
 export default function Profile() {
   const { user, basePoints, setBasePoints } = useApp();
+  const buyerId = user?.id
   const { t } = useLanguage();
   const toast = useToast();
 
@@ -57,8 +58,10 @@ export default function Profile() {
     const fetchReviews = async () => {
       setLoadingReviews(true)
       try {
-        const buyerId = user?.id ?? localStorage.getItem('cinepacho_buyer_id')
-        if (!buyerId) return
+        if (!buyerId) {
+          setUserReviews([])
+          return
+        }
         const data = await getUserReviews(buyerId)
         setUserReviews(Array.isArray(data) ? data : [])
       } catch (err) {
@@ -68,7 +71,7 @@ export default function Profile() {
       }
     }
     if (user?.userType === 'BUYER') fetchReviews()
-  }, [user])
+  }, [buyerId, user])
 
   // ── Puntos desde API ───────────────────────────────────────────────
   useEffect(() => {
@@ -340,10 +343,11 @@ export default function Profile() {
                       ) : (
                         <button
                           onClick={() => setReviewOrder(order)}
-                          className="text-xs font-bold text-gold bg-gold/10 border border-gold/30 px-3 py-2 rounded-xl hover:bg-gold/20 transition-colors"
+                          disabled={!buyerId}
+                          className={`text-xs font-bold ${buyerId ? 'text-gold bg-gold/10 border border-gold/30 hover:bg-gold/20' : 'text-text-secondary bg-carbon border border-border/30 cursor-not-allowed'} px-3 py-2 rounded-xl transition-colors`}
                         >
                           <Star size={12} className="inline mr-1" />
-                          {t('review.evaluate') || 'Evaluar'}
+                          {buyerId ? (t('review.evaluate') || 'Evaluar') : (t('review.unavailable') || 'No disponible')}
                         </button>
                       )}
                     </div>
@@ -373,7 +377,13 @@ export default function Profile() {
               </div>
             )}
 
-            {!loadingReviews && userReviews.length === 0 && (
+            {!buyerId && !loadingReviews && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 text-yellow-100 text-sm">
+                {t('review.missingBuyerIdWarning') || 'No se puede cargar ni enviar valoraciones porque el backend no proporcionó un ID de comprador en la sesión.'}
+              </div>
+            )}
+
+            {!loadingReviews && buyerId && userReviews.length === 0 && (
               <p className="text-text-secondary text-sm text-center py-4">
                 No has realizado ninguna valoración aún.
               </p>
@@ -412,7 +422,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} />
+      <ReviewModal order={reviewOrder} buyerId={buyerId} onClose={() => setReviewOrder(null)} />
     </div>
   );
 }

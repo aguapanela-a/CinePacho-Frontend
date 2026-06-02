@@ -48,7 +48,10 @@ export default function Home() {
   const [selectedMovie, setSelectedMovie] = useState(null)
 
   // Auxiliar para obtener el UUID correspondiente al multiplex seleccionado
-  const getMultiplexId = (name) => MULTIPLEX_IDS[name] || null
+  const getMultiplexId = (name) => {
+    const value = MULTIPLEX_IDS[name]
+    return value && value !== 'null' && value !== 'undefined' ? value : null
+  }
   const currentMultiplexId = getMultiplexId(displayMultiplex)
 
   // 1. EFECTO: Manejo del Debounce para el input de búsqueda
@@ -75,7 +78,18 @@ export default function Home() {
     setIsLoading(true)
 
     // Usamos directamente el id calculado para evitar añadir funciones u objetos pesados a las dependencias
-    const multiplexId = MULTIPLEX_IDS[displayMultiplex] || null
+    const multiplexId = getMultiplexId(displayMultiplex)
+
+    if (!multiplexId) {
+      console.warn('Home: multiplexId no válido para', displayMultiplex)
+      if (isMounted) {
+        setMovies([])
+        setFeaturedMovie(null)
+        setIsLoading(false)
+      }
+      toast.error('Multiplex no configurado. Selecciona otro o revisa la configuración.')
+      return
+    }
 
     getMovieSelectorsByMultiplex(multiplexId, debouncedSearch)
       .then((data) => {

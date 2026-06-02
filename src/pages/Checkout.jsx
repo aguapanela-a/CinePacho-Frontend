@@ -51,9 +51,7 @@ function mapCartToPaymentData(cart, defaultMultiplexId = null) {
 /**
  * Checkout — Página principal de pago.
  *
- * MODO SIN BACKEND (mientras el endpoint /api/payments/create-intent no exista):
- * Muestra la UI completa del carrito y el formulario de Stripe en estado
- * "pendiente de conexión al backend" con un aviso claro.
+ * Usa la ruta backend real /api/checkout/stripe para crear la sesión de Stripe.
  */
 export default function Checkout() {
   const { cart, cartTotal, pendingPoints, user } = useApp()
