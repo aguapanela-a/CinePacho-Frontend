@@ -13,7 +13,7 @@ import { createRoom, deleteRoom } from '../../services/roomService'
 export default function AdminRooms({ multiplexId, multiplexName, initialRooms = [] }) {
   const [rooms, setRooms]         = useState(initialRooms)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [numberRoom, setNumberRoom]   = useState('')
+  const [roomNumber, setRoomNumber]   = useState('')
   const [saving, setSaving]           = useState(false)
   const [formError, setFormError]     = useState(null)
   const [deletingId, setDeletingId]   = useState(null)
@@ -21,16 +21,16 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
 
   // ── Crear sala ────────────────────────────────────────────────────────
   const handleCreate = async () => {
-    if (!numberRoom || isNaN(Number(numberRoom)) || Number(numberRoom) < 1) {
+    if (!roomNumber || isNaN(Number(roomNumber)) || Number(roomNumber) < 1) {
       setFormError('Ingresa un número de sala válido (mayor a 0).')
       return
     }
     setSaving(true)
     setFormError(null)
     try {
-      const created = await createRoom({ multiplexId, numberRoom: Number(numberRoom) })
+      const created = await createRoom({ multiplexId, roomNumber: Number(roomNumber) })
       setRooms(prev => [...prev, created])
-      setNumberRoom('')
+      setRoomNumber('')
       setIsModalOpen(false)
     } catch (err) {
       setFormError(err.message)
@@ -69,7 +69,7 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
           </p>
         </div>
         <button
-          onClick={() => { setIsModalOpen(true); setFormError(null); setNumberRoom('') }}
+          onClick={() => { setIsModalOpen(true); setFormError(null); setRoomNumber('') }}
           className="flex items-center gap-2 bg-gradient-to-r from-magenta to-vinotinto text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 hover:opacity-90 transition-all cursor-pointer"
         >
           <Plus size={18} />
@@ -113,7 +113,7 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
                   </div>
                   <div>
                     <p className="text-xs text-text-secondary uppercase tracking-widest">Sala</p>
-                    <h3 className="text-2xl font-display text-white">#{room.numberRoom}</h3>
+                    <h3 className="text-2xl font-display text-white">#{room.roomNumber}</h3>
                   </div>
                 </div>
 
@@ -205,8 +205,8 @@ export default function AdminRooms({ multiplexId, multiplexName, initialRooms = 
               <input
                 type="number"
                 min={1}
-                value={numberRoom}
-                onChange={(e) => setNumberRoom(e.target.value)}
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                 className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
                 placeholder="Ej: 5"

@@ -188,7 +188,7 @@ function AppLayout() {
           <Route
             path="/admin/multiplex/:multiplexId/salas"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
                 <AdminMultiplexDetail section="salas" />
               </ProtectedRoute>
             }
