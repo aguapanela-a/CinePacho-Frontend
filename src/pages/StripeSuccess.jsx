@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { confirmStripePayment } from '../services/paymentService'
+import { useApp } from '../context/useApp'
+import { clearOrderSnapshot } from '../utils/orderSnapshot'
 
 export default function StripeSuccess() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { setCart } = useApp()
   const [status, setStatus] = useState('pending')
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -38,6 +41,8 @@ export default function StripeSuccess() {
 
         localStorage.removeItem('cinepacho_checkout_payload')
         localStorage.removeItem('cinepacho_payment_id')
+        clearOrderSnapshot()
+        setCart([])
 
         setStatus('success')
 

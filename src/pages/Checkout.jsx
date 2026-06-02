@@ -59,25 +59,10 @@ export default function Checkout() {
   const { t } = useLanguage()
   const isEmployeeOrManager = user?.userType === 'EMPLOYEE' || user?.userType === 'MANAGER'
 
-  const [shippingInfo, setShippingInfo] = useState({
-    address: '',
-    city: '',
-    postalCode: '',
-    phone: ''
-  })
   const [buyerEmail, setBuyerEmail] = useState('')
-  const [shippingErrors, setShippingErrors] = useState({})
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [intentError, setIntentError] = useState(null)
-
-  const handleShippingChange = (e) => {
-    const { name, value } = e.target
-    setShippingInfo(prev => ({ ...prev, [name]: value }))
-    if (shippingErrors[name]) {
-      setShippingErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
 
   const handlePay = async () => {
     if (cart.length === 0) return
@@ -127,7 +112,7 @@ export default function Checkout() {
         if (result.paymentId) {
           localStorage.setItem('cinepacho_payment_id', result.paymentId)
         }
-        saveOrderSnapshot({ cart, cartTotal, pendingPoints, shippingInfo, buyerEmail: buyerEmailToSend })
+        saveOrderSnapshot({ cart, cartTotal, pendingPoints, buyerEmail: buyerEmailToSend })
         window.location.href = result.sessionUrl // Redirige al Hosted Checkout de Stripe
       } else {
         setIntentError('Error: No se recibió la URL de Stripe')
@@ -196,80 +181,8 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* ── Formulario de pago ──────────────────────────────────────── */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Dirección de Envío */}
-            <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl">
-              <h2 className="font-display text-lg tracking-widest uppercase text-white mb-4">
-                {t('checkout.shippingAddress')}
-              </h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-bold text-text-secondary block mb-1">
-                    {t('checkout.address')}
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={shippingInfo.address}
-                    onChange={handleShippingChange}
-                    placeholder={t('checkout.addressPlaceholder')}
-                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.address ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                      }`}
-                  />
-                  {shippingErrors.address && <p className="text-red-500 text-xs mt-1">{shippingErrors.address}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-sm font-bold text-text-secondary block mb-1">
-                      {t('checkout.city')}
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={shippingInfo.city}
-                      onChange={handleShippingChange}
-                      placeholder={t('checkout.cityPlaceholder')}
-                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.city ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                        }`}
-                    />
-                    {shippingErrors.city && <p className="text-red-500 text-xs mt-1">{shippingErrors.city}</p>}
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold text-text-secondary block mb-1">
-                      {t('checkout.postalCode')}
-                    </label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      value={shippingInfo.postalCode}
-                      onChange={handleShippingChange}
-                      placeholder="080001"
-                      className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.postalCode ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                        }`}
-                    />
-                    {shippingErrors.postalCode && <p className="text-red-500 text-xs mt-1">{shippingErrors.postalCode}</p>}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-bold text-text-secondary block mb-1">
-                    {t('checkout.phone')}
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={shippingInfo.phone}
-                    onChange={handleShippingChange}
-                    placeholder="+57 300 0000000"
-                    className={`w-full bg-carbon border-2 rounded-xl px-4 py-2 text-text-primary placeholder-text-secondary/50 outline-none transition-all ${shippingErrors.phone ? 'border-red-500' : 'border-border/80 focus:border-magenta'
-                      }`}
-                  />
-                  {shippingErrors.phone && <p className="text-red-500 text-xs mt-1">{shippingErrors.phone}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Formulario de pago */}
+          {/* ── Panel de pago ───────────────────────────────────────────── */}
+          <div className="lg:col-span-3">
             <div className="bg-surface/80 border border-border/50 rounded-3xl p-8 backdrop-blur-xl">
               <h2 className="font-display text-xl tracking-widest uppercase text-white mb-6">
                 {t('checkout.paymentMethod')}
