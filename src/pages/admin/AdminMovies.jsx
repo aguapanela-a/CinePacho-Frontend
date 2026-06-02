@@ -142,7 +142,7 @@ export default function AdminMovies() {
         })
       setCreatedScreening(result)
       // Añadir a la lista de funciones local
-      setScreenings(prev => [...prev, { ...result, multiplexName }])
+      setScreenings(prev => [...prev, { ...result, multiplexName, format, originalTitle: selectedMovie.title }])
     } catch (err) {
       setScreeningError(err.message)
     } finally {
@@ -469,11 +469,15 @@ export default function AdminMovies() {
                       return (
                         <tr key={sc.screeningId} className="hover:bg-carbon/40 transition-colors">
                           <td className="py-4 px-4">
-                            <p className="font-bold text-white">{sc.title}</p>
-                            <p className="text-xs text-text-secondary">{sc.director}</p>
+                            <p className="font-bold text-white">{sc.originalTitle}</p>
                           </td>
                           <td className="py-4 px-4 text-sm text-text-secondary">{sc.multiplexName}</td>
                           <td className="py-4 px-4 text-sm text-text-secondary font-mono">{sc.dateTime}</td>
+                          <td className="py-4 px-4">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-surface border border-border/50 text-white">
+                              {sc.format ?? '—'}
+                            </span>
+                          </td>
                           <td className="py-4 px-4 text-gold font-bold">
                             ${Number(sc.price).toLocaleString('es-CO')}
                           </td>
@@ -513,4 +517,3 @@ export default function AdminMovies() {
     </AdminLayout>
   )
 }
-
