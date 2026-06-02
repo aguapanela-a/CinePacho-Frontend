@@ -4,16 +4,23 @@ import {
   Plus,
   Search,
   Mail,
-  Phone,
   Trash2,
   ShieldAlert,
   X,
+  Loader2,
+   phoneNumber,
+   AlertCircle,
+   BadgeCheck
 } from 'lucide-react'
+
+
 import { getEmployeesByMultiplex } from '../../data/mockMultiplexData'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
+import { registerEmployee } from '../../services/employeeService'
 
-const ALL_ROLES = ['Cajero', 'Supervisor', 'Proyeccionista', 'Encargado de Snacks']
+
+const ALL_ROLES = ['Cajero', 'Proyeccionista', 'Despachador de comida', 'Aseador']
 const ALL_ROLES_WITH_MANAGER = ['Manager', ...ALL_ROLES]
 
 export default function MultiplexEmployees({
@@ -38,50 +45,124 @@ export default function MultiplexEmployees({
   const [statusFilter, setStatusFilter] = useState('Activos')
   
   // Modales
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDismissModalOpen, setIsDismissModalOpen] = useState(false)
   const [employeeToDismiss, setEmployeeToDismiss] = useState(null)
   const [dismissalCause, setDismissalCause] = useState('')
+  const [errorForm, setErrorForm] = useState(null);
+  const [creating, setCreating] = useState(false);
 
-  // Formulario nuevo empleado
-  const [newEmp, setNewEmp] = useState({
-    name: '',
-    role: 'Cajero',
+
+  const [newEmployee, setNewEmployee] = useState({
     email: '',
-    phone: '',
-    documentId: ''
+    name: '',
+    password: '',
+    userType: '',
+    indentityCard: '',
+    phoneNumber: '',
+    salary: '',
+    rol: '',
+    startDate: '',
+    multiplexId: ''
   })
+
+
+
+ //Crear empleados local
+  const handleCreateEmployee = async () => {
+  
+  if (
+    !newEmployee.email ||
+    !newEmployee.name ||
+    !newEmployee.password ||
+    !newEmployee.userType ||
+    !newEmployee.indentityCard ||
+    !newEmployee.phoneNumber ||
+    !newEmployee.salary ||
+    !newEmployee.rol ||
+    !newEmployee.startDate ||
+    !multiplexId
+  ) {
+    setErrorForm('Todos los campos son obligatorios')
+    return
+  }
+
+  setCreating(true)
+  setErrorForm(null)
+
+  try {
+    const payload = {
+      email: newEmployee.email,
+      name: newEmployee.name,
+      password: newEmployee.password,
+      userType: newEmployee.userType,
+      indentityCard: newEmployee.indentityCard,
+      phoneNumber: newEmployee.phoneNumber,
+      salary: Number(newEmployee.salary),
+      rol: newEmployee.rol,
+      startDate: `${newEmployee.startDate} 00:00:00`, // Convertir a formato ISO
+      multiplexId: multiplexId
+    }
+
+
+    console.log('Payload enviado:', payload)
+
+    await registerEmployee(payload)
+
+    setNewEmployee({
+      email: '',
+      name: '',
+      password: '',
+      userType: 'EMPLOYEE',
+      indentityCard: '',
+      phoneNumber: '',
+      salary: '',
+      rol: '',
+      startDate: '',
+      multiplexId: multiplexId
+    })
+
+    setIsModalOpen(false)
+  } catch (err) {
+    console.error(err)
+    setErrorForm(err.message || 'Error al crear empleado')
+  } finally {
+    setCreating(false)
+  }
+}
+
+
 
   // Filtrado
   const filteredEmployees = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase()) || 
-                          emp.documentId.includes(search)
-    const matchesRole = roleFilter === 'Todos' || emp.role === roleFilter
+                          emp.indentityCard.includes(search)
+    const matchesRole = roleFilter === 'Todos' || emp.rol === roleFilter
     const matchesStatus = statusFilter === 'Todos' || 
                           (statusFilter === 'Activos' && emp.status === 'Activo') ||
                           (statusFilter === 'Inactivos' && emp.status === 'Inactivo')
     return matchesSearch && matchesRole && matchesStatus
   })
 
-  const handleAddEmployee = (e) => {
-    e.preventDefault()
-    if (!newEmp.name || !newEmp.documentId || !newEmp.email) return
+  // const handleAddEmployee = (e) => {
+  //   e.preventDefault()
+  //   if (!newEmp.name || !newEmp.indentityCard || !newEmp.email) return
 
-    const created = {
-      id: `EMP-${Date.now()}`,
-      ...newEmp,
-      status: 'Activo',
-      hireDate: new Date().toISOString().split('T')[0]
-    }
+  //   const created = {
+  //     id: `EMP-${Date.now()}`,
+  //     ...newEmp,
+  //     status: 'Activo',
+  //     hireDate: new Date().toISOString().split('T')[0]
+  //   }
 
-    setEmployees([created, ...employees])
-    setIsAddModalOpen(false)
-    setNewEmp({ name: '', role: 'Cajero', email: '', phone: '', documentId: '' })
-  }
+  //   setEmployees([created, ...employees])
+  //   setIsAddModalOpen(false)
+  //   setNewEmp({ name: '', rol: 'Cajero', email: '', phoneNumber: '', indentityCard: '' })
+  // }
 
   const handleDirectDismiss = () => {
     setEmployees(employees.map(emp => 
-      emp.id === employeeToDismiss.id 
+      emp.indentityCard === employeeToDismiss.indentityCard 
         ? { ...emp, status: 'Inactivo', dismissalReason: dismissalCause } 
         : emp
     ))
@@ -118,7 +199,7 @@ export default function MultiplexEmployees({
         {canAddEmployee && (
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => setIsModalOpen(true)}
             className="flex items-center justify-center gap-2 bg-gradient-to-r from-magenta to-vinotinto text-white font-bold px-5 py-3 rounded-2xl shadow-lg shadow-magenta/20 hover:opacity-90 transition-all cursor-pointer text-sm"
           >
             <Plus size={16} />
@@ -178,27 +259,27 @@ export default function MultiplexEmployees({
             <tbody className="divide-y divide-border/20 text-sm text-text-primary">
               {filteredEmployees.length > 0 ? (
                 filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={emp.indentityCard} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4">
                       <div>
                         <span className="font-bold text-white block">{emp.name}</span>
                         <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md mt-1 ${
-                          emp.role === 'Manager' ? 'bg-gold/10 text-gold border border-gold/20' : 'bg-surface-light text-text-secondary border border-border'
+                          emp.rol === 'Manager' ? 'bg-gold/10 text-gold border border-gold/20' : 'bg-surface-light text-text-secondary border border-border'
                         }`}>
-                          {emp.role}
+                          {emp.rol}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 font-mono text-xs text-text-secondary">
-                      {emp.documentId}
+                      {emp.indentityCard}
                     </td>
                     <td className="px-6 py-4 space-y-1 text-xs">
                       <div className="flex items-center gap-1.5 text-text-secondary">
                         <Mail size={12} /> <span className="truncate max-w-[160px]">{emp.email}</span>
                       </div>
-                      {emp.phone && (
+                      {emp.phoneNumber && (
                         <div className="flex items-center gap-1.5 text-text-secondary">
-                          <Phone size={12} /> <span>{emp.phone}</span>
+                          <phoneNumber size={12} /> <span>{emp.phoneNumber}</span>
                         </div>
                       )}
                     </td>
@@ -239,94 +320,238 @@ export default function MultiplexEmployees({
         </div>
       </div>
 
-      {/* Modal Agregar Empleado */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)} />
-          <form onSubmit={handleAddEmployee} className="bg-surface border border-border/80 rounded-3xl w-full max-w-lg p-6 relative z-10 space-y-5 animate-[scaleUp_0.2s_ease-out]">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold font-display text-white tracking-wider">Nuevo Empleado</h2>
-              <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-text-secondary hover:text-white"><X size={18} /></button>
-            </div>
+      {/* Modal Crear Empleado */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">Nombre Completo</label>
-                  <input
-                    type="text"
-                    required
-                    value={newEmp.name}
-                    onChange={(e) => setNewEmp({ ...newEmp, name: e.target.value })}
-                    className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">Cédula / Documento</label>
-                  <input
-                    type="text"
-                    required
-                    value={newEmp.documentId}
-                    onChange={(e) => setNewEmp({ ...newEmp, documentId: e.target.value })}
-                    className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
-                  />
-                </div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-display tracking-widest text-white uppercase">
+                  Nuevo <span className="gradient-brand">Empleado</span>
+                </h2>
+
+                <p className="text-text-secondary text-sm mt-1">
+                  Registrar nuevo empleado del sistema
+                </p>
               </div>
 
-              {/* Corregido el cierre de la grilla aquí */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">Correo Electrónico</label>
-                  <input
-                    type="email"
-                    required
-                    value={newEmp.email}
-                    onChange={(e) => setNewEmp({ ...newEmp, email: e.target.value })}
-                    className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">Teléfono</label>
-                  <input
-                    type="text"
-                    value={newEmp.phone}
-                    onChange={(e) => setNewEmp({ ...newEmp, phone: e.target.value })}
-                    className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
-                  />
-                </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Nombre completo
+                </label>
+
+                <input
+                  type="text"
+                  value={newEmployee.name}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      name: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Juan Pérez"
+                />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">Cargo / Rol</label>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Correo
+                </label>
+
+                <input
+                  type="email"
+                  value={newEmployee.email}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      email: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="empleado@cinepacho.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Teléfono
+                </label>
+
+                <input
+                  type="text"
+                  value={newEmployee.phoneNumber}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      phoneNumber: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="3001234567"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Cargo
+                </label>
+
                 <select
-                  value={newEmp.role}
-                  onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
-                  className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta cursor-pointer"
+                  value={newEmployee.rol}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      rol: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                 >
-                  {(canAssignManager ? ALL_ROLES_WITH_MANAGER : ALL_ROLES).map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
+                  <option value=""></option>
+                  <option value="CASHIER">Cajero</option>
+                  <option value="DISPATCHER">Despachador de comida</option>
+                  <option value="ROOM_ATTENDANT">Encargado de sala</option>
+                  <option value="CLEANER">Aseador</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Tipo de usuario
+                </label>
+                <select
+                  value={newEmployee.userType}
+                  onChange={(e) =>
+                    setNewEmployee({
+                      ...newEmployee,
+                      userType: e.target.value,
+                    })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                >
+                  <option value="EMPLOYEE">EMPLOYEE</option>
+                  <option value="MANAGER">MANAGER</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={newEmployee.password}
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, password: e.target.value })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Min. 8 caracteres"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Cédula
+                </label>
+                <input
+                  type="text"
+                  value={newEmployee.indentityCard} // Corrected typo
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, indentityCard: e.target.value }) // Corrected typo
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Ej: 1010101010"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Salario ($)
+                </label>
+                <input
+                  type="number"
+                  value={newEmployee.salary}
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, salary: e.target.value })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  placeholder="Ej: 1500000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Fecha de Contrato
+                </label>
+                <input
+                  type="date"
+                  value={newEmployee.startDate} 
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, startDate: e.target.value })
+                  }
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                  Multiplex
+                </label>
+
+                <select
+                  value={newEmployee.multiplexId}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+
+                >
+                  
                 </select>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            {errorForm && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <AlertCircle size={15} /> {errorForm}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 mt-8">
               <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer text-sm"
+                onClick={() => setIsModalOpen(false)}
+                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
               >
                 Cancelar
               </button>
+
               <button
-                type="submit"
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold transition-all shadow-lg shadow-magenta/20 hover:opacity-90 cursor-pointer text-sm"
+                onClick={handleCreateEmployee}
+                disabled={creating}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60"
               >
-                Registrar Empleado
+                {creating && <Loader2 size={16} className="animate-spin" />}
+                Guardar empleado
               </button>
             </div>
-          </form>
+          </div>
+
+
         </div>
+
+    
+
       )}
 
       {/* Modal Despido */}

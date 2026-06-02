@@ -14,7 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { registerEmployee, getEmployees } from '../../services/employeeService'
-import { getAllMultiplexes, getEmployeesByMultiplexId } from '../../services/multiplexService'
+import { getAllMultiplexes } from '../../services/multiplexService'
 import { useApp } from '../../context/useApp'
 
 
@@ -104,7 +104,7 @@ export default function AdminEmployees() {
 const confirmDeleteEmployee = () => {
   setEmployees(
     employees.filter(
-      (employee) => employee.id !== employeeToDelete.id
+      (employee) => employee.uniqueCode !== employeeToDelete.uniqueCode
     )
   )
 
@@ -118,7 +118,7 @@ const confirmDeleteEmployee = () => {
 const handleEditEmployee = () => {
   setEmployees(
     employees.map((employee) =>
-      employee.id === employeeToEdit.id
+      employee.uniqueCode === employeeToEdit.uniqueCode
         ? employeeToEdit
         : employee
     )
@@ -324,7 +324,7 @@ const handleEditEmployee = () => {
                   <td className="px-6 py-5">
                     <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 text-gold px-3 py-1.5 rounded-full text-sm font-bold">
                       <BadgeCheck size={14} />
-                      {employee.role}ASD
+                      {employee.rol}ASD
                     </div>
                   </td>
 
@@ -745,7 +745,7 @@ const handleEditEmployee = () => {
             onChange={(e) =>
               setEmployeeToEdit({
                 ...employeeToEdit,
-                role: e.target.value,
+                rol: e.target.value,
               })
             }
             className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
@@ -832,7 +832,7 @@ const handleEditEmployee = () => {
         </p>
 
         <p className="text-white font-bold text-lg mt-2">
-          {employeeToDelete?.name}
+          {employeeToDelete?.indentityCard} - {employeeToDelete?.name}?
         </p>
       </div>
 

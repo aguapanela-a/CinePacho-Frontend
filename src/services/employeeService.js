@@ -29,6 +29,12 @@ export const updateEmployee = (data) =>
     body: JSON.stringify(data),
   })
 
+export const deleteEmployee = async (id) => {
+  await apiFetch(`/api/admin/delete_employee/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 /**
  * PUT /api/checkout/employee/billing/{billingId}/scan
  * Escanea el código QR de una factura para validar la entrada.
