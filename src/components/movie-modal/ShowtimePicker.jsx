@@ -3,6 +3,7 @@ import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
 import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
 import { useState, useEffect, useCallback } from 'react'
+import { getMovieSelectorsById } from '../../services/movieService'
 
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
@@ -23,7 +24,7 @@ export default function ShowtimePicker({
   // Agrupar funciones por película (en caso de múltiples películas en el modal)
   // y ordenar por fecha + hora
   const availableScreenings = [...backendScreenings]
-    .filter(s => s.status === 'ACTIVE')
+    .filter(s => s.status?.toUpperCase() === 'ACTIVE')
     .sort((a, b) => new Date(a.screeningDate.substring(0, 10)) - new Date(b.screeningDate.substring(0, 10)))
 
   // Debug logging

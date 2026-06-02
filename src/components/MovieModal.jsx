@@ -134,7 +134,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
                   onConfirm={handleConfirmSeats}
                   roomId={selectedScreening?.roomId}
                   screeningId={selectedScreening?.screeningId}
-                  selectedFormat={selectedFormat}
+                  selectedFormat={selectedScreening?.format}
                   isLoading={isAddingToCart}
                 />
               ) : (
