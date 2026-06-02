@@ -1,9 +1,9 @@
 import { MapPin, Clock4, Loader } from 'lucide-react'
 import Button from '../Button'
 import { useLanguage } from '../../context/useLanguage'
-import { showtimeDates, showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
-import { useState, useEffect, useCallback } from 'react'
-import { getMovieSelectorsById } from '../../services/movieService'
+// import { showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
+import { useEffect} from 'react'
+// import { getMovieSelectorsById } from '../../services/movieService'
 
 const formatPriceLabel = (price) => {
   if (price >= 1000) return `$${Math.round(price / 1000)}K`
