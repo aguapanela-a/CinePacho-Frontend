@@ -1,5 +1,5 @@
 import { MapPin, Clock4, Loader } from 'lucide-react'
-import Button from '../Button'
+import Button from './Button'
 import { useLanguage } from '../../context/useLanguage'
 // import { showtimes as mockShowtimes, ticketFormats } from '../../data/mockMoviesData'
 import { useEffect} from 'react'
