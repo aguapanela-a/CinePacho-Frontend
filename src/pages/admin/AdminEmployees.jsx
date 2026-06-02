@@ -13,7 +13,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
-import { registerEmployee, getEmployees } from '../../services/employeeService'
+import { registerEmployee, getEmployees, updateEmployee, deleteEmployee } from '../../services/employeeService'
 import { getAllMultiplexes } from '../../services/multiplexService'
 import { useApp } from '../../context/useApp'
 
@@ -101,31 +101,43 @@ export default function AdminEmployees() {
 
 //confirmar borrar empleados
 
-const confirmDeleteEmployee = () => {
-  setEmployees(
-    employees.filter(
-      (employee) => employee.uniqueCode !== employeeToDelete.uniqueCode
-    )
-  )
+const confirmDeleteEmployee = async () => {
+  try {
+    await deleteEmployee(employeeToDelete.uniqueCode)
 
-  setIsDeleteModalOpen(false)
-  setEmployeeToDelete(null)
+    setEmployees(
+      employees.filter(
+        (employee) =>
+          employee.uniqueCode !== employeeToDelete.uniqueCode
+      )
+    )
+
+    setIsDeleteModalOpen(false)
+    setEmployeeToDelete(null)
+  } catch (error) {
+    console.error('Error eliminando empleado:', error)
+  }
 }
 
 
 //Editar empleados
 
-const handleEditEmployee = () => {
-  setEmployees(
-    employees.map((employee) =>
-      employee.uniqueCode === employeeToEdit.uniqueCode
-        ? employeeToEdit
-        : employee
+const handleEditEmployee = async () => {
+  try {
+    await updateEmployee(
+      employeeToEdit.email,
+      employeeToEdit
     )
-  )
 
-  setIsEditModalOpen(false)
-  setEmployeeToEdit(null)
+    const data = await getEmployees()
+    setEmployees(data)
+
+    setIsEditModalOpen(false)
+    setEmployeeToEdit(null)
+
+  } catch (error) {
+    console.error('Error actualizando empleado:', error)
+  }
 }
 
 
@@ -324,7 +336,7 @@ const handleEditEmployee = () => {
                   <td className="px-6 py-5">
                     <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 text-gold px-3 py-1.5 rounded-full text-sm font-bold">
                       <BadgeCheck size={14} />
-                      {employee.rol}ASD
+                      {employee.rol}A{employee.role}B{employee.role}
                     </div>
                   </td>
 
