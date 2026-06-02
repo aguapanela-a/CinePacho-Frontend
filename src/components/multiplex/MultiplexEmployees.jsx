@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Users,
   Plus,
@@ -6,22 +6,30 @@ import {
   Mail,
   Trash2,
   ShieldAlert,
-  // X,
   Loader2,
-  //  phoneNumber,
-   AlertCircle,
-  //  BadgeCheck
+  AlertCircle,
+  Phone // Corregido: Importación y nombre correcto del ícono
 } from 'lucide-react'
 
-
-import { getEmployeesByMultiplex } from '../../data/mockMultiplexData'
+import { getEmployeesByMultiplex, registerEmployee } from '../../services/employeeService'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
-import { registerEmployee } from '../../services/employeeService'
 
+// Diccionario para mostrar nombres legibles en la interfaz basándose en lo que viene de la BD
+const ROLE_LABELS = {
+  CASHIER: 'Cajero',
+  DISPATCHER: 'Despachador de comida',
+  ROOM_ATTENDANT: 'Encargado de sala',
+  CLEANER: 'Aseador',
+  MANAGER: 'Manager'
+}
 
-const ALL_ROLES = ['Cajero', 'Proyeccionista', 'Despachador de comida', 'Aseador']
-const ALL_ROLES_WITH_MANAGER = ['Manager', ...ALL_ROLES]
+const ALL_ROLES = [
+  { id: 'CASHIER', name: 'Cajero' },
+  { id: 'DISPATCHER', name: 'Despachador de comida' },
+  { id: 'ROOM_ATTENDANT', name: 'Encargado de sala' },
+  { id: 'CLEANER', name: 'Aseador' }
+]
 
 export default function MultiplexEmployees({
   multiplexId,
@@ -32,14 +40,9 @@ export default function MultiplexEmployees({
 }) {
   const { t } = useLanguage()
   const [multiplex, setMultiplex] = useState(null)
-  const [employees, setEmployees] = useState(() => getEmployeesByMultiplex(multiplexId))
+  const [employees, setEmployees] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!multiplexId) return
-    getMultiplexById(multiplexId)
-      .then(data => setMultiplex(data))
-      .catch(() => setMultiplex(null))
-  }, [multiplexId])
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('Todos')
   const [statusFilter, setStatusFilter] = useState('Activos')
@@ -49,15 +52,14 @@ export default function MultiplexEmployees({
   const [isDismissModalOpen, setIsDismissModalOpen] = useState(false)
   const [employeeToDismiss, setEmployeeToDismiss] = useState(null)
   const [dismissalCause, setDismissalCause] = useState('')
-  const [errorForm, setErrorForm] = useState(null);
-  const [creating, setCreating] = useState(false);
-
+  const [errorForm, setErrorForm] = useState(null)
+  const [creating, setCreating] = useState(false)
 
   const [newEmployee, setNewEmployee] = useState({
     email: '',
     name: '',
     password: '',
-    userType: '',
+    userType: 'EMPLOYEE', // Corregido: Valor por defecto consistente
     indentityCard: '',
     phoneNumber: '',
     salary: '',
@@ -66,74 +68,95 @@ export default function MultiplexEmployees({
     multiplexId: ''
   })
 
+  // Memorizamos la función con useCallback
+  const fetchEmployees = useCallback(async () => {
+    if (!multiplexId) return
+    try {
+      Promise.resolve().then(() => setLoading(true))
+      const data = await getEmployeesByMultiplex(multiplexId)
+      setEmployees(data)
+    } catch (error) {
+      console.error("Error al cargar empleados", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [multiplexId])
+
+  // Carga inicial y sincronización
+  useEffect(() => {
+    if (!multiplexId) return
+    
+    getMultiplexById(multiplexId)
+      .then(data => setMultiplex(data))
+      .catch(() => setMultiplex(null))
+
+    fetchEmployees()
+  }, [multiplexId, fetchEmployees])
 
 
- //Crear empleados local
-  const handleCreateEmployee = async () => {
+
   
-  if (
-    !newEmployee.email ||
-    !newEmployee.name ||
-    !newEmployee.password ||
-    !newEmployee.userType ||
-    !newEmployee.indentityCard ||
-    !newEmployee.phoneNumber ||
-    !newEmployee.salary ||
-    !newEmployee.rol ||
-    !newEmployee.startDate ||
-    !multiplexId
-  ) {
-    setErrorForm('Todos los campos son obligatorios')
-    return
-  }
-
-  setCreating(true)
-  setErrorForm(null)
-
-  try {
-    const payload = {
-      email: newEmployee.email,
-      name: newEmployee.name,
-      password: newEmployee.password,
-      userType: newEmployee.userType,
-      indentityCard: newEmployee.indentityCard,
-      phoneNumber: newEmployee.phoneNumber,
-      salary: Number(newEmployee.salary),
-      rol: newEmployee.rol,
-      startDate: `${newEmployee.startDate} 00:00:00`, // Convertir a formato ISO
-      multiplexId: multiplexId
+  // Crear empleado
+  const handleCreateEmployee = async () => {
+    if (
+      !newEmployee.email ||
+      !newEmployee.name ||
+      !newEmployee.password ||
+      !newEmployee.userType ||
+      !newEmployee.indentityCard ||
+      !newEmployee.phoneNumber ||
+      !newEmployee.salary ||
+      !newEmployee.rol ||
+      !newEmployee.startDate ||
+      !multiplexId
+    ) {
+      setErrorForm('Todos los campos son obligatorios')
+      return
     }
 
+    setCreating(true)
+    setErrorForm(null)
 
-    console.log('Payload enviado:', payload)
+    try {
+      const payload = {
+        email: newEmployee.email,
+        name: newEmployee.name,
+        password: newEmployee.password,
+        userType: newEmployee.userType,
+        indentityCard: newEmployee.indentityCard,
+        phoneNumber: newEmployee.phoneNumber,
+        salary: Number(newEmployee.salary),
+        rol: newEmployee.rol,
+        startDate: `${newEmployee.startDate} 00:00:00`,
+        multiplexId: multiplexId
+      }
 
-    await registerEmployee(payload)
+      await registerEmployee(payload)
+      await fetchEmployees() // Recarga la tabla inmediatamente
 
-    setNewEmployee({
-      email: '',
-      name: '',
-      password: '',
-      userType: 'EMPLOYEE',
-      indentityCard: '',
-      phoneNumber: '',
-      salary: '',
-      rol: '',
-      startDate: '',
-      multiplexId: multiplexId
-    })
+      setNewEmployee({
+        email: '',
+        name: '',
+        password: '',
+        userType: 'EMPLOYEE',
+        indentityCard: '',
+        phoneNumber: '',
+        salary: '',
+        rol: '',
+        startDate: '',
+        multiplexId: multiplexId
+      })
 
-    setIsModalOpen(false)
-  } catch (err) {
-    console.error(err)
-    setErrorForm(err.message || 'Error al crear empleado')
-  } finally {
-    setCreating(false)
+      setIsModalOpen(false)
+    } catch (err) {
+      console.error(err)
+      setErrorForm(err.message || 'Error al crear empleado')
+    } finally {
+      setCreating(false)
+    }
   }
-}
 
-
-
-  // Filtrado
+  // Filtrado optimizado con mapeo de roles de BD
   const filteredEmployees = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase()) || 
                           emp.indentityCard.includes(search)
@@ -143,22 +166,6 @@ export default function MultiplexEmployees({
                           (statusFilter === 'Inactivos' && emp.status === 'Inactivo')
     return matchesSearch && matchesRole && matchesStatus
   })
-
-  // const handleAddEmployee = (e) => {
-  //   e.preventDefault()
-  //   if (!newEmp.name || !newEmp.indentityCard || !newEmp.email) return
-
-  //   const created = {
-  //     id: `EMP-${Date.now()}`,
-  //     ...newEmp,
-  //     status: 'Activo',
-  //     hireDate: new Date().toISOString().split('T')[0]
-  //   }
-
-  //   setEmployees([created, ...employees])
-  //   setIsAddModalOpen(false)
-  //   setNewEmp({ name: '', rol: 'Cajero', email: '', phoneNumber: '', indentityCard: '' })
-  // }
 
   const handleDirectDismiss = () => {
     setEmployees(employees.map(emp => 
@@ -177,6 +184,10 @@ export default function MultiplexEmployees({
     setEmployeeToDismiss(null)
     setDismissalCause('')
   }
+
+  const rolesDisponibles = canAssignManager 
+    ? [{ id: 'MANAGER', name: 'Manager' }, ...ALL_ROLES] 
+    : ALL_ROLES
 
   return (
     <div className="space-y-6">
@@ -227,8 +238,8 @@ export default function MultiplexEmployees({
           className="bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta cursor-pointer"
         >
           <option value="Todos">Todos los roles</option>
-          {(canAssignManager ? ALL_ROLES_WITH_MANAGER : ALL_ROLES).map(r => (
-            <option key={r} value={r}>{r}</option>
+          {rolesDisponibles.map(r => (
+            <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </select>
 
@@ -264,9 +275,9 @@ export default function MultiplexEmployees({
                       <div>
                         <span className="font-bold text-white block">{emp.name}</span>
                         <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md mt-1 ${
-                          emp.rol === 'Manager' ? 'bg-gold/10 text-gold border border-gold/20' : 'bg-surface-light text-text-secondary border border-border'
+                          emp.rol === 'MANAGER' ? 'bg-gold/10 text-gold border border-gold/20' : 'bg-surface-light text-text-secondary border border-border'
                         }`}>
-                          {emp.rol}
+                          {ROLE_LABELS[emp.rol] || emp.rol}
                         </span>
                       </div>
                     </td>
@@ -279,12 +290,12 @@ export default function MultiplexEmployees({
                       </div>
                       {emp.phoneNumber && (
                         <div className="flex items-center gap-1.5 text-text-secondary">
-                          <phoneNumber size={12} /> <span>{emp.phoneNumber}</span>
+                          <Phone size={12} /> <span>{emp.phoneNumber}</span>
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 text-xs text-text-secondary">
-                      {emp.hireDate}
+                      {emp.startDate ? emp.startDate.split(' ')[0] : 'N/A'} {/* Corregido: Uso de startDate */}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -323,45 +334,33 @@ export default function MultiplexEmployees({
       {/* Modal Crear Empleado */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
-
-            {/* Header */}
+          <div className="w-full max-w-2xl bg-surface border border-border/50 rounded-3xl p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-3xl font-display tracking-widest text-white uppercase">
                   Nuevo <span className="gradient-brand">Empleado</span>
                 </h2>
-
                 <p className="text-text-secondary text-sm mt-1">
                   Registrar nuevo empleado del sistema
                 </p>
               </div>
-
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors"
+                className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon text-white transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            {/* Form */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-white">
               <div>
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
                   Nombre completo
                 </label>
-
                 <input
                   type="text"
                   value={newEmployee.name}
-                  onChange={(e) =>
-                    setNewEmployee({
-                      ...newEmployee,
-                      name: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Juan Pérez"
                 />
@@ -371,16 +370,10 @@ export default function MultiplexEmployees({
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
                   Correo
                 </label>
-
                 <input
                   type="email"
                   value={newEmployee.email}
-                  onChange={(e) =>
-                    setNewEmployee({
-                      ...newEmployee,
-                      email: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="empleado@cinepacho.com"
                 />
@@ -390,16 +383,10 @@ export default function MultiplexEmployees({
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
                   Teléfono
                 </label>
-
                 <input
                   type="text"
                   value={newEmployee.phoneNumber}
-                  onChange={(e) =>
-                    setNewEmployee({
-                      ...newEmployee,
-                      phoneNumber: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNewEmployee({ ...newEmployee, phoneNumber: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="3001234567"
                 />
@@ -409,22 +396,15 @@ export default function MultiplexEmployees({
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
                   Cargo
                 </label>
-
                 <select
                   value={newEmployee.rol}
-                  onChange={(e) =>
-                    setNewEmployee({
-                      ...newEmployee,
-                      rol: e.target.value,
-                    })
-                  }
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  onChange={(e) => setNewEmployee({ ...newEmployee, rol: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer"
                 >
                   <option value=""></option>
-                  <option value="CASHIER">Cajero</option>
-                  <option value="DISPATCHER">Despachador de comida</option>
-                  <option value="ROOM_ATTENDANT">Encargado de sala</option>
-                  <option value="CLEANER">Aseador</option>
+                  {ALL_ROLES.map(role => (
+                    <option key={role.id} value={role.id}>{role.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -434,13 +414,8 @@ export default function MultiplexEmployees({
                 </label>
                 <select
                   value={newEmployee.userType}
-                  onChange={(e) =>
-                    setNewEmployee({
-                      ...newEmployee,
-                      userType: e.target.value,
-                    })
-                  }
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  onChange={(e) => setNewEmployee({ ...newEmployee, userType: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer"
                 >
                   <option value="EMPLOYEE">EMPLOYEE</option>
                   <option value="MANAGER">MANAGER</option>
@@ -454,9 +429,7 @@ export default function MultiplexEmployees({
                 <input
                   type="password"
                   value={newEmployee.password}
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, password: e.target.value })
-                  }
+                  onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Min. 8 caracteres"
                 />
@@ -468,10 +441,8 @@ export default function MultiplexEmployees({
                 </label>
                 <input
                   type="text"
-                  value={newEmployee.indentityCard} // Corrected typo
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, indentityCard: e.target.value }) // Corrected typo
-                  }
+                  value={newEmployee.indentityCard}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, indentityCard: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Ej: 1010101010"
                 />
@@ -484,9 +455,7 @@ export default function MultiplexEmployees({
                 <input
                   type="number"
                   value={newEmployee.salary}
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, salary: e.target.value })
-                  }
+                  onChange={(e) => setNewEmployee({ ...newEmployee, salary: e.target.value })}
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
                   placeholder="Ej: 1500000"
                 />
@@ -499,10 +468,8 @@ export default function MultiplexEmployees({
                 <input
                   type="date"
                   value={newEmployee.startDate} 
-                  onChange={(e) =>
-                    setNewEmployee({ ...newEmployee, startDate: e.target.value })
-                  }
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
+                  onChange={(e) => setNewEmployee({ ...newEmployee, startDate: e.target.value })}
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white"
                 />
               </div>
 
@@ -510,13 +477,14 @@ export default function MultiplexEmployees({
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
                   Multiplex
                 </label>
-
                 <select
-                  value={newEmployee.multiplexId}
-                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-
+                  value={multiplexId}
+                  disabled
+                  className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none text-text-secondary opacity-70 cursor-not-allowed"
                 >
-                  
+                  <option value={multiplexId}>
+                    {multiplex?.name || 'Cargando...'}
+                  </option>
                 </select>
               </div>
             </div>
@@ -527,38 +495,31 @@ export default function MultiplexEmployees({
               </div>
             )}
 
-            {/* Footer */}
             <div className="flex items-center justify-end gap-3 mt-8">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer"
               >
                 Cancelar
               </button>
-
               <button
                 onClick={handleCreateEmployee}
                 disabled={creating}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60 cursor-pointer"
               >
                 {creating && <Loader2 size={16} className="animate-spin" />}
                 Guardar empleado
               </button>
             </div>
           </div>
-
-
         </div>
-
-    
-
       )}
 
       {/* Modal Despido */}
       {isDismissModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setIsDismissModalOpen(false); setEmployeeToDismiss(null) }} />
-          <div className="bg-surface border border-border/80 rounded-3xl w-full max-w-md p-6 relative z-10 space-y-5 animate-[scaleUp_0.2s_ease-out]">
+          <div className="bg-surface border border-border/80 rounded-3xl w-full max-w-md p-6 relative z-10 space-y-5">
             <div className="flex items-center gap-3 text-red-400">
               <ShieldAlert size={22} />
               <h2 className="text-lg font-bold font-display tracking-wider text-white">
@@ -568,11 +529,11 @@ export default function MultiplexEmployees({
             
             {employeeToDismiss && (
               <>
-                <p className="text-sm text-text-primary leading-relaxed">
+                <p className="text-sm text-text-primary leading-relaxed text-white">
                   {canRequestDismiss 
                     ? `Vas a enviar una solicitud formal de terminación de contrato para `
                     : `¿Estás seguro de que deseas desvincular inmediatamente de la empresa a `}
-                  <span className="font-bold text-white">{employeeToDismiss.name}</span> ({employeeToDismiss.role})?
+                  <span className="font-bold text-magenta">{employeeToDismiss.name}</span> ({ROLE_LABELS[employeeToDismiss.rol] || employeeToDismiss.rol})?
                 </p>
 
                 <div>

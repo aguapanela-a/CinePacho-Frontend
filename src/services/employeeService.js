@@ -15,8 +15,6 @@ export const getEmployees = () =>
   })
 
 
-
-
 export const registerEmployee = (data) =>
   apiFetch('/api/admin/register_employee', {
     method: 'POST',
