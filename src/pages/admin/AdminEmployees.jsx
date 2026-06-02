@@ -430,6 +430,8 @@ const handleEditEmployee = async () => {
                             password: '',
                             multiplexId: multiplex?.idMultiplex || multiplex?.id || '',
                           })
+                          console.log('Multiplex encontrado:', multiplex)
+console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name: m.nameMultiplex })))
                           setIsEditModalOpen(true)
                         }}
                         className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white"
