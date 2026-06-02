@@ -133,6 +133,20 @@ const handleEditEmployee = async () => {
   const finalMultiplexId =
     lockedMultiplexId || employeeToEdit.multiplexId
 
+  console.log('Employee to edit:', employeeToEdit)
+  console.log('Final Multiplex ID:', finalMultiplexId)
+  console.log('EmployeeToEdit fields:', {
+    email: employeeToEdit.email,
+    name: employeeToEdit.name,
+    userType: employeeToEdit.userType,
+    indentityCard: employeeToEdit.indentityCard,
+    phoneNumber: employeeToEdit.phoneNumber,
+    salary: employeeToEdit.salary,
+    rol: employeeToEdit.rol,
+    startDate: employeeToEdit.startDate,
+    multiplexId: employeeToEdit.multiplexId,
+  })
+
   if (
     !employeeToEdit.email ||
     !employeeToEdit.name ||
@@ -182,7 +196,7 @@ const handleEditEmployee = async () => {
 
 
 
-//Crear empleados local
+//Crear empleados
   const handleCreateEmployee = async () => {
   const lockedMultiplexId =
     user?.userType === 'MANAGER'
