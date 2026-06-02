@@ -11,7 +11,7 @@ import {
   Phone // Corregido: Importación y nombre correcto del ícono
 } from 'lucide-react'
 
-import { getEmployeesByMultiplex, registerEmployee } from '../../services/employeeService'
+import { getEmployeesByMultiplexId, registerEmployee } from '../../services/employeeService'
 import { getMultiplexById } from '../../services/multiplexService'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -73,7 +73,7 @@ export default function MultiplexEmployees({
     if (!multiplexId) return
     try {
       Promise.resolve().then(() => setLoading(true))
-      const data = await getEmployeesByMultiplex(multiplexId)
+      const data = await getEmployeesByMultiplexId(multiplexId)
       setEmployees(data)
     } catch (error) {
       console.error("Error al cargar empleados", error)
@@ -95,7 +95,7 @@ export default function MultiplexEmployees({
 
 
 
-  
+
   // Crear empleado
   const handleCreateEmployee = async () => {
     if (
