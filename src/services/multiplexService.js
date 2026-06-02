@@ -8,7 +8,7 @@ import { apiFetch } from './api'
 
 /** GET /api/employees/{multiplexId} - Obtiene todos los empleados de un multiplex específico */
 export const getEmployeesByMultiplexId = (multiplexId) =>
-  apiFetch(`/api/employees/${multiplexId}`)
+  apiFetch(`/api/admin/employees/${multiplexId}`)
 
 /** GET /admin/multiplexes — Lista todos los multiplex */
 export const getAllMultiplexes = () =>
