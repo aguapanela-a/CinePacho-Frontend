@@ -129,14 +129,6 @@ export default function AdminMovies() {
   const [multiplexes, setMultiplexes] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loadingMultiplexes, setLoadingMultiplexes] = useState(false);
-  const [screeningForm, setScreeningForm] = useState({
-    multiplexName: "",
-    multiplexId: "",
-    roomId: "",
-    dateTime: "",
-    price: "",
-    format: "FORMAT_2D",
-  });
   const [creatingScreening, setCreatingScreening] = useState(false);
   const [screeningError, setScreeningError] = useState(null);
   const [createdScreening, setCreatedScreening] = useState(null);
