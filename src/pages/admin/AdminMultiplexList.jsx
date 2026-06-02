@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, MapPin, Plus, Pencil, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { getRoomById } from '../../services/roomService'
+import { getRoomsByMultiplexId } from '../../services/roomService'
 import {
   getAllMultiplexes,
   createMultiplex,
@@ -61,7 +61,7 @@ useEffect(() => {
     const entries = await Promise.all(
       multiplexList.map(async (plex) => {
         try {
-          const rooms = await getRoomById(plex.idMultiplex)
+          const rooms = await getRoomsByMultiplexId(plex.idMultiplex)
           return [plex.idMultiplex, Array.isArray(rooms) ? rooms.length : 0]
         } catch {
           return [plex.idMultiplex, 0]

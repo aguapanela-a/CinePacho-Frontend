@@ -93,7 +93,7 @@ export default function AdminMovies() {
   const [rooms, setRooms]               = useState([])
   const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
   const [screeningForm, setScreeningForm] = useState({
-    multiplexName: '', multiplexId: '', roomId: '', dateTime: '', price: '',
+    multiplexName: '', multiplexId: '', roomId: '', dateTime: '', price: '', format: 'FORMAT_2D',
   })
   const [creatingScreening, setCreatingScreening] = useState(false)
   const [screeningError, setScreeningError]       = useState(null)
@@ -122,8 +122,8 @@ export default function AdminMovies() {
   }
 
   const handleCreateScreening = async () => {
-    const { multiplexName, roomId, dateTime, price } = screeningForm
-    if (!selectedMovie || !multiplexName || !roomId || !dateTime || !price) {
+    const { multiplexName, roomId, dateTime, price, format } = screeningForm
+    if (!selectedMovie || !multiplexName || !roomId || !dateTime || !price || !format) {
       setScreeningError('Completa todos los campos. Asegúrate de haber seleccionado una película primero.')
       return
     }
@@ -139,6 +139,7 @@ export default function AdminMovies() {
           roomId,
           dateTime: dateTime.replace('T', ' ') + ':00',
           price: parseFloat(price),
+          format,
         })
       setCreatedScreening(result)
       // Añadir a la lista de funciones local
@@ -405,6 +406,22 @@ export default function AdminMovies() {
               </div>
             </div>
 
+            {/* Formato */}
+            <div>
+              <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
+                Formato de Proyección
+              </label>
+              <select
+                value={screeningForm.format}
+                onChange={(e) => setScreeningForm(f => ({ ...f, format: e.target.value }))}
+                className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+              >
+                <option value="FORMAT_2D">2D - Proyección Estándar</option>
+                <option value="FORMAT_3D">3D - Proyección Tridimensional</option>
+                <option value="FORMAT_IMAX">IMAX - Pantalla Gigante</option>
+              </select>
+            </div>
+
             {screeningError && (
               <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                 <AlertCircle size={15} /> {screeningError}
@@ -457,7 +474,7 @@ export default function AdminMovies() {
                 <table className="w-full min-w-[800px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-border/50">
-                      {['Película', 'Multiplex', 'Fecha / Hora', 'Precio', 'Estado', 'Cambiar Estado'].map(h => (
+                      {['Película', 'Multiplex', 'Fecha / Hora', 'Formato', 'Precio', 'Estado', 'Cambiar Estado'].map(h => (
                         <th key={h} className="py-4 px-4 text-xs font-bold text-text-secondary uppercase tracking-widest">{h}</th>
                       ))}
                     </tr>
@@ -474,6 +491,11 @@ export default function AdminMovies() {
                           </td>
                           <td className="py-4 px-4 text-sm text-text-secondary">{sc.multiplexName}</td>
                           <td className="py-4 px-4 text-sm text-text-secondary font-mono">{sc.dateTime}</td>
+                          <td className="py-4 px-4">
+                            <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                              {sc.format || '2D'}
+                            </span>
+                          </td>
                           <td className="py-4 px-4 text-gold font-bold">
                             ${Number(sc.price).toLocaleString('es-CO')}
                           </td>

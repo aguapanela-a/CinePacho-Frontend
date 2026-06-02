@@ -6,27 +6,32 @@
 
 import { apiFetch } from './api'
 
-/** TODO: Implementar backend /api/admin/rooms */
+/** GET /api/admin/{multiplexId}/rooms — Obtiene todas las salas de un multiplex */
+export const getRoomsByMultiplexId = (multiplexId) =>
+  apiFetch(`/api/admin/${multiplexId}/rooms`)
+
+/** @deprecated Usar getRoomsByMultiplexId en su lugar */
 export const getAllRooms = () => {
-  console.warn('getAllRooms: backend /api/admin/rooms no implementado')
+  console.warn('getAllRooms: usa getRoomsByMultiplexId(multiplexId) en su lugar')
   return Promise.resolve([])
 }
 
-/** TODO: Implementar backend /api/admin/rooms/{id} */
+/** @deprecated Esta función estaba mal implementada. Usa getRoomsByMultiplexId */
 export const getRoomById = (multiplexId) => {
-  console.warn('getRoomById: backend /api/admin/rooms/{multiplexId} no implementado')
-  return Promise.resolve(null)
+  console.warn('getRoomById: usa getRoomsByMultiplexId(multiplexId) en su lugar')
+  return getRoomsByMultiplexId(multiplexId)
 }
 
 /**
  * POST /api/admin/{multiplexId}/rooms — Crea una sala asociada a un multiplex
- * @param {{ multiplexId: string }} data
+ * @param {{ multiplexId: string, numberRoom: number }} data
  */
-export const createRoom = ({ multiplexId }) =>
+export const createRoom = ({ multiplexId, numberRoom }) =>
   apiFetch(`/api/admin/${multiplexId}/rooms`, {
     method: 'POST',
+    body: JSON.stringify({ numberRoom }),
   })
 
-/** DELETE /admin/rooms/{id} — Elimina una sala */
+/** DELETE /api/admin/rooms/{id} — Elimina una sala */
 export const deleteRoom = (id) =>
   apiFetch(`/api/admin/rooms/${id}`, { method: 'DELETE' })
