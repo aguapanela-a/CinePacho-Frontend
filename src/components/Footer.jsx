@@ -1,6 +1,7 @@
 import { Film, Globe, MessageCircle, Share2 } from 'lucide-react'
 import { useLanguage } from '../context/useLanguage'
 
+
 export default function Footer() {
   const { t } = useLanguage()
 
@@ -19,6 +20,13 @@ export default function Footer() {
             <p className="text-sm text-text-secondary leading-relaxed">
               {t('footer.description')}
             </p>
+            <div className="w-full max-w-[422px] h-[196px] flex items-center justify-center overflow-hidden">
+              <img
+                src="/themoviebd.svg"
+                alt="The Movie DB API"
+                className="w-full h-full object-contain"
+              />
+            </div>
           </div>
 
           {/* Nuestras Sedes */}
