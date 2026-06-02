@@ -406,6 +406,8 @@ const handleEditEmployee = async () => {
                     <button
                         // Al abrir el modal de edición
                         onClick={() => {
+                      console.log('Employee data:', employee)
+
                           const multiplex = multiplexes.find(m => m.nameMultiplex === employee.nameMultiplex)
                           setEmployeeToEdit({
                             uniqueCode: employee.uniqueCode,
@@ -649,6 +651,7 @@ const handleEditEmployee = async () => {
                 <select
                   value={newEmployee.multiplexId}
                   onChange={(e) => {
+                    
                     const selectedId = e.target.value
                     const selected = multiplexes.find((m) => (m.idMultiplex || m.id) === selectedId)
                     setNewEmployee({
