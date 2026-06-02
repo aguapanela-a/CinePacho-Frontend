@@ -150,10 +150,7 @@ export default function MultiplexEmployees({
     const matchesSearch = emp.name?.toLowerCase().includes(search.toLowerCase()) || 
                           emp.indentityCard?.includes(search)
     const matchesRole = roleFilter === 'Todos' || emp.rol === roleFilter
-    const matchesStatus = statusFilter === 'Todos' || 
-                          (statusFilter === 'Activos' && emp.status === 'Activo') ||
-                          (statusFilter === 'Inactivos' && emp.status === 'Inactivo')
-    return matchesSearch && matchesRole && matchesStatus
+    return matchesSearch && matchesRole
   })
 
   const handleDirectDismiss = () => {
@@ -191,7 +188,7 @@ export default function MultiplexEmployees({
               {t('admin.employees') || 'Empleados'}
             </h1>
             <p className="text-xs text-text-secondary mt-0.5">
-              Sede: {multiplex?.name || (loading ? 'Cargando sede...' : 'No disponible')}
+              Sede: {multiplex?.nameMultiplex || (loading ? 'Cargando sede...' : 'No disponible')}
             </p>
           </div>
         </div>
@@ -396,7 +393,7 @@ export default function MultiplexEmployees({
                   className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none text-text-secondary opacity-70 cursor-not-allowed"
                 >
                   <option value={multiplexId || ''}>
-                    {multiplex?.name || 'Cargando datos del multiplex...'}
+                    {multiplex?.nameMultiplex || 'Cargando datos del multiplex...'}
                   </option>
                 </select>
               </div>
