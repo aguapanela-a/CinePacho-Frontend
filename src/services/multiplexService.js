@@ -1,7 +1,7 @@
 /**
  * multiplexService.js
  * Servicios para el CRUD completo de Multiplex.
- * Endpoints: /admin/multiplexes
+ * Endpoints: /api/multiplexes (lista pública) y /api/admin/multiplexes
  */
 
 import { apiFetch } from './api'

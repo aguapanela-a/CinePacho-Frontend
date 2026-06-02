@@ -13,7 +13,7 @@ import { getMyPoints, redeemPoints } from '../services/pointsService';
 
 export default function Profile() {
   const { user, basePoints, setBasePoints } = useApp();
-  const buyerId = user?.id
+  const buyerId = user?.id || user?.userId || user?.idUser || user?.buyerId
   const { t } = useLanguage();
   const toast = useToast();
 
