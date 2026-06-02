@@ -1,11 +1,28 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Search, Film, DollarSign, Loader2, AlertCircle,
-  CheckCircle, XCircle, Clock, ChevronDown, Clapperboard,
-} from 'lucide-react'
-import AdminLayout from '../../components/admin/AdminLayout'
-import { searchMovies, selectMovie, createScreening, updateScreeningStatus, getMovieSelectorsByMultiplex} from '../../services/movieService'
-import { getAllMultiplexes, getMultiplexById } from '../../services/multiplexService'
+  Search,
+  Film,
+  DollarSign,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ChevronDown,
+  Clapperboard,
+} from "lucide-react";
+import AdminLayout from "../../components/admin/AdminLayout";
+import {
+  searchMovies,
+  selectMovie,
+  createScreening,
+  updateScreeningStatus,
+  getMovieSelectorsByMultiplex,
+} from "../../services/movieService";
+import {
+  getAllMultiplexes,
+  getMultiplexById,
+} from "../../services/multiplexService";
 
 // ── Constantes ──────────────────────────────────────────────────────────────
 const TMDB_IMAGE = "https://image.tmdb.org/t/p/w342";
@@ -140,6 +157,7 @@ export default function AdminMovies() {
         roomId: "",
       }));
       setRooms([]);
+      setScreenings([]);
       return;
     }
     setScreeningForm((f) => ({
@@ -151,10 +169,48 @@ export default function AdminMovies() {
     try {
       const detail = await getMultiplexById(plex.idMultiplex);
       setRooms(detail?.rooms || []);
-      const historicalScreenings = await getScreeningsByMultiplex(plex.idMultiplex);
-      setScreenings(historicalScreenings || []);
+
+      const movieSelectors = await getMovieSelectorsByMultiplex(
+        plex.idMultiplex,
+      );
+
+      const flattenedScreenings = [];
+      if (movieSelectors && Array.isArray(movieSelectors)) {
+        movieSelectors.forEach((selector) => {
+          const movie = selector.movieInfo;
+          const globalRating = selector.rating;
+          const genresList = movie.genreIds
+            ? movie.genreIds.map((g) => g.name)
+            : [];
+
+          if (selector.screenings && Array.isArray(selector.screenings)) {
+            selector.screenings.forEach((scr) => {
+              flattenedScreenings.push({
+                screeningId: scr.screeningId,
+                dateTime: scr.screeningDate,
+                originalLanguage: movie.originalLanguage,
+                originalTitle: movie.originalTitle,
+                overview: movie.overview,
+                rating: globalRating,
+                status: scr.status,
+                genres: genresList,
+                format: scr.format || "2D",
+                multiplexName: plex.nameMultiplex,
+                price: scr.price || 0,
+              });
+            });
+          }
+        }); // Aquí se cierra el forEach correctamente
+      }
+      flattenedScreenings.sort(
+        (a, b) => new Date(b.dateTime) - new Date(a.dateTime),
+      );
+      setScreenings(flattenedScreenings);
     } catch (error) {
-      console.error("Error al cargar la información del multiplex:", error);
+      console.error(
+        "Error al cargar la información y funciones del multiplex:",
+        error,
+      );
       setRooms([]);
       setScreenings([]);
     }
