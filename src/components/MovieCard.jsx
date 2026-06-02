@@ -2,7 +2,7 @@ import { Star, Clock, Play, Ticket } from 'lucide-react'
 import { useLanguage } from '../context/useLanguage'
 
 export default function MovieCard({ movie, onClick }) {
-  const { title, genre, rating, duration, year, posterUrl } = movie
+  const { title, genre, rating, duration, year, posterUrl, description, director } = movie
   const { t } = useLanguage()
 
   const handleCardClick = () => onClick?.()
