@@ -440,7 +440,7 @@ const handleEditEmployee = async () => {
                             email: employee.email,
                             phoneNumber: employee.phoneNumber,
                             rol: employee.rol,
-                            userType: employee.userType,
+                            userType: employee.userType || 'EMPLOYEE',
                             indentityCard: employee.indentityCard,
                             salary: employee.salary,
                             startDate: employee.startDate ? employee.startDate.split('T')[0] : '',
