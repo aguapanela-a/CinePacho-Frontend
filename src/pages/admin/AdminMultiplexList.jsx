@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, MapPin, Plus, Pencil, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
+import { getRoomById } from '../../services/roomService'
 import {
   getAllMultiplexes,
   createMultiplex,
@@ -34,6 +35,7 @@ export default function AdminMultiplexList() {
 
   // ── Estado confirmación de borrado ────────────────────────────────────
   const [deletingId, setDeletingId] = useState(null)
+  const [roomCounts, setRoomCounts] = useState({})
 
   // ── Carga inicial desde el backend ────────────────────────────────────
 const fetchMultiplexes = useCallback(async () => {
@@ -51,6 +53,26 @@ const fetchMultiplexes = useCallback(async () => {
     setLoading(false)
   }
 }, [])
+
+useEffect(() => {
+  if (multiplexList.length === 0) return
+
+  const fetchRoomCounts = async () => {
+    const entries = await Promise.all(
+      multiplexList.map(async (plex) => {
+        try {
+          const rooms = await getRoomById(plex.idMultiplex)
+          return [plex.idMultiplex, Array.isArray(rooms) ? rooms.length : 0]
+        } catch {
+          return [plex.idMultiplex, 0]
+        }
+      })
+    )
+    setRoomCounts(Object.fromEntries(entries))
+  }
+
+  fetchRoomCounts()
+}, [multiplexList])
 
   useEffect(() => {
     const loadMultiplexes = async () => {
@@ -247,7 +269,7 @@ const fetchMultiplexes = useCallback(async () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                       <Building2 size={14} className="text-magenta flex-shrink-0" />
-                      {plex.rooms?.length ?? 0} sala{plex.rooms?.length !== 1 ? 's' : ''}
+                      {roomCounts[plex.idMultiplex] ?? 0} sala{(roomCounts[plex.idMultiplex] ?? 0) !== 1 ? 's' : ''}
                     </div>
                   </div>
 

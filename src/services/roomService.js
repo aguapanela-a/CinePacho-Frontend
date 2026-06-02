@@ -13,8 +13,8 @@ export const getAllRooms = () => {
 }
 
 /** TODO: Implementar backend /api/admin/rooms/{id} */
-export const getRoomById = (id) => {
-  console.warn('getRoomById: backend /api/admin/rooms/{id} no implementado')
+export const getRoomById = (multiplexId) => {
+  console.warn('getRoomById: backend /api/admin/rooms/{multiplexId} no implementado')
   return Promise.resolve(null)
 }
 
