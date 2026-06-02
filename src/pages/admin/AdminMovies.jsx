@@ -36,8 +36,6 @@ const GENRES = [
     {  "id": 37,  "name": "Oeste"}
   ]
 
-
-
 export default function AdminMovies() {
   const [tab, setTab] = useState('buscar')
 
@@ -93,7 +91,7 @@ export default function AdminMovies() {
   const [rooms, setRooms]               = useState([])
   const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
   const [screeningForm, setScreeningForm] = useState({
-    multiplexName: '', multiplexId: '', roomId: '', dateTime: '', price: '',
+    multiplexName: '', multiplexId: '', roomId: '', dateTime: '', price: '', format: '2D',
   })
   const [creatingScreening, setCreatingScreening] = useState(false)
   const [screeningError, setScreeningError]       = useState(null)
@@ -122,8 +120,8 @@ export default function AdminMovies() {
   }
 
   const handleCreateScreening = async () => {
-    const { multiplexName, roomId, dateTime, price } = screeningForm
-    if (!selectedMovie || !multiplexName || !roomId || !dateTime || !price) {
+    const { multiplexName, roomId, dateTime, price, format } = screeningForm
+    if (!selectedMovie || !multiplexName || !roomId || !dateTime || !price || !format) {
       setScreeningError('Completa todos los campos. Asegúrate de haber seleccionado una película primero.')
       return
     }
@@ -139,6 +137,7 @@ export default function AdminMovies() {
           roomId,
           dateTime: dateTime.replace('T', ' ') + ':00',
           price: parseFloat(price),
+          format,
         })
       setCreatedScreening(result)
       // Añadir a la lista de funciones local
@@ -373,6 +372,20 @@ export default function AdminMovies() {
               </select>
             </div>
 
+            {/* Formato (CORRECCIÓN) */}
+            <div>
+              <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Formato de la función</label>
+              <select
+                value={screeningForm.format}
+                onChange={(e) => setScreeningForm(f => ({ ...f, format: e.target.value }))}
+                className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+              >
+                <option value="2D">2D</option>
+                <option value="3D">3D</option>
+                <option value="IMAX">IMAX</option>
+              </select>
+            </div>
+
             {/* Fecha y hora */}
             <div>
               <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
@@ -405,6 +418,7 @@ export default function AdminMovies() {
               </div>
             </div>
 
+            {/* Erreores de creación */}
             {screeningError && (
               <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                 <AlertCircle size={15} /> {screeningError}
