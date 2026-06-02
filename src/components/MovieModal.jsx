@@ -112,7 +112,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
       id: `${movie.id}-${selectedScreening.screeningId}`,
       title: movie.title,
       type: 'TICKET',
-      showtime: `${dateDisplayStr} — ${timeDisplayStr}`
+      showtime: `${dateDisplayStr} — ${timeDisplayStr}`,
       seats: selectedSeatIds,
       qty: selectedSeatIds.length,
       unitPrice: total / selectedSeatIds.length,
