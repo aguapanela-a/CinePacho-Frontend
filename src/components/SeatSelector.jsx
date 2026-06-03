@@ -19,7 +19,7 @@ export default function SeatSelector({
   isLoading = false
 })
  {
-  const [selectedSeats, setSelectedSeats] = useState(initialSeats)
+  const [selectedSeats, setSelectedSeats] = useState([])
 
   const { t } = useLanguage()
   const toast = useToast()
