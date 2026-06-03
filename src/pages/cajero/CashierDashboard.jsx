@@ -106,7 +106,7 @@ export default function CashierDashboard() {
   const [isSeatSelectorOpen, setIsSeatSelectorOpen] = useState(false)
 
   // FIX 3: Only show ACTIVE screenings
-  const movieScreenings = selectedMovie?.screenings?.filter(s => s.status === 'ACTIVE') || []
+  const movieScreenings = selectedMovie?.screenings?.filter(s => s.status?.toUpperCase() === 'ACTIVE') || []
 
   // Agrupar horarios únicos
   const availableShowtimes = movieScreenings.length > 0
