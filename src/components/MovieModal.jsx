@@ -38,8 +38,15 @@ useEffect(() => {
   const fetchFreshData = async () => {
     try {
       const trailerData = await getMovieTrailer(movie.id).catch(() => null)
-      if (trailerData?.key) setTrailerKey(trailerData.key)
-      else if (typeof trailerData === 'string') setTrailerKey(trailerData)
+      
+      // 🛡️ Filtro para getMovieTrailer
+      if (trailerData?.key) {
+        setTrailerKey(trailerData.key)
+      } else if (typeof trailerData === 'string' && !trailerData.includes('No hay trailer')) {
+        setTrailerKey(trailerData)
+      } else {
+        setTrailerKey(null) // Si es el texto de error, se queda en null
+      }
 
       const reviewsData = await getMovieReviews(movie.id).catch(() => [])
       if (Array.isArray(reviewsData)) setReviews(reviewsData)
@@ -47,23 +54,20 @@ useEffect(() => {
       setLoadingScreenings(true)
 
       if (multiplexId) {
-        // Modo multiplex específico
         const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
         if (freshData) {
-          console.log('MovieSelectorDTO:', freshData)
           setLiveScreenings(Array.isArray(freshData.screenings) ? freshData.screenings : [])
           if (freshData.movieInfo) setFetchedMovieInfo(freshData.movieInfo)
           
-          // ✨ ¡NUEVO!: Si viene la key en el selector, la asignamos aquí también
-          if (freshData.key) setTrailerKey(freshData.key)
+          // 🛡️ Filtro por si viene en freshData
+          if (freshData.key && !freshData.key.includes('No hay trailer')) {
+            setTrailerKey(freshData.key)
+          }
         }
       } else {
-        // Modo "Todos": busca en todos los multiplexes
         const allMultiplexes = await getAllMultiplexes().catch(() => [])
         const results = await Promise.allSettled(
-          allMultiplexes.map(plex =>
-            getMovieSelectorsById(plex.idMultiplex, movie.id)
-          )
+          allMultiplexes.map(plex => getMovieSelectorsById(plex.idMultiplex, movie.id))
         )
         const allScreenings = results
           .filter(r => r.status === 'fulfilled' && r.value?.screenings)
@@ -75,14 +79,15 @@ useEffect(() => {
         if (firstValid) {
           setFetchedMovieInfo(firstValid.value.movieInfo)
           
-          // ✨ ¡NUEVO!: Extraemos la key del primer multiplex válido que responda
-          if (firstValid.value?.key) setTrailerKey(firstValid.value.key)
+          // 🛡️ Filtro por si viene en el primer multiplex válido
+          if (firstValid.value?.key && !firstValid.value.key.includes('No hay trailer')) {
+            setTrailerKey(firstValid.value.key)
+          }
         }
       }
     } catch (err) {
       console.error('Error fetching movie extra data', err)
     } finally {
-      document.body.style.overflow = 'unset' // Evitamos bloqueos raros de scroll
       setLoadingScreenings(false)
     }
   }
