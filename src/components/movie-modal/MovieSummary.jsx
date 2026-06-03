@@ -5,16 +5,19 @@ export default function MovieSummary({ movie }) {
   console.log("¿Qué trae el objeto movie?", movie);
   const { t } = useLanguage()
 
-  // Convertimos el reparto a string si viene como array, o lo dejamos como está
-  const castText = Array.isArray(movie.cast) 
-    ? movie.cast.join(', ') 
-    : movie.cast;
+  // Accedemos a los datos a través de movieInfo
+  const movieInfo = movie?.movieInfo || {};
+  
+  // Convertimos el reparto a string si es necesario
+  const castText = Array.isArray(movieInfo.cast) 
+    ? movieInfo.cast.join(', ') 
+    : movieInfo.cast;
 
   return (
     <>
       <div>
         <h2 id="movie-modal-title" className="text-3xl sm:text-4xl font-display uppercase tracking-widest text-white leading-none mb-3 pr-8">
-          {movie.title}
+          {movieInfo.originalTitle || movie.title}
         </h2>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-gold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/30 text-xs font-bold">
@@ -23,14 +26,14 @@ export default function MovieSummary({ movie }) {
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Clock size={11} />
-            {movie.duration}
+            {movie.duration || 'N/A'}
           </span>
           <span className="bg-magenta/10 px-2.5 py-1 rounded-full border border-magenta/30 text-xs font-bold text-magenta">
-            {movie.genre}
+            {movie.genre || 'N/A'}
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Calendar size={11} />
-            {movie.year}
+            {movieInfo.releaseDate || movie.year}
           </span>
         </div>
       </div>
@@ -41,7 +44,7 @@ export default function MovieSummary({ movie }) {
             {t('movie.synopsisLabel')}
           </h3>
           <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-            {movie.synopsis || t('movie.noSynopsis') || 'Sin sinopsis disponible.'}
+            {movieInfo.overview || movie.synopsis || t('movie.noSynopsis')}
           </p>
         </div>
 
@@ -50,7 +53,9 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
               <Clapperboard size={9} /> {t('movie.director')}
             </p>
-            <p className="text-white text-sm font-medium">{movie.director || 'No disponible'}</p>
+            <p className="text-white text-sm font-medium">
+              {movieInfo.director || t('movie.notAvailable')}
+            </p>
           </div>
           
           <div className="h-px bg-border/20" />
@@ -60,7 +65,7 @@ export default function MovieSummary({ movie }) {
               {t('movie.cast')}
             </p>
             <p className="text-white/75 text-[11px] leading-relaxed">
-              {castText || t('movie.notAvailable') || 'Reparto no disponible'}
+              {castText || t('movie.notAvailable')}
             </p>
           </div>
         </div>
