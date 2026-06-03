@@ -4,9 +4,22 @@
 
 import { apiFetch } from './api'
 
+/** * GET /api/snacks/all 
+ * PÚBLICO: Obtiene todos los snacks disponibles de todas las sedes.
+ * Útil cuando no hay un multiplexId definido o quieres ver el catálogo global.
+ */
+export const getAllPublicSnacks = async () => {
+  try {
+    const data = await apiFetch('/api/snacks/all')
+    return Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error cargando el catálogo global de snacks:', error)
+    return []
+  }
+}
+
 /** * GET /api/snacks/{multiplexId} 
- * ¡PÚBLICO / COMPRADORES! Lista snacks con inventario disponible para la compra.
- * Alínea directo con @GetMapping("/snacks/{multiplexId}") de tu controlador.
+ * PÚBLICO: Lista snacks con inventario disponible para una sede específica.
  */
 export const getAllSnacks = async (multiplexId) => {
   if (!multiplexId) {
@@ -15,7 +28,6 @@ export const getAllSnacks = async (multiplexId) => {
   }
 
   try {
-    // IMPORTANTE: Sin el '/admin' para que no pida rol de administrador
     const data = await apiFetch(`/api/snacks/${multiplexId}`)
     return Array.isArray(data) ? data : []
   } catch (error) {

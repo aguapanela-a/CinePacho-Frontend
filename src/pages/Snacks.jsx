@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Star, AlertCircle } from 'lucide-react'
 import Button from '../components/Button'
 import { useApp } from '../context/useApp'
-import { getAllSnacks, getAdminSnacks } from '../services/snackService'
+import { getAllSnacks, getAdminSnacks, getAllPublicSnacks } from '../services/snackService'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
@@ -22,25 +22,27 @@ export default function Snacks() {
       
       try {
         let data;
-        // Definición estricta de roles administrativos
         const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
         
         if (isAdmin) {
           data = await getAdminSnacks();
         } else {
-          // Obtener ID del multiplex o usar el fallback de variable de entorno
           const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
           
-          if (!multiplexId) {
-            throw new Error('Multiplex no definido');
+          if (multiplexId) {
+            // Intentar cargar por multiplex específico
+            data = await getAllSnacks(multiplexId);
+            // Si el resultado es vacío, intentamos el fallback global
+            if (!data || data.length === 0) {
+              data = await getAllPublicSnacks();
+            }
+          } else {
+            // Fallback directo si no hay ID
+            data = await getAllPublicSnacks();
           }
-          
-          // Llamada al endpoint público
-          data = await getAllSnacks(multiplexId);
         }
 
-        // Lógica de aplanamiento robusta
-        // Si data es array, aplanamos si hay grupos (SnackByMultiplex) o retornamos el array directo
+        // Aplanamiento robusto
         const flatSnacks = Array.isArray(data) 
           ? data.flatMap(item => (item.snacks && Array.isArray(item.snacks)) ? item.snacks : [item])
           : [];
@@ -49,14 +51,14 @@ export default function Snacks() {
         
       } catch (err) {
         console.error("Error cargando snacks:", err);
-        setError(err.message || 'Error al conectar con el servidor');
+        setError(t('snacks.errorLoading') || 'Error al conectar con el servidor');
       } finally {
         setLoading(false);
       }
     }
 
     fetchSnacks();
-  }, [user]);
+  }, [user, t]);
 
   const toCartItem = (snack) => {
     return {
