@@ -11,16 +11,15 @@ export default function Snacks() {
   const { t } = useLanguage()
   const toast = useToast()
 
-  const [snacks, setSnacks]   = useState([])
+  const [snacks, setSnacks] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchSnacks = async () => {
       setLoading(true)
       setError(null)
       
-      // Soporta tanto multiplexId como idMultiplex viniendo del usuario autenticado
       const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
 
       if (!multiplexId) {
@@ -31,9 +30,21 @@ export default function Snacks() {
       }
 
       try {
-        // Llama al endpoint libre /api/snacks/{multiplexId}
         const data = await getAllSnacks(multiplexId)
-        setSnacks(Array.isArray(data) ? data : [])
+        
+        // --- LÓGICA DE APLANAMIENTO ---
+        // Si el backend devuelve grupos, los aplanamos para que snacks sea siempre un array simple
+        let processedSnacks = []
+        if (Array.isArray(data)) {
+          if (data.length > 0 && data[0].snacks) {
+            processedSnacks = data.flatMap(group => group.snacks)
+          } else {
+            processedSnacks = data
+          }
+        }
+        setSnacks(processedSnacks)
+        // ------------------------------
+        
       } catch (err) {
         setError(err.message)
       } finally {
@@ -43,7 +54,6 @@ export default function Snacks() {
     fetchSnacks()
   }, [user])
 
-  // Normaliza el DTO del backend (SnackResponse) al formato esperado por el AppContext de tu carrito
   const toCartItem = (snack) => {
     return {
       id: snack.idSnack,
@@ -65,7 +75,6 @@ export default function Snacks() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-      {/* Cabecera */}
       <div className="text-center mb-16 animate-[fadeUp_0.5s_ease-out_forwards]">
         <h1 className="text-5xl md:text-6xl font-display uppercase tracking-widest text-white mb-4">
           <span className="gradient-brand">{t('snacks.title')}</span>
@@ -78,7 +87,6 @@ export default function Snacks() {
         </p>
       </div>
 
-      {/* Error de carga */}
       {error && (
         <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-5 py-4 mb-8 max-w-xl mx-auto">
           <AlertCircle size={18} />
@@ -86,7 +94,6 @@ export default function Snacks() {
         </div>
       )}
 
-      {/* Loading skeleton */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[...Array(6)].map((_, i) => (
@@ -105,7 +112,6 @@ export default function Snacks() {
           <p className="text-lg">{t('snacks.emptyCatalog')}</p>
         </div>
       ) : (
-        /* Grid de productos */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {snacks.map((snack, index) => (
             <div
@@ -113,25 +119,20 @@ export default function Snacks() {
               className="group relative bg-surface border border-border/50 rounded-3xl overflow-hidden hover:border-magenta/40 transition-all duration-300 hover:shadow-2xl hover:shadow-magenta/20 flex flex-col h-full animate-[fadeUp_0.5s_ease-out_forwards]"
               style={{ animationDelay: `${index * 0.07}s` }}
             >
-              {/* Imagen/Placeholder */}
               <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center">
                 <div className="absolute inset-0 bg-carbon/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
                 <img 
                   src="/comboFamiliar.png" 
                   alt={snack.nameSnack}
                   className="w-full h-full object-cover z-0 animate-[fadeIn_0.6s_ease-out_forwards]"
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                  }}
+                  onError={(e) => { e.target.style.display = 'none' }}
                 />
 
-                {/* Badge de puntos acumulables */}
                 <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
                   <Star size={14} fill="currentColor" />
                   <span>+{snack.pointsSnack || 0} {t('common.points')}</span>
                 </div>
 
-                {/* Badge stock bajo */}
                 {snack.quantitySnack <= 5 && snack.quantitySnack > 0 && (
                   <div className="absolute top-4 right-4 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 px-2.5 py-1 rounded-full text-xs font-bold">
                     {t('snacks.lastUnits')}
@@ -139,7 +140,6 @@ export default function Snacks() {
                 )}
               </div>
 
-              {/* Contenido */}
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <h3 className="text-xl font-display tracking-wide text-white group-hover:text-magenta transition-colors">
