@@ -421,7 +421,10 @@ export default function Home() {
 
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setDisplayMultiplex("Todos")}
+                onClick={() => {
+                  console.log('Seleccionando Todos')
+                  setDisplayMultiplex('Todos')
+                }}
                 className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
                   displayMultiplex === "Todos"
                     ? "bg-magenta border-magenta text-white shadow-lg shadow-magenta/20"
@@ -443,7 +446,11 @@ export default function Home() {
                 multiplexesList.map((plex) => (
                   <button
                     key={plex.multiplexId}
-                    onClick={() => setDisplayMultiplex(plex.multiplexId)}
+                    onClick={() => {
+                      console.log("Multiplex seleccionado:", plex.nameMultiplex, "ID:", plex.multiplexId)
+                      setDisplayMultiplex(plex.multiplexId) 
+                    }}
+                    
                     className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
                       displayMultiplex === plex.multiplexId
                         ? "bg-magenta border-magenta text-white shadow-lg shadow-magenta/20"
