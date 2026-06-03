@@ -102,7 +102,7 @@ export default function CartDrawer() {
               className="w-full shadow-[0_0_20px_rgba(200,22,122,0.3)]"
               onClick={() => { setIsCartOpen(false); navigate('/checkout') }}
             >
-              {t('cart.checkoutBtn') || 'Proceder al Pago'}
+              {t('Proceder al Pago') || 'Proceder al Pago'}
             </Button>
           </div>
         )}

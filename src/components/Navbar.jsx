@@ -39,7 +39,7 @@ export default function Navbar() {
   const pointsProgress = Math.min((basePoints / POINTS_FOR_REWARD) * 100, 100)
 
   const handleLogout = () => {
-    const shouldSignOut = window.confirm(t('nav.logoutConfirm') || '¿Seguro que deseas cerrar sesión?')
+    const shouldSignOut = window.confirm(t('¿Seguro que deseas cerrar sesión?') || '¿Seguro que deseas cerrar sesión?')
     if (!shouldSignOut) return
     logoutUser()
     setUserMenuOpen(false)

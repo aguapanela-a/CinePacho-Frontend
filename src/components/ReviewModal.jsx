@@ -48,12 +48,12 @@ export default function ReviewModal({ order, onClose, buyerId }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (movieRating === 0 && serviceRating === 0) {
-      toast.error(t('review.selectAtLeastOne') || 'Selecciona al menos una calificación')
+      toast.error(t('Selecciona al menos una calificación') || 'Selecciona al menos una calificación')
       return
     }
 
     if (!buyerId) {
-      toast.error(t('review.missingBuyerId') || 'No se encontró el ID de comprador. Inicia sesión nuevamente.')
+      toast.error(t('No se encontró el ID de comprador. Inicia sesión nuevamente.') || 'No se encontró el ID de comprador. Inicia sesión nuevamente.')
       return
     }
 
@@ -75,7 +75,7 @@ export default function ReviewModal({ order, onClose, buyerId }) {
         })
       }
 
-      toast.success(t('review.submitted') || '¡Evaluación enviada con éxito!')
+      toast.success(t('¡Evaluación enviada con éxito!') || '¡Evaluación enviada con éxito!')
       onClose()
     } catch (err) {
       toast.error(err.message || 'Hubo un error al enviar tu evaluación')
@@ -115,13 +115,13 @@ export default function ReviewModal({ order, onClose, buyerId }) {
             <div className="flex items-center gap-2 text-magenta">
               <Film size={18} />
               <span className="text-sm font-bold tracking-wider uppercase">
-                {t('review.rateMovie') || 'Califica la Película'}
+                {t('Califica la Película') || 'Califica la Película'}
               </span>
             </div>
             <StarRating
               value={movieRating}
               onChange={setMovieRating}
-              label={t('review.movieQuality') || '¿Qué te pareció la película?'}
+              label={t('¿Qué te pareció la película?') || '¿Qué te pareció la película?'}
             />
           </div>
 
@@ -130,27 +130,27 @@ export default function ReviewModal({ order, onClose, buyerId }) {
             <div className="flex items-center gap-2 text-gold">
               <Building2 size={18} />
               <span className="text-sm font-bold tracking-wider uppercase">
-                {t('review.rateService') || 'Califica el Servicio'}
+                {t('Califica el Servicio') || 'Califica el Servicio'}
               </span>
             </div>
             <StarRating
               value={serviceRating}
               onChange={setServiceRating}
-              label={t('review.serviceQuality') || '¿Cómo fue la atención en el multiplex?'}
+              label={t('¿Cómo fue la atención en el multiplex?') || '¿Cómo fue la atención en el multiplex?'}
             />
           </div>
 
           {/* Comentario */}
           <div>
             <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-              {t('review.comment') || 'Comentario (opcional)'}
+              {t('Comentario (opcional)') || 'Comentario (opcional)'}
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
               maxLength={300}
-              placeholder={t('review.commentPlaceholder') || 'Cuéntanos tu experiencia...'}
+              placeholder={t('Cuéntanos tu experiencia...') || 'Cuéntanos tu experiencia...'}
               className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta transition-colors resize-none text-sm"
             />
             <p className="text-right text-[10px] text-text-secondary mt-1">{comment.length}/300</p>
@@ -159,7 +159,7 @@ export default function ReviewModal({ order, onClose, buyerId }) {
           {/* Submit */}
           <Button type="submit" className="w-full" disabled={!buyerId}>
             <Send size={16} />
-            {t('review.submit') || 'Enviar Evaluación'}
+            {t('Enviar Evaluación') || 'Enviar Evaluación'}
           </Button>
         </form>
       </div>

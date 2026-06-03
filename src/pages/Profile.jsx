@@ -53,7 +53,7 @@ export default function Profile() {
         setLoadingOrders(false)
       }
     }
-    if (user?.userType === 'BUYER') fetchOrders()
+    if (user?.userType?.toUpperCase()  === 'BUYER') fetchOrders()
   }, [user])
 
   // ── Cargar reviews del usuario ──────────────────────────────────────────────
@@ -73,7 +73,7 @@ export default function Profile() {
         setLoadingReviews(false)
       }
     }
-    if (user?.userType === 'BUYER') fetchReviews()
+    if (user?.userType?.toUpperCase() === 'BUYER') fetchReviews()
   }, [buyerId, user])
 
   // ── Puntos desde API ───────────────────────────────────────────────
@@ -84,7 +84,6 @@ export default function Profile() {
         const data = await getMyPoints();
         if (data) {
           setBasePoints(data.pointsNow || 0);
-          setPointsHistory(data.historyPoints || []);
         }
       } catch (err) {
         console.error('Error fetching points', err);
@@ -92,7 +91,7 @@ export default function Profile() {
         setLoadingPoints(false);
       }
     };
-    if (user?.userType === 'BUYER') fetchPoints();
+    if (user?.userType?.toUpperCase() === 'BUYER') fetchPoints();
   }, [user, setBasePoints]);
 
   const isReviewed = useCallback((orderId) => {
@@ -138,14 +137,14 @@ export default function Profile() {
   const validCoupons = coupons.filter((c) => !c.used && new Date(c.expiresAt) > new Date());
 
   // ── Render empleado / manager / admin ───────────────────────────────────────
-  if (user.userType !== 'BUYER') {
+  if (user.userType?.toUpperCase() !== 'BUYER') {
     return (
       <div className="max-w-4xl mx-auto p-8 animate-[fadeUp_0.5s_ease-out_forwards] mt-10">
         <div className="bg-surface/80 border border-border/50 rounded-3xl p-10 backdrop-blur-xl flex flex-col items-center text-center">
           <div className="w-24 h-24 bg-gradient-to-br from-magenta to-vinotinto rounded-3xl flex items-center justify-center shadow-[0_0_30px_rgba(200,22,122,0.4)] mb-6">
             <Shield size={40} className="text-white" />
           </div>
-          <h1 className="text-3xl font-display text-white mb-2">{user.username}</h1>
+          <h1 className="text-3xl font-display text-white mb-2">{user.name}</h1>
           <p className="text-magenta font-bold tracking-widest uppercase text-sm mb-8">
             {t('nav.profile')} - {t(`roles.${user.userType}`)}
           </p>
@@ -174,7 +173,7 @@ export default function Profile() {
             <div className="w-24 h-24 bg-carbon border-2 border-magenta rounded-full flex items-center justify-center mx-auto mb-4">
               <User size={40} className="text-magenta" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-1">{user.username}</h2>
+            <h2 className="text-2xl font-bold text-white mb-1">{user.name}</h2>
             <p className="text-text-secondary text-sm mb-6">{t('profile.client')}</p>
           </div>
 

@@ -25,7 +25,7 @@ export default function MovieCard({ movie, onClick }) {
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-magenta rounded-2xl outline-none"
-        aria-label={`${title} — ${t('movieCard.viewTimes') || 'Ver funciones'}`}
+        aria-label={`${title} — ${t('Ver funciones') || 'Ver funciones'}`}
         role="button"
         tabIndex="0"
       >
@@ -64,7 +64,7 @@ export default function MovieCard({ movie, onClick }) {
                 className="flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-magenta via-vinotinto to-gold text-white text-xs font-bold py-2.5 rounded-xl hover:shadow-lg hover:shadow-magenta/30 transition-all duration-300 active:scale-95 cursor-pointer"
               >
                 <Ticket size={14} />
-                {t('movieCard.buyBtn') || 'Comprar'}
+                {t('Comprar') || 'Comprar'}
               </button>
               <button
                 type="button"
@@ -73,7 +73,7 @@ export default function MovieCard({ movie, onClick }) {
                   onClick?.()
                 }}
                 className="flex items-center justify-center w-10 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 transition-all duration-300 active:scale-95 cursor-pointer"
-                aria-label={t('movieCard.trailer') || 'Ver trailer'}
+                aria-label={t('Ver trailer') || 'Ver trailer'}
               >
                 <Play size={14} fill="currentColor" />
               </button>
