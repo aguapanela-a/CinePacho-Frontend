@@ -100,7 +100,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
         }
       } catch (err) {
         console.error('Error fetching movie extra data', err)
-      } file {
+      } finally {
         setLoadingScreenings(false)
       }
     }
