@@ -40,7 +40,7 @@ export const translations = {
     home: {
       featuredOfWeek: 'DESTACADA DE LA SEMANA',
       viewDetailsAndTimes: 'VER DETALLES Y HORARIOS',
-      searchPlaceholder: 'Buscar por título o género...',
+      searchPlaceholder: 'Buscar por título',
       onBillboard: 'En Cartelera',
       discoverBest: 'Descubre las mejores películas del momento',
       viewAll: 'Ver todo',
@@ -335,7 +335,7 @@ export const translations = {
     home: {
       featuredOfWeek: 'FEATURED OF THE WEEK',
       viewDetailsAndTimes: 'VIEW DETAILS AND TIMES',
-      searchPlaceholder: 'Search by title or genre...',
+      searchPlaceholder: 'Search by title ',
       onBillboard: 'Now Showing',
       discoverBest: 'Discover the best movies right now',
       viewAll: 'View all',
