@@ -305,13 +305,15 @@ export default function Home() {
 
   // Filtrado local en el Front sobre el estado actual
 
-  const filteredMovies = useMemo(() => {
-    return movies.filter((movie) =>
-      (movie.title || movie.originalTitle || "")
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    );
-  }, [movies, search]);
+      const filteredMovies = useMemo(() => {
+      return movies.filter((movie) => {
+        // Convertimos a string de forma segura usando el constructor String()
+        const title = String(movie.title || movie.originalTitle || "");
+        const searchTerm = String(search || "");
+        
+        return title.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+    }, [movies, search]);
 
   return (
     <div className="min-h-screen bg-background text-text-primary pb-16 selection:bg-magenta selection:text-white">
