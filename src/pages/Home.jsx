@@ -58,12 +58,6 @@ export default function Home() {
 
   const [multiplexesError, setMultiplexesError] = useState(null);
 
-  // Auxiliar para obtener el UUID correspondiente al multiplex seleccionado
-
-  const getMultiplexId = (id) => {
-    if (id && id !== "Todos") return id;
-    return multiplexesList.length > 0 ? multiplexesList[0].idMultiplex : null;
-  };
 
   const currentMultiplexId = displayMultiplex === "Todos" ? null : displayMultiplex;
 
@@ -515,7 +509,7 @@ export default function Home() {
           movie={selectedMovie}
           multiplexId={currentMultiplexId}  
           multiplexName={
-            multiplexesList.find(p => p.multiplexId === displayMultiplex)?.nameMultiplex 
+            multiplexesList.find(p => p.idMultiplex  === displayMultiplex)?.nameMultiplex 
             || 'Cartelera General'
           }
           onClose={() => setSelectedMovie(null)} 
