@@ -3,12 +3,14 @@ import { useLanguage } from '../../context/LanguageContext'
 
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
-console.log(movie)
+  
+  // Log para verificar qué llega exactamente
+  console.log("MovieSummary data:", movie);
+
   // 1. Si no hay objeto movie, evitamos que la aplicación falle
   if (!movie) return <div className="p-4 text-white">Cargando detalles...</div>;
 
-  // 2. Extraemos info de forma segura. 
-  // Si movie.movieInfo no existe, intentamos usar 'movie' directamente
+  // 2. Extraemos info de forma segura (Priorizamos movieInfo si existe, sino usamos la raíz)
   const info = movie.movieInfo || movie;
 
   // 3. Verificamos si realmente tenemos datos básicos para mostrar
@@ -34,9 +36,8 @@ console.log(movie)
             <Clock size={11} />
             {info.duration || 'N/A'}
           </span>
-          {/* Mapeo de géneros seguro */}
           <span className="bg-magenta/10 px-2.5 py-1 rounded-full border border-magenta/30 text-xs font-bold text-magenta">
-            {info.genres ? info.genres.map(g => g.name).join(', ') : (info.genre || 'N/A')}
+            {info.genres?.map(g => g.name).join(', ') || info.genre || 'N/A'}
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Calendar size={11} />
@@ -51,7 +52,7 @@ console.log(movie)
             {t('movie.synopsisLabel')}
           </h3>
           <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-            {info.overview || 'Sin sinopsis disponible'}
+            {info.overview || t('movie.noSynopsis')}
           </p>
         </div>
 
@@ -61,7 +62,7 @@ console.log(movie)
               <Clapperboard size={9} /> {t('movie.director')}
             </p>
             <p className="text-white text-sm font-medium">
-              {info.director || 'No disponible'}
+              {info.director || t('movie.notAvailable')}
             </p>
           </div>
           
@@ -72,7 +73,7 @@ console.log(movie)
               {t('movie.cast')}
             </p>
             <p className="text-white/75 text-[11px] leading-relaxed">
-              {info.cast || 'No disponible'}
+              {info.cast || t('movie.notAvailable')}
             </p>
           </div>
         </div>
