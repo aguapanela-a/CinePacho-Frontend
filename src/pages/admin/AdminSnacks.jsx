@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package } from 'lucide-react'
+import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package, Trash2 } from 'lucide-react'
 import AdminLayout from '../../components/admin/AdminLayout'
-import { getAdminSnacks, createSnack, updateSnack } from '../../services/snackService'
+import { getAdminSnacks, createSnack, updateSnack, deleteSnack } from '../../services/snackService'
 import { getAllMultiplexes } from '../../services/multiplexService'
 import { useApp } from '../../context/useApp'
 
@@ -14,7 +14,9 @@ const EMPTY_FORM = {
   multiplexId: '',
 }
 
-export default function AdminSnacks() {
+export default function AdminSnacks(
+  multiplexId
+) {
   const { user } = useApp()
   const [snacks, setSnacks]       = useState([])
   const [loading, setLoading]     = useState(true)
@@ -29,6 +31,10 @@ export default function AdminSnacks() {
   const [form, setForm]               = useState(EMPTY_FORM)
   const [saving, setSaving]           = useState(false)
   const [formError, setFormError]     = useState(null)
+  // ── Estados para Eliminación de Snacks ──────────────────────────────────
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [snackToDelete, setSnackToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false) // Opcional por si quieres mostrar un loader al borrar
 
   // ── Carga inicial ──────────────────────────────────────────────────────
   const fetchSnacks = useCallback(async () => {
@@ -75,6 +81,31 @@ export default function AdminSnacks() {
     }
     loadMultiplexes()
   }, [])
+
+  // Abre el modal y guarda el snack seleccionado
+const openDeleteModal = (snack) => {
+  setSnackToDelete(snack)
+  setIsDeleteModalOpen(true)
+}
+
+// Ejecuta la eliminación real al dar clic en "Eliminar snack" dentro del modal
+  const confirmDeleteSnack = async () => {
+    if (!snackToDelete) return
+
+    setDeleting(true)
+    try {
+      await deleteSnack(snackToDelete.idSnack)
+      await fetchSnacks() // Recarga la tabla de snacks
+
+      // Cierra el modal y limpia el estado
+      setIsDeleteModalOpen(false)
+      setSnackToDelete(null)
+    } catch (err) {
+      alert(`Error al eliminar el snack: ${err.message}`)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   // ── Filtro local de búsqueda ───────────────────────────────────────────
   const filtered = snacks.filter(s =>
@@ -143,6 +174,26 @@ export default function AdminSnacks() {
       setSaving(false)
     }
   }
+
+  // Agrega esto debajo de handleSave
+
+  const handleDeleteSnack = async (snack) => {
+    const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar el snack "${snack.nameSnack}"?`);
+
+    if (!confirmDelete) return;
+
+    try {
+      // Al mapear en fetchSnacks usaste snack.idSnack
+      await deleteSnack(snack.idSnack);
+
+      // Recargamos la lista automáticamente tras eliminar con éxito
+      await fetchSnacks();
+
+      alert('Snack eliminado correctamente');
+    } catch (err) {
+      alert(`Error al eliminar el snack: ${err.message}`);
+    }
+  };
 
   // ── Helpers de estilo por nivel de stock ───────────────────────────────
   const stockBadge = (qty) => {
@@ -230,14 +281,15 @@ export default function AdminSnacks() {
                       </div>
                     </td>
                     <td className="py-4 px-4 text-sm text-text-secondary max-w-xs truncate">
+                      {snack.multiplexName || '—'}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-text-secondary max-w-xs truncate">
                       {snack.descriptionSnack || '—'}
                     </td>
                     <td className="py-4 px-4 font-bold text-gold">
                       ${Number(snack.priceSnack).toLocaleString('es-CO')}
                     </td>
-                    <td className="py-4 px-4 text-sm text-text-secondary max-w-xs truncate">
-                      {snack.multiplexName || '—'}
-                    </td>
+                    
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
                         <Package size={14} className="text-text-secondary" />
@@ -253,13 +305,28 @@ export default function AdminSnacks() {
                       </span>
                     </td>
                     <td className="py-4 px-4">
-                      <button
-                        onClick={() => openEdit(snack)}
-                        className="flex items-center gap-1.5 text-xs font-bold text-text-secondary hover:text-gold border border-border/50 hover:border-gold/40 px-3 py-1.5 rounded-xl transition-all"
-                      >
-                        <Pencil size={12} /> Editar
-                      </button>
-                    </td>
+  <div className="flex items-center gap-2"> {/* Agregamos un contenedor flex para alinearlos mejor */}
+    
+    {/* Botón de Editar */}
+    <button
+      onClick={() => openEdit(snack)}
+      className="flex items-center gap-1.5 text-xs font-bold text-text-secondary hover:text-gold border border-border/50 hover:border-gold/40 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+    >
+      <Pencil size={12} /> Editar
+    </button>
+
+    {/* Botón de Eliminar */}
+    <button
+  type="button"
+  onClick={() => openDeleteModal(snack)}
+  className="w-8 h-8 rounded-xl border border-border/50 hover:border-red-500/40 hover:bg-red-500/10 transition-all flex items-center justify-center text-text-secondary hover:text-red-400 cursor-pointer"
+  title="Eliminar snack"
+>
+  <Trash2 size={14} />
+</button>
+    
+  </div>
+</td>
                   </tr>
                 ))}
               </tbody>
@@ -352,6 +419,67 @@ export default function AdminSnacks() {
           </div>
         </div>
       )}
+
+      {/* Modal Confirmar Eliminación de Snacks */}
+{isDeleteModalOpen && (
+  <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+          <Trash2 className="text-red-400" size={24} />
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-display tracking-widest text-white uppercase">
+            Confirmar eliminación
+          </h2>
+          <p className="text-text-secondary text-sm mt-1">
+            Esta acción no se puede deshacer
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-8">
+        <p className="text-text-secondary text-sm">
+          ¿Deseas eliminar el snack de la dulcería:
+        </p>
+        <p className="text-white font-bold text-lg mt-2">
+          {snackToDelete?.nameSnack}
+        </p>
+        {snackToDelete?.multiplexName && (
+          <span className="text-xs text-text-secondary/80 block mt-1">
+            Multiplex: {snackToDelete.multiplexName}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={() => {
+            setIsDeleteModalOpen(false)
+            setSnackToDelete(null)
+          }}
+          className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all disabled:opacity-50 cursor-pointer"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={confirmDeleteSnack}
+          className="px-6 py-3 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all shadow-lg disabled:bg-red-500/50 flex items-center gap-2 cursor-pointer"
+        >
+          {deleting ? 'Eliminando...' : 'Eliminar snack'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </AdminLayout>
   )
 }

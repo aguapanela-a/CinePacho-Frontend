@@ -4,6 +4,8 @@ if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
   BASE_URL = 'https://back-cinepacho-production.up.railway.app'
 }
 
+//  const BASE_URL = 'http://localhost:8010'
+
 /**
  * Retorna los headers estándar incluyendo el JWT si existe en localStorage.
  * @param {Object} extra - Headers adicionales para fusionar
