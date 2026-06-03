@@ -6,6 +6,8 @@ import { getAllSnacks, getAdminSnacks, getAllPublicSnacks } from '../services/sn
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
+const DEFAULT_SNACK_IMAGE = "https://images.unsplash.com/photo-1599487488170-d11ec6c17e53?q=80&w=600&auto=format&fit=crop";
+
 export default function Snacks() {
   const { addToCart, user } = useApp()
   const { t } = useLanguage()
@@ -30,19 +32,15 @@ export default function Snacks() {
           const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
           
           if (multiplexId) {
-            // Intentar cargar por multiplex específico
             data = await getAllSnacks(multiplexId);
-            // Si el resultado es vacío, intentamos el fallback global
             if (!data || data.length === 0) {
               data = await getAllPublicSnacks();
             }
           } else {
-            // Fallback directo si no hay ID
             data = await getAllPublicSnacks();
           }
         }
 
-        // Aplanamiento robusto
         const flatSnacks = Array.isArray(data) 
           ? data.flatMap(item => (item.snacks && Array.isArray(item.snacks)) ? item.snacks : [item])
           : [];
@@ -68,7 +66,7 @@ export default function Snacks() {
       price: Number(snack.priceSnack) || 0, 
       type: 'snack',
       showtime: null, 
-      image: snack.imageUrl || null,
+      image: snack.imageUrl || DEFAULT_SNACK_IMAGE,
       points: Number(snack.pointsSnack) || 0, 
       multiplexId: user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
@@ -114,7 +112,13 @@ export default function Snacks() {
               key={snack.idSnack}
               className="group relative bg-surface border border-border/50 rounded-3xl overflow-hidden flex flex-col h-full hover:border-magenta/40 transition-all duration-300"
             >
-              <div className="relative h-48 bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center">
+              <div className="relative h-48 bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center overflow-hidden">
+                <img 
+                  src={snack.imageUrl || DEFAULT_SNACK_IMAGE} 
+                  alt={snack.nameSnack}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => e.target.src = DEFAULT_SNACK_IMAGE}
+                />
                 <div className="absolute top-4 left-4 z-20 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold">
                   <Star size={14} fill="currentColor" />
                   <span>+{snack.pointsSnack || 0}</span>
