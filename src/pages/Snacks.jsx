@@ -6,7 +6,7 @@ import { getAllSnacks, getAdminSnacks, getAllPublicSnacks } from '../services/sn
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
-const DEFAULT_SNACK_IMAGE = "f"/comboFamiliar.png";";
+const DEFAULT_SNACK_IMAGE = "/comboFamiliar.png";
 
 export default function Snacks() {
   const { addToCart, user } = useApp()
