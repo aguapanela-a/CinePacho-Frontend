@@ -18,6 +18,8 @@ function normalizeUserType(rawRole) {
   return roleMap[normalized] || normalized // Si no está en el mapa, devolver como está
 }
 
+
+
 function normalizeCartItem(item) {
   const qty = item.qty || 1
   // If unitPrice is already provided (from SeatSelector), use it directly
@@ -142,7 +144,7 @@ export function AppProvider({ children }) {
         user,
         token,
         loginUser,
-        logoutUser,
+        logoutUser
       }}
     >
       {children}
