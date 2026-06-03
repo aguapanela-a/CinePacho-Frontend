@@ -283,7 +283,7 @@ export default function Profile() {
               <div className="space-y-4">
                 {orderHistory.map((order, index) => {
                   // ID compuesto porque el backend no devuelve un id de orden
-                  const orderId = `${order.movieTitle}_${order.screeningDate}`
+                  const orderId = `${order.movieTitle}_${order.screeningDate}_${order.movieId}`;
 
                   // Formatear "2026-06-03T18:00" → "3 jun. 2026, 6:00 p.m."
                   const screeningFormatted = order.screeningDate

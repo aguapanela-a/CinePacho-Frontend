@@ -58,6 +58,7 @@ export default function ReviewModal({ order, onClose, buyerId }) {
     }
 
     try {
+      console.log('Enviando evaluación:', { buyerId, orderId: order.id, movieRating, serviceRating, comment })
       // 1. Enviar reseña de película si hay calificación
       if (movieRating > 0 && order?.movieId) {
         await submitMovieReview(buyerId, {
@@ -65,6 +66,7 @@ export default function ReviewModal({ order, onClose, buyerId }) {
           rating: movieRating,
           comment: comment.trim()
         })
+        console.log('Reseña de película enviada:', { movieId: order.movieId, rating: movieRating, comment: comment.trim() })
       }
 
       // 2. Enviar reseña de servicio si hay calificación
