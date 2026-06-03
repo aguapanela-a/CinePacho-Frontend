@@ -305,9 +305,11 @@ export default function Home() {
 
   // Filtrado local en el Front sobre el estado actual
 
-      const filteredMovies = useMemo(() => {
+          const filteredMovies = useMemo(() => {
+      if (!Array.isArray(movies)) return [];
+      
       return movies.filter((movie) => {
-        // Convertimos a string de forma segura usando el constructor String()
+        // Convertimos a string de forma segura
         const title = String(movie.title || movie.originalTitle || "");
         const searchTerm = String(search || "");
         
