@@ -393,7 +393,7 @@ export default function Home() {
                     className="group-hover:scale-110 transition-transform"
                   />
 
-                  {t("home.getTicketsBtn") || "RESERVAR FUNCIONES"}
+                  {t("¡Reservar Ahora!") || "RESERVAR FUNCIONES"}
                 </Button>
               </div>
             </div>
@@ -416,7 +416,7 @@ export default function Home() {
 
           <div className="space-y-3">
             <label className="text-[11px] font-display font-bold tracking-widest text-magenta uppercase">
-              {t("home.selectMultiplexLabel") || "Selecciona tu Multiplex"}
+              {t("Selecciona tu Multiplex") || "Selecciona tu Multiplex"}
             </label>
 
             <div className="flex flex-wrap gap-2">
