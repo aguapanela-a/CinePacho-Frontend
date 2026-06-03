@@ -19,7 +19,7 @@ export default function Snacks() {
     const fetchSnacks = async () => {
       setLoading(true)
       setError(null)
-      
+
       try {
         let data;
         
@@ -32,6 +32,7 @@ export default function Snacks() {
         } else {
           // Llama al endpoint público para compradores
           const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
+      console.log("Estoy pidiendo snacks para este Multiplex ID:", multiplexId);
           if (!multiplexId) throw new Error('Multiplex no definido');
           data = await getAllSnacks(multiplexId);
         }
