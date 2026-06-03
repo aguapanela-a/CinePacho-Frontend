@@ -57,6 +57,8 @@ export function AppProvider({ children }) {
 
   const loginUser = (authResponse) => {
     const { token: jwt, userType, name, userId, multiplexId } = authResponse
+
+    console.log('Auth Response:', authResponse)
     const normalizedType = userType ? String(userType).toUpperCase() : userType
     const userData = { id: userId, name, userType: normalizedType, multiplexId }
 
