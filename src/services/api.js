@@ -107,7 +107,8 @@ export async function apiFetch(endpoint, options = {}) {
     }
 
     // Intercepta e inyecta las correcciones de datos antes de entregar la respuesta al servicio
-    return normalizeData(data)
+    console.log("Datos recibidos del servidor:", data);
+    return data;
   } catch (error) {
     if (error instanceof TypeError) {
       const networkError = new Error(
