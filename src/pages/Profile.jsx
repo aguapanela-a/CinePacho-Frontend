@@ -14,7 +14,7 @@ import { getOrderHistory } from '../services/orderHistory';
 
 export default function Profile() {
   const { user, basePoints, setBasePoints } = useApp();
-  const buyerId = user?.id || user?.userId || user?.idUser || user?.buyerId
+  const buyerId = user.id;
   const { t } = useLanguage();
   const toast = useToast();
 
@@ -44,6 +44,7 @@ export default function Profile() {
       setOrdersError(null)
       try {
         // TODO: descomentar cuando el back implemente GET /api/orders/my
+        console.log('Fetching order history for buyerId:', buyerId)
          const data = await getOrderHistory(buyerId)
          setOrderHistory(Array.isArray(data) ? data : [])
       } catch (err) {
