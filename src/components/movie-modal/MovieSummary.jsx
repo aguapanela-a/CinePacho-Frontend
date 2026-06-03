@@ -4,32 +4,33 @@ import { useLanguage } from '../../context/LanguageContext'
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
 
-  // Intentamos capturar los datos desde cualquier estructura posible
-  // 1. Si llega como movie.movieInfo
-  // 2. Si llega aplanado en la raíz (movie)
-  const data = movie?.movieInfo || movie || {};
+  // 1. Verificación de seguridad: si no hay movie, no renderizamos
+  if (!movie) return null;
+
+  // 2. Definimos info apuntando a movieInfo
+  const info = movie.movieInfo || {};
 
   return (
     <>
       <div>
         <h2 id="movie-modal-title" className="text-3xl sm:text-4xl font-display uppercase tracking-widest text-white leading-none mb-3 pr-8">
-          {data.originalTitle || data.title || 'Título no disponible'}
+          {info.originalTitle || 'Cargando...'}
         </h2>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-gold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/30 text-xs font-bold">
             <Star size={11} fill="currentColor" />
-            {data.rating || '0.0'}
+            {movie.rating || '0.0'}
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Clock size={11} />
-            {data.duration || 'N/A'}
+            {info.duration || 'N/A'}
           </span>
           <span className="bg-magenta/10 px-2.5 py-1 rounded-full border border-magenta/30 text-xs font-bold text-magenta">
-            {data.genre || (data.genres && Array.isArray(data.genres) ? data.genres.map(g => g.name).join(', ') : '') || 'N/A'}
+            {info.genreIds?.map(g => g.name).join(', ') || 'N/A'}
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Calendar size={11} />
-            {data.releaseDate || data.year || 'N/A'}
+            {info.releaseDate || 'N/A'}
           </span>
         </div>
       </div>
@@ -40,7 +41,7 @@ export default function MovieSummary({ movie }) {
             {t('movie.synopsisLabel')}
           </h3>
           <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-            {data.overview || t('movie.noSynopsis')}
+            {info.overview || t('movie.noSynopsis')}
           </p>
         </div>
 
@@ -49,9 +50,9 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
               <Clapperboard size={9} /> {t('movie.director')}
             </p>
-            {/* Si aún no aparece, verifica en la pestaña Network del navegador */}
+            {/* Aquí accedemos explícitamente a info.director */}
             <p className="text-white text-sm font-medium">
-              {data.director || t('movie.notAvailable')}
+              {info.director ?? t('movie.notAvailable')}
             </p>
           </div>
           
@@ -61,8 +62,9 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">
               {t('movie.cast')}
             </p>
+            {/* Aquí accedemos explícitamente a info.cast */}
             <p className="text-white/75 text-[11px] leading-relaxed">
-              {data.cast || t('movie.notAvailable')}
+              {info.cast ?? t('movie.notAvailable')}
             </p>
           </div>
         </div>
