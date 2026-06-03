@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Play } from 'lucide-react'
 import { useApp } from '../context/useApp'
@@ -8,7 +8,6 @@ import ShowtimePicker from './movie-modal/ShowtimePicker'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 import { getMovieTrailer, getMovieSelectorsById } from '../services/movieService'
-import { getMovieReviews } from '../services/reviewService'
 import { getAllMultiplexes } from '../services/multiplexService'
 
 export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex', multiplexId }) {
@@ -21,29 +20,34 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [trailerKey, setTrailerKey] = useState(null)
   const [showTrailer, setShowTrailer] = useState(false)
-  const [liveScreenings, setLiveScreenings] = useState(null)
+  const [liveScreenings, setLiveScreenings] = useState([])
   const [fetchedMovieInfo, setFetchedMovieInfo] = useState(null)
-  const [loading, setLoading] = useState(true) // Estado unificado de carga
+  const [loading, setLoading] = useState(true)
+
+  // 1. Memorizamos el objeto enriquecido para evitar re-renders constantes
+  const enrichedMovie = useMemo(() => ({ ...movie, ...fetchedMovieInfo }), [movie, fetchedMovieInfo])
 
   useEffect(() => {
     if (!movie?.id) return
 
+    const controller = new AbortController()
+    setLoading(true)
+    
     const fetchData = async () => {
-      setLoading(true)
       try {
         const [trailerData, selectorData] = await Promise.all([
           getMovieTrailer(movie.id).catch(() => null),
-          multiplexId ? getMovieSelectorsById(multiplexId, movie.id).catch(() => null) : null
+          multiplexId ? getMovieSelectorsById(multiplexId, movie.id) : null
         ])
 
-        // Trailer
-        if (trailerData && typeof trailerData === 'string' && !trailerData.includes('No hay trailer')) {
-          setTrailerKey(trailerData)
-        } else if (trailerData?.key) {
-          setTrailerKey(trailerData.key)
+        if (controller.signal.aborted) return
+
+        // Procesar Trailer
+        if (trailerData) {
+          setTrailerKey(typeof trailerData === 'string' ? trailerData : trailerData.key)
         }
 
-        // Screenings
+        // Procesar Screenings
         if (selectorData) {
           setLiveScreenings(Array.isArray(selectorData.screenings) ? selectorData.screenings : [])
           setFetchedMovieInfo(selectorData.movieInfo || null)
@@ -55,18 +59,20 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
           if (validInfo) setFetchedMovieInfo(validInfo)
         }
       } catch (err) {
-        console.error('Error loading movie details:', err)
+        console.error('Error loading movie:', err)
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
+
     fetchData()
+    return () => controller.abort()
   }, [movie?.id, multiplexId])
 
-  if (!movie) return null
+  // Reset del step al cambiar de película
+  useEffect(() => { setStep(1); setSelectedScreening(null) }, [movie?.id])
 
-  const enrichedMovie = { ...movie, ...fetchedMovieInfo }
-  const backendScreenings = liveScreenings || movie.screenings || []
+  if (!movie) return null
 
   const handleConfirmSeats = (selectedSeatIds, total) => {
     setIsAddingToCart(true)
@@ -97,7 +103,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
           <div className="flex flex-col md:flex-row">
             <div className="w-full md:w-80 shrink-0 relative aspect-[2/3] bg-carbon">
               <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover" />
-              {trailerKey && (
+              {trailerKey && !trailerKey.includes('No hay trailer') && (
                 <button onClick={() => setShowTrailer(true)} className="absolute inset-0 m-auto w-16 h-16 bg-magenta/80 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform z-20">
                   <Play fill="currentColor" size={24} className="ml-1" />
                 </button>
@@ -125,7 +131,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
                     setSelectedScreening={setSelectedScreening}
                     canProceedToSeats={selectedScreening !== null}
                     handleProceedToSeats={() => setStep(2)}
-                    backendScreenings={backendScreenings}
+                    backendScreenings={liveScreenings}
                     loadingScreenings={loading}
                   />
                 </>
@@ -135,15 +141,10 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
         </div>
       </div>
       
-      {showTrailer && trailerKey && (
+      {showTrailer && (
         <div className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4">
           <button onClick={() => setShowTrailer(false)} className="absolute top-6 right-6 text-white"><X size={32} /></button>
-          <iframe 
-            className="w-full max-w-5xl aspect-video" 
-            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`} 
-            allow="autoplay; encrypted-media" 
-            allowFullScreen
-          ></iframe>
+          <iframe className="w-full max-w-5xl aspect-video" src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`} allow="autoplay; encrypted-media" allowFullScreen></iframe>
         </div>
       )}
     </div>,

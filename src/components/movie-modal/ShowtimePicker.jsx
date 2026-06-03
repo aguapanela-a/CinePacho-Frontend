@@ -13,19 +13,25 @@ export default function ShowtimePicker({
 }) {
   const { t } = useLanguage()
 
-  // Memorizamos el filtrado y ordenado
   const availableScreenings = useMemo(() => {
-    if (!backendScreenings) return []
+    if (!Array.isArray(backendScreenings)) return []
+    
     return [...backendScreenings]
-      .filter(s => s.status?.toUpperCase() === 'ACTIVE')
-      .sort((a, b) => new Date(a.screeningDate) - new Date(b.screeningDate))
+      .filter(s => s?.status?.toUpperCase() === 'ACTIVE')
+      .sort((a, b) => {
+        const dateA = new Date(a.screeningDate || 0).getTime()
+        const dateB = new Date(b.screeningDate || 0).getTime()
+        return dateA - dateB
+      })
   }, [backendScreenings])
 
-  // Formatear fecha + hora para mostrar
   const formatScreeningDisplay = (screening) => {
     if (!screening?.screeningDate) return { dateStr: '...', timeStr: '...' }
     
     const date = new Date(screening.screeningDate)
+    
+    // Verificación básica para fecha inválida
+    if (isNaN(date.getTime())) return { dateStr: '---', timeStr: '--:--' }
     
     const dateStr = date.toLocaleDateString('es-CO', { 
       weekday: 'short', 
@@ -63,7 +69,7 @@ export default function ShowtimePicker({
           
           {availableScreenings.length === 0 ? (
             <p className="text-xs text-text-secondary italic py-2">
-              No hay funciones disponibles en este momento
+              No hay funciones disponibles
             </p>
           ) : (
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -89,7 +95,7 @@ export default function ShowtimePicker({
           )}
         </div>
       ) : (
-        <div className="space-y-3.5">
+        <div className="space-y-3.5 animate-in fade-in duration-300">
           <div className="bg-carbon/40 border border-magenta/30 rounded-xl px-4 py-3 space-y-2">
             <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">
               {t('movie.selectedShowtime') || 'Función seleccionada'}
