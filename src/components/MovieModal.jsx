@@ -33,16 +33,61 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
     if (e.key === 'Escape') onClose()
   }, [onClose])
 
-  useEffect(() => {
-    if (movie) {
-      document.body.style.overflow = 'hidden'
-      document.addEventListener('keydown', handleEscape)
+useEffect(() => {
+  if (!movie || !movie.id) return
+  const fetchFreshData = async () => {
+    try {
+      const trailerData = await getMovieTrailer(movie.id).catch(() => null)
+      if (trailerData?.key) setTrailerKey(trailerData.key)
+      else if (typeof trailerData === 'string') setTrailerKey(trailerData)
+
+      const reviewsData = await getMovieReviews(movie.id).catch(() => [])
+      if (Array.isArray(reviewsData)) setReviews(reviewsData)
+
+      setLoadingScreenings(true)
+
+      if (multiplexId) {
+        // Modo multiplex específico
+        const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
+        if (freshData) {
+          console.log('MovieSelectorDTO:', freshData)
+          setLiveScreenings(Array.isArray(freshData.screenings) ? freshData.screenings : [])
+          if (freshData.movieInfo) setFetchedMovieInfo(freshData.movieInfo)
+          
+          // ✨ ¡NUEVO!: Si viene la key en el selector, la asignamos aquí también
+          if (freshData.key) setTrailerKey(freshData.key)
+        }
+      } else {
+        // Modo "Todos": busca en todos los multiplexes
+        const allMultiplexes = await getAllMultiplexes().catch(() => [])
+        const results = await Promise.allSettled(
+          allMultiplexes.map(plex =>
+            getMovieSelectorsById(plex.idMultiplex, movie.id)
+          )
+        )
+        const allScreenings = results
+          .filter(r => r.status === 'fulfilled' && r.value?.screenings)
+          .flatMap(r => r.value.screenings)
+
+        setLiveScreenings(allScreenings)
+
+        const firstValid = results.find(r => r.status === 'fulfilled' && r.value?.movieInfo)
+        if (firstValid) {
+          setFetchedMovieInfo(firstValid.value.movieInfo)
+          
+          // ✨ ¡NUEVO!: Extraemos la key del primer multiplex válido que responda
+          if (firstValid.value?.key) setTrailerKey(firstValid.value.key)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching movie extra data', err)
+    } finally {
+      document.body.style.overflow = 'unset' // Evitamos bloqueos raros de scroll
+      setLoadingScreenings(false)
     }
-    return () => {
-      document.body.style.overflow = 'unset'
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [movie, handleEscape])
+  }
+  fetchFreshData()
+}, [movie, multiplexId])
 
   useEffect(() => {
   if (!movie || !movie.id) return
@@ -149,10 +194,13 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
             <div className="w-full md:w-80 shrink-0 relative aspect-[2/3] bg-carbon">
               <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover" />
               {trailerKey && (
-                <button onClick={() => setShowTrailer(true)} className="absolute inset-0 m-auto w-16 h-16 bg-magenta/80 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform">
+                <button 
+                  onClick={() => setShowTrailer(true)} 
+                  className="absolute inset-0 m-auto w-16 h-16 bg-magenta/80 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform z-20"
+                >
                   <Play fill="currentColor" size={24} className="ml-1" />
                 </button>
-              )}
+              )}    
             </div>
 
             <div className="flex-1 p-6 flex flex-col gap-5">
