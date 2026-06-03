@@ -64,7 +64,7 @@ export default function ShowtimePicker({
       ) : !selectedScreening ? (
         <div className="space-y-1.5">
           <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
-            {t('movie.availableShowtimes') || 'Funciones disponibles'}
+            {t('Funciones disponibles') || 'Funciones disponibles'}
           </p>
           
           {availableScreenings.length === 0 ? (

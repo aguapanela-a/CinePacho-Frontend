@@ -40,7 +40,7 @@ export default function MovieSummary({ movie }) {
           {t('movie.synopsisLabel')}
         </h3>
         <p className="text-text-primary/85 text-[13px] leading-relaxed font-body max-w-2xl">
-          {info.overview || t('movie.noSynopsis')}
+          {info.overview || t('Sinopsis')}
         </p>
       </div>
     </>
