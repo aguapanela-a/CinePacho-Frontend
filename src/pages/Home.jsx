@@ -80,6 +80,7 @@ export default function Home() {
 
       try {
         const data = await getAllMultiplexes();
+        console.log('multiplexesList[0]:', multiplexesList[0])
 
         if (Array.isArray(data)) {
           setMultiplexesList(data);
