@@ -409,33 +409,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* FILTROS Y BÚSQUEDA */}
-      <section className="max-w-7xl mx-auto px-4 mt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex flex-wrap gap-2">
-          <button 
-            onClick={() => setDisplayMultiplex('Todos')} 
-            className={`px-4 py-2 rounded-xl text-xs uppercase border ${displayMultiplex === 'Todos' ? 'bg-magenta border-magenta text-white' : 'bg-surface/40 border-border/40 text-text-secondary'}`}
-          >
-            Todos
-          </button>
-          {multiplexesList.map(plex => (
-            <button 
-              key={plex.multiplexId} 
-              onClick={() => setDisplayMultiplex(plex.multiplexId)} 
-              className={`px-4 py-2 rounded-xl text-xs uppercase border ${displayMultiplex === plex.multiplexId ? 'bg-magenta border-magenta text-white' : 'bg-surface/40 border-border/40 text-text-secondary'}`}
-            >
-              {plex.nameMultiplex}
-            </button>
-          ))}
-        </div>
-        <div className="w-full max-w-md">
-          <SearchBar 
-            value={search} 
-            onChange={setSearch} 
-            placeholder={t('home.searchPlaceholder') || "Buscar películas..."} 
-          />
-        </div>
-      </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-12 space-y-8">
         <div className="flex flex-col gap-6 border-b border-border/30 pb-6">
@@ -469,8 +442,8 @@ export default function Home() {
               ) : (
                 multiplexesList.map((plex) => (
                   <button
-                    key={plex.idMultiplex}
-                    onClick={() => setDisplayMultiplex(plex.idMultiplex)}
+                    key={plex.multiplexId}
+                    onClick={() => setDisplayMultiplex(plex.multiplexId)}
                     className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
                       displayMultiplex === plex.idMultiplex
                         ? "bg-magenta border-magenta text-white shadow-lg shadow-magenta/20"
