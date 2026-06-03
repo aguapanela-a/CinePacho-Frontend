@@ -6,7 +6,7 @@ import { getAllSnacks, getAdminSnacks, getAllPublicSnacks } from '../services/sn
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
-const DEFAULT_SNACK_IMAGE = "https://images.unsplash.com/photo-1599487488170-d11ec6c17e53?q=80&w=600&auto=format&fit=crop";
+const DEFAULT_SNACK_IMAGE = "frontendcinepacho\public\comboFamiliar.png";
 
 export default function Snacks() {
   const { addToCart, user } = useApp()
@@ -121,7 +121,7 @@ export default function Snacks() {
                 />
                 <div className="absolute top-4 left-4 z-20 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold">
                   <Star size={14} fill="currentColor" />
-                  <span>+{snack.pointsSnack || 0}</span>
+                  <span>+{snack.pointsSnack || 5}</span>
                 </div>
               </div>
 
