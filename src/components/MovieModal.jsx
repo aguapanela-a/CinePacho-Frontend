@@ -9,6 +9,7 @@ import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 import { getMovieTrailer, getMovieSelectorsById } from '../services/movieService'
 import { getMovieReviews } from '../services/reviewService'
+import { getAllMultiplexes } from '../services/multiplexService'
 
 export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex', multiplexId }) {
   const [step, setStep] = useState(1)
@@ -44,40 +45,51 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
   }, [movie, handleEscape])
 
   useEffect(() => {
-    if (!movie || !movie.id) return
-    const fetchFreshData = async () => {
-      try {
-        const trailerData = await getMovieTrailer(movie.id).catch(() => null)
-        if (trailerData?.key) setTrailerKey(trailerData.key)
-        else if (typeof trailerData === 'string') setTrailerKey(trailerData)
+  if (!movie || !movie.id) return
+  const fetchFreshData = async () => {
+    try {
+      const trailerData = await getMovieTrailer(movie.id).catch(() => null)
+      if (trailerData?.key) setTrailerKey(trailerData.key)
+      else if (typeof trailerData === 'string') setTrailerKey(trailerData)
 
-        const reviewsData = await getMovieReviews(movie.id).catch(() => [])
-        if (Array.isArray(reviewsData)) setReviews(reviewsData)
+      const reviewsData = await getMovieReviews(movie.id).catch(() => [])
+      if (Array.isArray(reviewsData)) setReviews(reviewsData)
 
-        if (multiplexId) {
-          setLoadingScreenings(true)
-          const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
-          if (freshData) {
-            console.log('MovieSelectorDTO:', freshData)
+      setLoadingScreenings(true)
 
-            // 1. Guardar funciones
-            const screenings = Array.isArray(freshData.screenings) ? freshData.screenings : []
-            setLiveScreenings(screenings)
-
-            // 2. Guardar la info de la película (overview, géneros, etc.)
-            if (freshData.movieInfo) {
-              setFetchedMovieInfo(freshData.movieInfo)
-            }
-          }
-          setLoadingScreenings(false)
+      if (multiplexId) {
+        // Modo multiplex específico
+        const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
+        if (freshData) {
+          console.log('MovieSelectorDTO:', freshData)
+          setLiveScreenings(Array.isArray(freshData.screenings) ? freshData.screenings : [])
+          if (freshData.movieInfo) setFetchedMovieInfo(freshData.movieInfo)
         }
-      } catch (err) {
-        console.error('Error fetching movie extra data', err)
-        setLoadingScreenings(false)
+      } else {
+        // Modo "Todos": busca en todos los multiplexes
+        const allMultiplexes = await getAllMultiplexes().catch(() => [])
+        const results = await Promise.allSettled(
+          allMultiplexes.map(plex =>
+            getMovieSelectorsById(plex.multiplexId, movie.id)
+          )
+        )
+        const allScreenings = results
+          .filter(r => r.status === 'fulfilled' && r.value?.screenings)
+          .flatMap(r => r.value.screenings)
+
+        setLiveScreenings(allScreenings)
+
+        const firstValid = results.find(r => r.status === 'fulfilled' && r.value?.movieInfo)
+        if (firstValid) setFetchedMovieInfo(firstValid.value.movieInfo)
       }
+    } catch (err) {
+      console.error('Error fetching movie extra data', err)
+    } finally {
+      setLoadingScreenings(false)
     }
-    fetchFreshData()
-  }, [movie, multiplexId])
+  }
+  fetchFreshData()
+}, [movie, multiplexId])
 
   if (!movie) return null
 

@@ -416,7 +416,7 @@ export default function Home() {
 
           <div className="space-y-3">
             <label className="text-[11px] font-display font-bold tracking-widest text-magenta uppercase">
-              {t("home.selectMultiplexLabel") || "Selecciona tu Multiplex"}
+              {"Selecciona tu Multiplex"}
             </label>
 
             <div className="flex flex-wrap gap-2">
