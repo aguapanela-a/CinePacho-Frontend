@@ -144,7 +144,7 @@ export default function Profile() {
           <div className="w-24 h-24 bg-gradient-to-br from-magenta to-vinotinto rounded-3xl flex items-center justify-center shadow-[0_0_30px_rgba(200,22,122,0.4)] mb-6">
             <Shield size={40} className="text-white" />
           </div>
-          <h1 className="text-3xl font-display text-white mb-2">{user.name}</h1>
+          <h1 className="text-3xl font-display text-white mb-2">{user.username}</h1>
           <p className="text-magenta font-bold tracking-widest uppercase text-sm mb-8">
             {t('nav.profile')} - {t(`roles.${user.userType}`)}
           </p>
@@ -173,12 +173,8 @@ export default function Profile() {
             <div className="w-24 h-24 bg-carbon border-2 border-magenta rounded-full flex items-center justify-center mx-auto mb-4">
               <User size={40} className="text-magenta" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-1">{user.name}</h2>
+            <h2 className="text-2xl font-bold text-white mb-1">{user.username}</h2>
             <p className="text-text-secondary text-sm mb-6">{t('profile.client')}</p>
-            <div className="inline-flex items-center gap-2 bg-magenta/10 border border-magenta/20 text-magenta px-4 py-2 rounded-full font-bold text-sm">
-              <Star size={16} />
-              {t('profile.bronzeLevel')}
-            </div>
           </div>
 
           {/* Puntos */}
@@ -221,32 +217,6 @@ export default function Profile() {
                 </button>
               )}
             </div>
-          </div>
-
-          {/* Historial de Puntos */}
-          <div className="bg-surface/80 border border-border/50 rounded-3xl p-6 backdrop-blur-xl">
-            <h3 className="text-white font-display uppercase tracking-widest mb-4 text-sm flex items-center gap-2">
-              <Star size={16} className="text-gold" /> Historial de Puntos
-            </h3>
-            {loadingPoints ? (
-              <div className="flex justify-center p-4"><Loader2 className="animate-spin text-gold" /></div>
-            ) : pointsHistory.length === 0 ? (
-              <p className="text-text-secondary text-sm text-center py-2">No hay movimientos.</p>
-            ) : (
-              <div className="space-y-3 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/30 scrollbar-track-carbon">
-                {pointsHistory.map((pt, i) => (
-                  <div key={i} className="flex justify-between items-center bg-carbon border border-border/30 rounded-xl p-3">
-                    <div>
-                      <span className="text-xs text-text-secondary block">{new Date(pt.date || pt.createdAt || currentTime).toLocaleDateString('es-CO')}</span>
-                      <span className="text-sm font-bold text-white/90">{pt.reason || 'Suma de puntos'}</span>
-                    </div>
-                    <span className={`text-sm font-bold ${pt.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                      {pt.amount > 0 ? '+' : ''}{pt.amount}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Cupones activos */}
