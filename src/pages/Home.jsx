@@ -349,7 +349,7 @@ export default function Home() {
                 <TrendingUp size={14} className="text-magenta animate-pulse" />
 
                 <span className="text-[10px] font-bold tracking-widest uppercase text-magenta font-display">
-                  {t("home.featuredLabel") || "Destacada en Cartelera"}
+                  {t("Destacada en Cartelera") || "Destacada en Cartelera"}
                 </span>
               </div>
 
