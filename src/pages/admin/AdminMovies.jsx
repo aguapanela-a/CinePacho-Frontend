@@ -78,9 +78,10 @@ export default function AdminMovies() {
   const debounceRef = useRef(null);
   const [screeningForm, setScreeningForm] = useState(() => {
     const saved = localStorage.getItem("screeningForm");
+    const defaults = { multiplexName: "", multiplexId: "", roomId: "", dateTime: "", price: "", format: "FORMAT_2D" }
     return saved
-      ? JSON.parse(saved)
-      : { multiplexName: "", multiplexId: "", roomId: "" };
+      ? { ...defaults, ...JSON.parse(saved) }
+      : defaults;
     });
   useEffect(() => {
     localStorage.setItem("screeningForm", JSON.stringify(screeningForm));
@@ -156,6 +157,9 @@ export default function AdminMovies() {
         multiplexName: "",
         multiplexId: "",
         roomId: "",
+        dateTime: "",
+        price: "",
+        format: "FORMAT_2D",
       }));
       setRooms([]);
       setScreenings([]);
@@ -166,6 +170,9 @@ export default function AdminMovies() {
       multiplexName: plex.nameMultiplex,
       multiplexId: plex.idMultiplex,
       roomId: "",
+      dateTime: "",
+      price: "",
+      format: "FORMAT_2D",
     }));
     try {
       const detail = await getMultiplexById(plex.idMultiplex);

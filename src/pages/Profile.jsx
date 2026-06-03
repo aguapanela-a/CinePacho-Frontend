@@ -14,7 +14,7 @@ import { getOrderHistory } from '../services/orderHistory';
 
 export default function Profile() {
   const { user, basePoints, setBasePoints } = useApp();
-  const buyerId = user?.id || user?.userId || user?.idUser || user?.buyerId
+  const buyerId = user.id;
   const { t } = useLanguage();
   const toast = useToast();
 
@@ -44,6 +44,7 @@ export default function Profile() {
       setOrdersError(null)
       try {
         // TODO: descomentar cuando el back implemente GET /api/orders/my
+        console.log('Fetching order history for buyerId:', buyerId)
          const data = await getOrderHistory(buyerId)
          setOrderHistory(Array.isArray(data) ? data : [])
       } catch (err) {
@@ -282,7 +283,7 @@ export default function Profile() {
               <div className="space-y-4">
                 {orderHistory.map((order, index) => {
                   // ID compuesto porque el backend no devuelve un id de orden
-                  const orderId = `${order.movieTitle}_${order.screeningDate}`
+                  const orderId = `${order.movieTitle}_${order.screeningDate}_${order.movieId}`;
 
                   // Formatear "2026-06-03T18:00" → "3 jun. 2026, 6:00 p.m."
                   const screeningFormatted = order.screeningDate
