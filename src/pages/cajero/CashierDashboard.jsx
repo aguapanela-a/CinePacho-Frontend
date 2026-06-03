@@ -38,6 +38,7 @@ export default function CashierDashboard() {
   useEffect(() => {
     const loadData = async () => {
       const multiplexId = user?.multiplexId
+      console.log('loadData ejecutado, multiplexId:', multiplexId)
       if (!multiplexId) {
         setMovies([])
         setSnacks([])
@@ -57,6 +58,8 @@ export default function CashierDashboard() {
             screenings: item.screenings || [],
           }))
           console.log('mappeados:', mapped)
+          console.log('moviesResp:', moviesResp)
+          console.log('Es array:', Array.isArray(moviesResp))
           setMovies(mapped)
         } else {
           setMovies([])
