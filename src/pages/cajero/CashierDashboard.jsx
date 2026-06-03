@@ -56,7 +56,7 @@ export default function CashierDashboard() {
               : 'https://via.placeholder.com/200x300?text=Sin+imagen',
             screenings: item.screenings || [],
           }))
-          console.log('mapped:', mapped)
+          console.log('mappeados:', mapped)
           setMovies(mapped)
         } else {
           setMovies([])
