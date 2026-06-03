@@ -2,6 +2,7 @@ import { Star, Clock, Calendar, Clapperboard } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function MovieSummary({ movie }) {
+  console.log("¿Qué trae el objeto movie?", movie);
   const { t } = useLanguage()
 
   // Convertimos el reparto a string si viene como array, o lo dejamos como está
