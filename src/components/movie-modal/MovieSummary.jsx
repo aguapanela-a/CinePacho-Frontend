@@ -3,7 +3,7 @@ import { useLanguage } from '../../context/LanguageContext'
 
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
-
+console.log(movie)
   // 1. Si no hay objeto movie, evitamos que la aplicación falle
   if (!movie) return <div className="p-4 text-white">Cargando detalles...</div>;
 
