@@ -14,6 +14,7 @@ export const getEmployeesByMultiplexId = (multiplexId) =>
 export const getAllMultiplexes = () =>
   apiFetch('/api/multiplexes')
 
+
 /** GET /admin/multiplexes/{id} — Obtiene un multiplex con sus salas */
 export const getMultiplexById = (id) =>
   apiFetch(`/api/multiplexes/${id}`)
