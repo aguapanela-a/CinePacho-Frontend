@@ -46,17 +46,18 @@ export default function CashierDashboard() {
 
       try {
         const moviesResp = await getMovieSelectorsByMultiplex(multiplexId)
+        console.log('moviesResp:', moviesResp)
         if (Array.isArray(moviesResp)) {
-          setMovies(moviesResp.map(item => ({
+          const mapped = moviesResp.map(item => ({
             id: item.movieInfo?.id,
-  // "originalTitle" no existe — el campo es "title"
             title: item.movieInfo?.title,
-  // "posterPath" no existe — el campo es "poster_path"
             posterUrl: item.movieInfo?.poster_path
               ? `${TMDB_IMAGE_BASE}${item.movieInfo.poster_path}`
               : 'https://via.placeholder.com/200x300?text=Sin+imagen',
             screenings: item.screenings || [],
-          })))
+          }))
+          console.log('mapped:', mapped)
+          setMovies(mapped)
         } else {
           setMovies([])
         }
