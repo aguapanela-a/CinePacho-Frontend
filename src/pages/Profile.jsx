@@ -7,6 +7,7 @@ import { useToast } from '../context/useToast';
 import ReviewModal from '../components/ReviewModal';
 import { getUserReviews } from '../services/reviewService';
 import { getMyPoints, redeemPoints } from '../services/pointsService';
+import { getOrderHistory } from '../services/orderHistory';
 
 // TODO: reemplazar por GET /api/orders/my cuando el back lo implemente
 // import { getOrderHistory } from '../services/orderService'
@@ -34,6 +35,8 @@ export default function Profile() {
   const [redeeming, setRedeeming] = useState(false);
   const [currentTime] = useState(() => Date.now());
 
+
+
   // ── Cargar historial de órdenes ─────────────────────────────────────────────
   useEffect(() => {
     const fetchOrders = async () => {
@@ -41,9 +44,8 @@ export default function Profile() {
       setOrdersError(null)
       try {
         // TODO: descomentar cuando el back implemente GET /api/orders/my
-        // const data = await getOrderHistory()
-        // setOrderHistory(Array.isArray(data) ? data : [])
-        setOrderHistory([]) // vacío hasta que el back esté listo
+         const data = await getOrderHistory(buyerId)
+         setOrderHistory(Array.isArray(data) ? data : [])
       } catch (err) {
         setOrdersError(err.message)
       } finally {
