@@ -34,7 +34,7 @@ export default function SeatSelector({
       setBackendSeats(data)
     } catch (err) {
       console.error('Error loading seats:', err)
-      toast.error(t('seats.errorLoading') || 'Error al cargar la disponibilidad')
+      toast.error(t('Error al cargar la disponibilidad') || 'Error al cargar la disponibilidad')
     }
   }, [roomId, screeningId, t, toast])
 
@@ -73,7 +73,7 @@ export default function SeatSelector({
     const isSelected = selectedSeats.includes(seat.idSeat)
 
     if (!isSelected && seat.status?.toUpperCase() !== 'AVAILABLE') {
-      toast.error(t('seats.occupiedAlert') || 'La silla no está disponible')
+      toast.error(t('La silla no está disponible') || 'La silla no está disponible')
       return
     }
 

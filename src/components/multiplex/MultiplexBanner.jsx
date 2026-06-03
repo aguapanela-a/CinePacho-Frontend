@@ -14,7 +14,7 @@ export default function MultiplexBanner({ multiplexName }) {
       <div className="flex items-center gap-3">
         <Building2 size={18} className="text-magenta" />
         <span className="text-sm text-text-secondary font-bold">
-          {t('admin.viewingMultiplex') || 'Viendo multiplex:'}
+          {t('Viendo Multiplex') || 'Viendo multiplex:'}
         </span>
         <span className="text-white font-bold font-display text-lg tracking-wider">
           {multiplexName}
@@ -26,7 +26,7 @@ export default function MultiplexBanner({ multiplexName }) {
         className="flex items-center gap-2 text-sm font-bold text-magenta hover:text-white transition-colors"
       >
         <ArrowLeft size={16} />
-        {t('admin.backToGeneral') || 'Volver al Panel General'}
+        {t('Volver al Panel General') || 'Volver al Panel General'}
       </Link>
     </div>
   )

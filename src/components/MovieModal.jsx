@@ -141,7 +141,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
       multiplexId
     })
     
-    toast.success(t('movie.addedToCart') || 'Entradas agregadas')
+    toast.success(t('Entradas agregadas') || 'Entradas agregadas')
     onClose()
     setIsAddingToCart(false)
   }
