@@ -158,7 +158,11 @@ export default function Home() {
       {selectedMovie && (
         <MovieModal 
           movie={selectedMovie}
-          multiplexName={multiplexesList.find(p => p.multiplexId === displayMultiplex)?.nameMultiplex || 'Cartelera General'}
+          multiplexId={currentMultiplexId}  {/* ✅ Agregar esto */}
+          multiplexName={
+            multiplexesList.find(p => p.multiplexId === displayMultiplex)?.nameMultiplex 
+            || 'Cartelera General'
+          }
           onClose={() => setSelectedMovie(null)} 
         />
       )}
