@@ -3,12 +3,14 @@ import { useLanguage } from '../context/useLanguage'
 
 export default function SearchBar({ value, onChange, placeholder }) {
   const { t } = useLanguage()
-  const label = placeholder || t('home.searchPlaceholder')
+  
+  // Aseguramos que el placeholder siempre sea un string
+  const label = placeholder || t('home.searchPlaceholder') || "Buscar..."
 
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       <label htmlFor="movie-search" className="sr-only">
-        {t('search.label')}
+        {t('search.label') || "Buscar"}
       </label>
       <Search
         size={20}
@@ -19,12 +21,12 @@ export default function SearchBar({ value, onChange, placeholder }) {
         id="movie-search"
         type="search"
         value={value}
-        onChange={onChange}
+        // CORRECCIÓN: Extraemos el valor del evento aquí
+        onChange={(e) => onChange(e.target.value)}
         placeholder={label}
-        aria-label={t('search.label')}
+        aria-label={t('search.label') || "Buscar"}
         className="w-full bg-surface/80 backdrop-blur-sm border border-border/50 rounded-2xl pl-12 pr-4 py-3.5 text-text-primary placeholder-text-secondary/50 outline-none transition-all duration-300 focus:border-magenta/50 focus:ring-2 focus:ring-magenta/15 focus:bg-surface text-sm sm:text-base"
       />
     </div>
   )
 }
-

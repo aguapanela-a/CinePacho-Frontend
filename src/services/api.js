@@ -1,4 +1,3 @@
-
 let BASE_URL = import.meta.env.VITE_API_URL || ''
 
 if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
@@ -28,12 +27,12 @@ function getHeaders(extra = {}) {
 function normalizeData(data) {
   if (!data) return data
 
-  // Caso 1: Es un arreglo directo de snacks (Ej: GET /api/snacks/{multiplexId})
+  // Caso 1: Es un arreglo directo de snacks
   if (Array.isArray(data) && data.length > 0 && 'idSnack' in data[0]) {
     return data.map(item => normalizeItem(item))
   }
 
-  // Caso 2: Objeto agrupado que contiene una lista de snacks (Ej: SnackByMultiplex structure)
+  // Caso 2: Objeto agrupado que contiene una lista de snacks
   if (data.snacks && Array.isArray(data.snacks)) {
     return {
       ...data,
@@ -41,7 +40,7 @@ function normalizeData(data) {
     }
   }
 
-  // Caso 3: Es una lista de objetos agrupadores (Ej: GET /api/admin/snacks agrupados por Multiplex)
+  // Caso 3: Es una lista de objetos agrupadores
   if (Array.isArray(data) && data.length > 0 && data[0].snacks) {
     return data.map(group => ({
       ...group,
@@ -49,19 +48,17 @@ function normalizeData(data) {
     }))
   }
 
-  // Caso 4: Es un único snack (Ej: GET /api/admin/snacks/{id} o respuestas de PUT)
+  // Caso 4: Es un único snack
   return normalizeItem(data)
 }
 
 /**
- * Aplica el fallback de puntos de forma segura usando desestructuración.
- * @param {Object} item - Objeto individual a verificar
+ * Aplica el fallback de puntos de forma segura.
  */
 function normalizeItem(item) {
   if (item && typeof item === 'object' && 'idSnack' in item) {
     return {
       ...item,
-      // Si pointsSnack llega nulo o no definido desde el backend, asegura un valor por defecto (5)
       pointsSnack: item.pointsSnack ?? 5 
     }
   }
@@ -69,10 +66,10 @@ function normalizeItem(item) {
 }
 
 /**
- * Función centralizada para realizar peticiones HTTP (fetch).
- * @param {string} endpoint - Ruta relativa del recurso, ej: '/api/snacks/1'
- * @param {RequestInit} options - Opciones nativas de fetch (method, body, etc.)
- * @returns {Promise<any>} JSON parseado y sanitizado de la respuesta
+ * Función centralizada y RESILIENTE para realizar peticiones HTTP (fetch).
+ * @param {string} endpoint - Ruta relativa del recurso
+ * @param {RequestInit} options - Opciones nativas de fetch
+ * @returns {Promise<any>}
  */
 export async function apiFetch(endpoint, options = {}) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
@@ -84,16 +81,20 @@ export async function apiFetch(endpoint, options = {}) {
       headers: getHeaders(options.headers),
     })
 
-    // Las respuestas 204 No Content (como un DELETE exitoso) no poseen cuerpo
     if (response.status === 204) return null
 
-    // Intentamos parsear a JSON. Si el cuerpo está vacío o falla, retorna null de forma segura
     const data = await response.json().catch(() => null)
 
     if (!response.ok) {
-      let message =
-        data?.message || data?.error || `Error ${response.status}: ${response.statusText}`
-        
+      // CORRECCIÓN RESILIENTE: 
+      // Si el backend responde 400 en selectores, no rompemos el flujo.
+      if (response.status === 400 && endpoint.includes('/selectors/')) {
+        console.warn(`[apiFetch] 400 ignorado en ${endpoint}: No hay funciones disponibles.`);
+        return { screenings: [], movieInfo: null }; 
+      }
+
+      let message = data?.message || data?.error || `Error ${response.status}: ${response.statusText}`
+      
       if (response.status === 403) {
         message = data?.message || 'Forbidden: no tienes permiso para acceder a este recurso'
       } else if (response.status === 404) {
@@ -106,9 +107,12 @@ export async function apiFetch(endpoint, options = {}) {
       throw error
     }
 
-    // Intercepta e inyecta las correcciones de datos antes de entregar la respuesta al servicio
-    console.log("Datos recibidos del servidor:", data);
-    return data;
+    // Intercepta e inyecta las correcciones de datos antes de entregar la respuesta
+    const processedData = normalizeData(data)
+    
+    console.log("Datos recibidos y procesados:", processedData);
+    return processedData;
+
   } catch (error) {
     if (error instanceof TypeError) {
       const networkError = new Error(

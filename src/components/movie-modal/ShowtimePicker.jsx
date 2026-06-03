@@ -1,12 +1,7 @@
 import { MapPin, Clock4, Loader } from 'lucide-react'
 import Button from '../Button'
-import { useLanguage } from '../../context/useLanguage'
-import { useEffect, useMemo } from 'react' // Añadimos useMemo
-
-const formatPriceLabel = (price) => {
-  if (price >= 1000) return `$${Math.round(price / 1000)}K`
-  return `$${price.toLocaleString('es-CO')}`
-}
+import { useLanguage } from '../../context/LanguageContext'
+import { useMemo } from 'react'
 
 export default function ShowtimePicker({
   multiplexName = 'Titán',
@@ -18,43 +13,38 @@ export default function ShowtimePicker({
 }) {
   const { t } = useLanguage()
 
-  // CORRECCIÓN: Memorizar el filtrado y ordenado para evitar recreaciones infinitas de arrays
   const availableScreenings = useMemo(() => {
+    if (!Array.isArray(backendScreenings)) return []
+    
     return [...backendScreenings]
-      .filter(s => s.status?.toUpperCase() === 'ACTIVE')
+      .filter(s => s?.status?.toUpperCase() === 'ACTIVE')
       .sort((a, b) => {
-        if (!a.screeningDate || !b.screeningDate) return 0
-        return new Date(a.screeningDate.substring(0, 10)) - new Date(b.screeningDate.substring(0, 10))
+        const dateA = new Date(a.screeningDate || 0).getTime()
+        const dateB = new Date(b.screeningDate || 0).getTime()
+        return dateA - dateB
       })
   }, [backendScreenings])
 
-  // Debug logging seguro
-  useEffect(() => {
-    console.log('ShowtimePicker - backendScreenings:', backendScreenings)
-    console.log('ShowtimePicker - availableScreenings (filtered ACTIVE):', availableScreenings)
-  }, [backendScreenings, availableScreenings])
-
-  // Formatear fecha + hora para mostrar
   const formatScreeningDisplay = (screening) => {
-    try {
-      const dateString = screening?.screeningDate
-      if (!dateString) return { dateStr: 'Fecha desconocida', timeStr: 'Hora desconocida' }
-      
-      const timeStr = dateString.substring(11, 16)
-      const dateStr = dateString.substring(0, 10)
-      const date = new Date(dateStr + 'T00:00:00') // Forzar formato local para evitar desfases de días
-      
-      const formatted = date.toLocaleDateString('es-CO', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
-      })
-      
-      return { dateStr: formatted, timeStr }
-    } catch (err) {
-      console.error('Error formatting screening display:', err, screening)
-      return { dateStr: 'Fecha', timeStr: 'Hora' }
-    }
+    if (!screening?.screeningDate) return { dateStr: '...', timeStr: '...' }
+    
+    const date = new Date(screening.screeningDate)
+    
+    // Verificación básica para fecha inválida
+    if (isNaN(date.getTime())) return { dateStr: '---', timeStr: '--:--' }
+    
+    const dateStr = date.toLocaleDateString('es-CO', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+    const timeStr = date.toLocaleTimeString('es-CO', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })
+    
+    return { dateStr, timeStr }
   }
 
   return (
@@ -66,24 +56,23 @@ export default function ShowtimePicker({
         </span>
       </div>
 
-      {!selectedScreening ? (
-        // MODO 1: Mostrar lista de funciones disponibles para elegir
+      {loadingScreenings ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader size={16} className="text-magenta animate-spin mr-2" />
+          <p className="text-xs text-text-secondary">Cargando funciones...</p>
+        </div>
+      ) : !selectedScreening ? (
         <div className="space-y-1.5">
           <p className="text-[10px] font-bold text-text-secondary tracking-widest uppercase">
             {t('movie.availableShowtimes') || 'Funciones disponibles'}
           </p>
           
-          {loadingScreenings ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader size={16} className="text-magenta animate-spin mr-2" />
-              <p className="text-xs text-text-secondary">Cargando funciones...</p>
-            </div>
-          ) : availableScreenings.length === 0 ? (
-            <p className="text-xs text-text-secondary italic">
-              No hay funciones disponibles en este momento
+          {availableScreenings.length === 0 ? (
+            <p className="text-xs text-text-secondary italic py-2">
+              No hay funciones disponibles
             </p>
           ) : (
-            <div className="space-y-2 max-h-56 overflow-y-auto">
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {availableScreenings.map((screening) => {
                 const { dateStr, timeStr } = formatScreeningDisplay(screening)
                 return (
@@ -94,12 +83,10 @@ export default function ShowtimePicker({
                   >
                     <div className="flex items-center gap-3">
                       <Clock4 size={14} className="group-hover:text-magenta" />
-                      <span className="font-display text-xs tracking-wider">
-                        {dateStr} • {timeStr}
-                      </span>
+                      <span className="font-display text-xs tracking-wider">{dateStr} • {timeStr}</span>
                     </div>
                     <span className="text-[9px] font-semibold uppercase text-magenta/60 group-hover:text-magenta">
-                      {screening.format || '_2D'} • Sala {screening.roomNumber}
+                      {screening.format || '2D'} • Sala {screening.roomNumber}
                     </span>
                   </button>
                 )
@@ -108,48 +95,33 @@ export default function ShowtimePicker({
           )}
         </div>
       ) : (
-        // MODO 2: Mostrar selección fija de la función elegida
-        <div className="space-y-3.5">
+        <div className="space-y-3.5 animate-in fade-in duration-300">
           <div className="bg-carbon/40 border border-magenta/30 rounded-xl px-4 py-3 space-y-2">
             <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">
               {t('movie.selectedShowtime') || 'Función seleccionada'}
             </p>
-            
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-white font-medium">
-                  {formatScreeningDisplay(selectedScreening).dateStr}
-                </p>
-                <p className="text-sm font-display tracking-wider text-magenta">
-                  {formatScreeningDisplay(selectedScreening).timeStr}
-                </p>
+                <p className="text-xs text-white font-medium">{formatScreeningDisplay(selectedScreening).dateStr}</p>
+                <p className="text-sm font-display tracking-wider text-magenta">{formatScreeningDisplay(selectedScreening).timeStr}</p>
               </div>
-              <div className="text-right space-y-1">
-                <p className="text-[9px] text-text-secondary font-bold">Formato</p>
+              <div className="text-right">
+                <p className="text-[9px] text-text-secondary font-bold">Formato / Sala</p>
                 <p className="text-xs font-semibold text-white">
-                  {selectedScreening.format || '_2D'}
-                </p>
-              </div>
-              <div className="text-right space-y-1">
-                <p className="text-[9px] text-text-secondary font-bold">Sala</p>
-                <p className="text-xs font-semibold text-white">
-                  {selectedScreening.roomNumber}
+                  {selectedScreening.format || '2D'} • {selectedScreening.roomNumber}
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Botón para volver a elegir otra función */}
           <button
             onClick={() => setSelectedScreening(null)}
             className="w-full text-[9px] font-bold text-text-secondary hover:text-magenta transition-colors uppercase tracking-widest"
           >
-            ← Elegir otra función
+            ← {t('movie.chooseAnother') || 'Elegir otra función'}
           </button>
         </div>
       )}
 
-      {/* Botón de continuar (solo visible cuando hay screening seleccionada) */}
       {selectedScreening && (
         <div className="pt-2">
           <Button
