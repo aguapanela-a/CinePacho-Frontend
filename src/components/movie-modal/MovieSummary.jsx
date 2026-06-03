@@ -3,36 +3,32 @@ import { useLanguage } from '../../context/LanguageContext'
 
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
-  
-  // Extraemos movieInfo para mayor limpieza
-  const info = movie?.movieInfo || {};
 
-  // El cast llega como String (según el backend) o posiblemente vacío
-  const castText = info.cast || t('movie.notAvailable');
+  // Como la consola confirma que movieInfo es el objeto padre:
+  const info = movie?.movieInfo || {};
 
   return (
     <>
       <div>
         <h2 id="movie-modal-title" className="text-3xl sm:text-4xl font-display uppercase tracking-widest text-white leading-none mb-3 pr-8">
-          {info.originalTitle}
+          {info.title}
         </h2>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-gold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/30 text-xs font-bold">
             <Star size={11} fill="currentColor" />
             {movie.rating}
           </span>
+          {/* Duración y Año: Si no vienen en info, los mantenemos opcionales */}
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Clock size={11} />
-            {/* Si no tienes duración, puedes dejarlo así o manejarlo desde el backend */}
             {info.duration || 'N/A'}
           </span>
           <span className="bg-magenta/10 px-2.5 py-1 rounded-full border border-magenta/30 text-xs font-bold text-magenta">
-            {/* Accediendo a los géneros que llegan en el array */}
             {info.genres?.map(g => g.name).join(', ') || 'N/A'}
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Calendar size={11} />
-            {info.releaseDate}
+            {info.release_date || info.releaseDate}
           </span>
         </div>
       </div>
@@ -52,8 +48,10 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
               <Clapperboard size={9} /> {t('movie.director')}
             </p>
-            {/* Aquí accedemos correctamente a info.director */}
-            <p className="text-white text-sm font-medium">{info.director || 'No disponible'}</p>
+            {/* ACCESO CORRECTO A DIRECTOR */}
+            <p className="text-white text-sm font-medium">
+              {info.director || t('movie.notAvailable')}
+            </p>
           </div>
           
           <div className="h-px bg-border/20" />
@@ -62,9 +60,9 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">
               {t('movie.cast')}
             </p>
-            {/* Aquí accedemos correctamente a info.cast */}
+            {/* ACCESO CORRECTO A CAST */}
             <p className="text-white/75 text-[11px] leading-relaxed">
-              {castText}
+              {info.cast || t('movie.notAvailable')}
             </p>
           </div>
         </div>
