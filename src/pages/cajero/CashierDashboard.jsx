@@ -259,37 +259,40 @@ export default function CashierDashboard() {
 
   const handleConfirmSeatSelection = (seats, seatsTotal) => {
     if (!ticketScreeningId) return;
+    
     setSelectedSeatIdsByScreening((prev) => ({
       ...prev,
       [ticketScreeningId]: seats,
     }));
+
+    const totalTicketsQty = cart
+      .filter(
+        (item) =>
+          item.type === "ticket" && item.screeningId === ticketScreeningId,
+      )
+      .reduce((acc, item) => acc + item.qty, 0);
+
+    if (totalTicketsQty > 0 && seatsTotal > 0) {
+      const updatedPricePerTicket = seatsTotal / totalTicketsQty;
+      const updatedCart = cart.map((item) => {
+        if (item.type === "ticket" && item.screeningId === ticketScreeningId) {
+          return {
+            ...item,
+            unitPrice: updatedPricePerTicket,
+            price: updatedPricePerTicket.toLocaleString("es-CO", {
+              style: "currency",
+              currency: "COP",
+              maximumFractionDigits: 0,
+            }),
+          };
+        }
+        return item;
+      });
+      setCart(updatedCart);
+    }
+    
     setIsSeatSelectorOpen(false);
   };
-  const totalTicketsQty = cart
-    .filter(
-      (item) =>
-        item.type === "ticket" && item.screeningId === ticketScreeningId,
-    )
-    .reduce((acc, item) => acc + item.qty, 0);
-  if (totalTicketsQty > 0 && seatsTotal > 0) {
-    const updatedPricePerTicket = seatsTotal / totalTicketsQty;
-    const updatedCart = cart.map((item) => {
-      if (item.type === "ticket" && item.screeningId === ticketScreeningId) {
-        return {
-          ...item,
-          unitPrice: updatedPricePerTicket,
-          price: updatedPricePerTicket.toLocaleString("es-CO", {
-            style: "currency",
-            currency: "COP",
-            maximumFractionDigits: 0,
-          }),
-        };
-      }
-      return item;
-    });
-    setCart(updatedCart);
-  }
-  setIsSeatSelectorOpen(false);
 
   const handleRemoveFromCart = (itemToRemove) => {
     removeFromCart(itemToRemove.id, itemToRemove.type, itemToRemove.showtime);
@@ -1045,7 +1048,7 @@ export default function CashierDashboard() {
               selectedFormat={ticketFormat}
               maxSeats={ticketCount}
               isLoading={false}
-              initialSeats={selectedSeatIds}
+              initialSeats={selectedSeatIds}fv
               generalPrice={ticketItems[0]?.price ?? 0}
               preferentialPrice={ticketItems[0]?.price ?? 0}
             />
