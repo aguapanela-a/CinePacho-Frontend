@@ -448,14 +448,14 @@ export default function Home() {
               ) : (
                 multiplexesList.map((plex) => (
                   <button
-                    key={plex.multiplexId}
+                    key={plex.idMultiplex }
                     onClick={() => {
-                      console.log("Multiplex seleccionado:", plex.nameMultiplex, "ID:", plex.multiplexId)
-                      setDisplayMultiplex(plex.multiplexId) 
+                      console.log("Multiplex seleccionado:", plex.nameMultiplex, "ID:", plex.idMultiplex )
+                      setDisplayMultiplex(plex.idMultiplex ) 
                     }}
                     
                     className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
-                      displayMultiplex === plex.multiplexId
+                      displayMultiplex === plex.idMultiplex 
                         ? "bg-magenta border-magenta text-white shadow-lg shadow-magenta/20"
                         : "bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white"
                     }`}
