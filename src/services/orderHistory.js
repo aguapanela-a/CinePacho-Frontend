@@ -6,5 +6,5 @@ import { apiFetch } from './api'
  */
 
 export const getOrderHistory = (userId) => {
-  return apiFetch(`/api/billings/user/${userId}`)
+  return apiFetch(`/api/checkout/billings/user/${userId}`)
 }
