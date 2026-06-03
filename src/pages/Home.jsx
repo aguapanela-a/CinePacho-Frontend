@@ -328,7 +328,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-carbon animate-pulse" />
         ) : featuredMovie ? (
           <>
-            <div className="absolute inset-0 scale-80 animate-[subtleZoom_20s_ease-out_infinite] transition-transform duration-1000">
+            <div className="absolute inset-0 scale-120 animate-[subtleZoom_20s_ease-out_infinite] transition-transform duration-1000">
               <img
                 src={
                   featuredMovie.backdropPath
