@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment, useCallback } from 'react'
-import { Monitor, ArrowLeft, Star, Loader2, Clock } from 'lucide-react' // Eliminado Armchair
+import { Monitor, ArrowLeft, Star, Loader2, Clock } from 'lucide-react'
 import Button from './Button'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
@@ -24,10 +24,9 @@ export default function SeatSelector({
 
   const [backendSeats, setBackendSeats] = useState([])
   const [seatTimers, setSeatTimers] = useState({})
-  const [currentTime, setCurrentTime] = useState( () => {Date.now()})
-  const [isProcessingSeat, setIsProcessingSeat] = useState(false) // Feedback de carga para clics
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
+  const [isProcessingSeat, setIsProcessingSeat] = useState(false)
 
-  // Usamos useCallback para evitar recrear la función en cada render
   const reloadSeats = useCallback(async () => {
     if (!roomId || !screeningId) return
     try {
@@ -39,34 +38,23 @@ export default function SeatSelector({
     }
   }, [roomId, screeningId, t, toast])
 
-    // Carga inicial de asientos
   useEffect(() => {
-    setCurrentTime // <-- Aquí sí es legal porque es un Efecto
     reloadSeats()
-    
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000)
     return () => clearInterval(interval)
   }, [reloadSeats])
 
-  // Formatear tiempo restante (Ahora sí se usa abajo)
-  // Cambia tu función para que acepte "now":
   const formatRemainingTime = (expiry, now) => {
     if (!expiry || isNaN(expiry)) return '--:--'
-
-    // Usamos el "now" que viene del estado controlado de React
     const remaining = Math.max(0, Math.ceil((expiry - now) / 1000))
     const minutes = String(Math.floor(remaining / 60)).padStart(2, '0')
     const seconds = String(remaining % 60).padStart(2, '0')
     return `${minutes}:${seconds}`
   }
 
-  // Limpieza de timers expirados corregida (Evita llamadas múltiples al backend)
-  // Cambia tu segundo useEffect por este:
   useEffect(() => {
     let hasExpired = false
-
     Object.entries(seatTimers).forEach(([seatId, expiry]) => {
-      // Usamos currentTime del estado en lugar de Date.now() directo
       if (expiry <= currentTime) {
         hasExpired = true
         setSeatTimers(prev => {
@@ -77,12 +65,8 @@ export default function SeatSelector({
         setSelectedSeats(prev => prev.filter(id => id !== seatId))
       }
     })
-
-    if (hasExpired) {
-      reloadSeats()
-    }
-  }, [currentTime, seatTimers, reloadSeats]) // <-- Cambiado tick por currentTime
-
+    if (hasExpired) reloadSeats()
+  }, [currentTime, seatTimers, reloadSeats])
 
   const toggleSeat = async (seat) => {
     if (!seat || isProcessingSeat) return
@@ -104,8 +88,6 @@ export default function SeatSelector({
 
       if (!isSelected) {
         setSelectedSeats(prev => [...prev, seat.idSeat])
-
-        // 🔥 CAMBIO AQUÍ: Usamos currentTime del estado en lugar de Date.now()
         const expiry = currentTime + 10 * 60 * 1000 
         setSeatTimers(prev => ({ ...prev, [seat.idSeat]: expiry }))
       } else {
@@ -124,7 +106,6 @@ export default function SeatSelector({
     }
   }
 
-  // Fallback seguro por si ticketFormats viene vacío
   const formatPricing = ticketFormats?.find(f => f.fmt === selectedFormat) || ticketFormats?.[0] || { generalPrice: 0, preferentialPrice: 0 }
   const generalPrice = formatPricing.generalPrice
   const prefPrice = formatPricing.preferentialPrice
@@ -134,7 +115,6 @@ export default function SeatSelector({
     return acc + (s?.type?.toUpperCase() === 'PREFERENTIAL' ? prefPrice : generalPrice)
   }, 0)
 
-  // Obtener el timer del asiento más próximo a expirar para mostrarlo en el UI
   const dynamicTimers = Object.values(seatTimers)
   const nextExpiry = dynamicTimers.length > 0 ? Math.min(...dynamicTimers) : null
 
@@ -146,7 +126,6 @@ export default function SeatSelector({
         </button>
         <div className="text-right">
           <h3 className="font-display text-white text-xl tracking-widest uppercase">{t('seats.title')}</h3>
-          {/* Agregado: Feedback visual del tiempo de reserva */}
           {nextExpiry && (
             <p className="text-xs text-magenta/80 flex items-center justify-end gap-1 mt-1 font-mono">
               <Clock size={12} /> {t('seats.timer') || 'Tiempo de reserva:'} {formatRemainingTime(nextExpiry, currentTime)}
@@ -155,58 +134,56 @@ export default function SeatSelector({
         </div>
       </div>
 
-      <div className="mb-10 text-center relative px-8">
+      <div className="mb-6 text-center relative px-8">
         <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-magenta to-transparent opacity-50 rounded-full" />
         <p className="text-[10px] font-bold text-magenta tracking-widest uppercase mt-3">
           <Monitor size={12} className="inline mr-1" /> {t('seats.screen')}
         </p>
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-6">
-        <div className="min-w-fit mx-auto flex flex-col items-center gap-3">
+      <div className="flex-1 w-full max-w-xl mx-auto px-2 pb-6">
+        <div className="flex flex-col items-center gap-2">
           {ROWS.map(row => (
-            <div key={row} className="flex items-center gap-4">
-              <span className="w-4 text-xs font-bold text-text-secondary">{row}</span>
-              <div className="flex gap-2">
+            <div key={row} className="flex items-center gap-3 w-full justify-center">
+              <span className="w-6 text-[10px] font-bold text-text-secondary">{row}</span>
+              
+              <div className="flex gap-1.5 flex-1 justify-center max-w-[400px]">
                 {Array.from({ length: COLS }).map((_, i) => {
                   const seatNumber = (ROWS.indexOf(row) * COLS) + (i + 1)
                   const seat = backendSeats.find(s => s.seatNumber === seatNumber)
                   
-                  if (!seat) return <div key={i} className="w-[44px]" />
+                  if (!seat) return <div key={i} className="flex-1" />
                   
                   const isSelected = selectedSeats.includes(seat.idSeat)
-                  const seatStatus = seat.status?.toUpperCase()
-                  const seatType = seat.type?.toUpperCase()
-
-                  const isOccupied = seatStatus === 'SOLD' || (seatStatus === 'BLOCKED' && !isSelected)
-                  const isPref = seatType === 'PREFERENTIAL'
+                  const isOccupied = seat.status?.toUpperCase() === 'SOLD' || (seat.status?.toUpperCase() === 'BLOCKED' && !isSelected)
+                  const isPref = seat.type?.toUpperCase() === 'PREFERENTIAL'
 
                   return (
                     <Fragment key={seat.idSeat}>
                       <button
                         onClick={() => toggleSeat(seat)}
                         disabled={isOccupied || isProcessingSeat}
-                        className={`w-[44px] h-[44px] rounded-t-xl rounded-b-md border flex items-center justify-center text-xs font-bold transition-all
-                          ${isSelected ? 'bg-magenta border-magenta text-white shadow-[0_0_15px_rgba(200,22,122,0.5)]' : 
+                        className={`flex-1 aspect-square min-w-[28px] max-w-[40px] rounded-t-lg rounded-b-sm border flex items-center justify-center text-[10px] font-bold transition-all
+                          ${isSelected ? 'bg-magenta border-magenta text-white shadow-[0_0_10px_rgba(200,22,122,0.4)]' : 
                             isOccupied ? 'bg-red-500/10 border-red-500/20 text-transparent cursor-not-allowed opacity-50' :
-                            isPref ? 'bg-gold/5 border-gold/40 text-gold hover:border-gold' :
+                            isPref ? 'bg-gold/5 border-gold/40 text-gold hover:bg-gold/20' :
                             'bg-white/5 border-white/20 text-white/50 hover:bg-white/10 hover:border-white/50'
                           }`}
                       >
                         {isSelected ? (i + 1) : (isPref && !isOccupied ? <Star size={10} /> : '')}
                       </button>
-                      {(i === 2 || i === 6) && <div className="w-8" />}
+                      {(i === 2 || i === 6) && <div className="w-3" />}
                     </Fragment>
                   )
                 })}
               </div>
-              <span className="w-4 text-xs font-bold text-text-secondary">{row}</span>
+              
+              <span className="w-6 text-[10px] font-bold text-text-secondary text-right">{row}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Footer y Total */}
       <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4">
          <p className="text-gold font-display text-xl">${total.toLocaleString('es-CO')}</p>
          <Button onClick={() => onConfirm(selectedSeats, total)} disabled={selectedSeats.length === 0 || isLoading || isProcessingSeat}>
