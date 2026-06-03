@@ -19,30 +19,30 @@ export default function Snacks() {
     const fetchSnacks = async () => {
       setLoading(true)
       setError(null)
-
+      
       try {
         let data;
-        
-        // Determinar si el usuario tiene privilegios de administrador
+        // Definición estricta de roles administrativos
         const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
         
         if (isAdmin) {
-          // Llama al endpoint de admin que retorna List<SnackByMultiplex>
           data = await getAdminSnacks();
         } else {
-          // Llama al endpoint público para compradores
+          // Obtener ID del multiplex o usar el fallback de variable de entorno
           const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
-      console.log("Estoy pidiendo snacks para este Multiplex ID:", multiplexId);
-          if (!multiplexId) throw new Error('Multiplex no definido');
-       //   data = await getAllSnacks(multiplexId);
-            data = await getAdminSnacks();
+          
+          if (!multiplexId) {
+            throw new Error('Multiplex no definido');
+          }
+          
+          // Llamada al endpoint público
+          data = await getAllSnacks(multiplexId);
         }
 
-        // Lógica de aplanamiento:
-        // Si el backend devuelve grupos (estructura admin), aplanamos.
-        // Si ya es un array de snacks (estructura pública), lo usamos tal cual.
+        // Lógica de aplanamiento robusta
+        // Si data es array, aplanamos si hay grupos (SnackByMultiplex) o retornamos el array directo
         const flatSnacks = Array.isArray(data) 
-          ? data.flatMap(item => item.snacks ? item.snacks : [item])
+          ? data.flatMap(item => (item.snacks && Array.isArray(item.snacks)) ? item.snacks : [item])
           : [];
           
         setSnacks(flatSnacks);
@@ -54,6 +54,7 @@ export default function Snacks() {
         setLoading(false);
       }
     }
+
     fetchSnacks();
   }, [user]);
 
@@ -106,7 +107,7 @@ export default function Snacks() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {snacks.map((snack, index) => (
+          {snacks.map((snack) => (
             <div
               key={snack.idSnack}
               className="group relative bg-surface border border-border/50 rounded-3xl overflow-hidden flex flex-col h-full hover:border-magenta/40 transition-all duration-300"
@@ -121,7 +122,7 @@ export default function Snacks() {
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-display text-white mb-2">{snack.nameSnack}</h3>
                 <span className="text-xl font-bold text-gold mb-4">
-                  ${Number(snack.priceSnack).toLocaleString('es-CO')}
+                  ${Number(snack.priceSnack || 0).toLocaleString('es-CO')}
                 </span>
                 <p className="text-text-secondary text-sm mb-6 flex-1">
                   {snack.descriptionSnack}
