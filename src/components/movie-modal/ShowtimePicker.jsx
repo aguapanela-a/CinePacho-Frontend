@@ -52,7 +52,7 @@ export default function ShowtimePicker({
       <div className="flex items-center gap-2">
         <MapPin size={15} className="text-magenta" />
         <span className="font-display text-base tracking-widest text-white">
-          {t('movie.showtimesIn') || 'Funciones en'} {multiplexName}
+          {t('Funciones en') || 'Funciones en'} {multiplexName}
         </span>
       </div>
 
@@ -98,7 +98,7 @@ export default function ShowtimePicker({
         <div className="space-y-3.5 animate-in fade-in duration-300">
           <div className="bg-carbon/40 border border-magenta/30 rounded-xl px-4 py-3 space-y-2">
             <p className="text-[9px] text-text-secondary font-bold tracking-widest uppercase">
-              {t('movie.selectedShowtime') || 'Función seleccionada'}
+              {t('Función seleccionada') || 'Función seleccionada'}
             </p>
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -117,7 +117,7 @@ export default function ShowtimePicker({
             onClick={() => setSelectedScreening(null)}
             className="w-full text-[9px] font-bold text-text-secondary hover:text-magenta transition-colors uppercase tracking-widest"
           >
-            ← {t('movie.chooseAnother') || 'Elegir otra función'}
+            ← {t('Elegir otra función') || 'Elegir otra función'}
           </button>
         </div>
       )}
@@ -130,7 +130,7 @@ export default function ShowtimePicker({
             size="md"
             className="w-full rounded-xl shadow-[0_0_20px_rgba(200,22,122,0.3)] hover:shadow-[0_0_30px_rgba(200,22,122,0.5)]"
           >
-            {t('movie.proceedToSeats') || 'Elegir Asientos'}
+            {t('Elegir Asientos') || 'Elegir Asientos'}
           </Button>
         </div>
       )}
