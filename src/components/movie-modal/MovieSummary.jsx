@@ -1,19 +1,13 @@
 import { Star, Clock, Calendar, Clapperboard } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 
-const castData = {
-  1: 'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr.',
-  2: 'Timothée Chalamet, Zendaya, Austin Butler, Florence Pugh',
-  3: 'Amy Poehler, Maya Hawke, Ayo Edebiri, Kensington Tallman',
-  4: 'Paul Mescal, Pedro Pascal, Denzel Washington, Connie Nielsen',
-  5: 'Bill Skarsgård, Lily-Rose Depp, Nicholas Hoult, Willem Dafoe',
-  6: 'Cynthia Erivo, Ariana Grande, Jeff Goldblum, Michelle Yeoh',
-  7: 'Ryan Reynolds, Hugh Jackman, Emma Corrin, Morena Baccarin',
-  8: 'Cailee Spaeny, David Jonsson, Archie Renaux, Isabela Merced',
-}
-
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
+
+  // Convertimos el reparto a string si viene como array, o lo dejamos como está
+  const castText = Array.isArray(movie.cast) 
+    ? movie.cast.join(', ') 
+    : movie.cast;
 
   return (
     <>
@@ -42,23 +36,30 @@ export default function MovieSummary({ movie }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4">
         <div>
-          <h3 className="text-xs font-display tracking-widest text-magenta mb-1">{t('movie.synopsisLabel')}</h3>
+          <h3 className="text-xs font-display tracking-widest text-magenta mb-1">
+            {t('movie.synopsisLabel')}
+          </h3>
           <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-            {movie.synopsis}
+            {movie.synopsis || t('movie.noSynopsis') || 'Sin sinopsis disponible.'}
           </p>
         </div>
+
         <div className="sm:w-52 bg-carbon/50 p-3.5 rounded-xl border border-white/5 space-y-2">
           <div>
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
               <Clapperboard size={9} /> {t('movie.director')}
             </p>
-            <p className="text-white text-sm font-medium">{movie.director}</p>
+            <p className="text-white text-sm font-medium">{movie.director || 'No disponible'}</p>
           </div>
+          
           <div className="h-px bg-border/20" />
+          
           <div>
-            <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">{t('movie.cast')}</p>
+            <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">
+              {t('movie.cast')}
+            </p>
             <p className="text-white/75 text-[11px] leading-relaxed">
-              {castData[movie.id] || t('movie.notAvailable')}
+              {castText || t('movie.notAvailable') || 'Reparto no disponible'}
             </p>
           </div>
         </div>
