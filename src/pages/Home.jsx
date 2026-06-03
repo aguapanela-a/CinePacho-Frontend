@@ -62,13 +62,10 @@ export default function Home() {
 
   const getMultiplexId = (id) => {
     if (id && id !== "Todos") return id;
-
-    // Si es 'Todos', usar el primer multiplex como fallback para cargar funciones
-
     return multiplexesList.length > 0 ? multiplexesList[0].idMultiplex : null;
   };
 
-  const currentMultiplexId = getMultiplexId(displayMultiplex);
+  const currentMultiplexId = displayMultiplex === "Todos" ? null : displayMultiplex;
 
   // 0. EFECTO: Cargar multiplexes desde el backend
 
@@ -195,7 +192,7 @@ export default function Home() {
 
     // Usamos directamente el id calculado para evitar añadir funciones u objetos pesados a las dependencias
 
-    const multiplexId = getMultiplexId(displayMultiplex);
+    const multiplexId = displayMultiplex === "Todos" ? null : displayMultiplex;
 
     if (!multiplexId) {
       console.warn("Home: multiplexId no válido para", displayMultiplex);
