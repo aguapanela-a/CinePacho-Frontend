@@ -11,7 +11,7 @@ import { saveOrderSnapshot } from '../utils/orderSnapshot'
  * Función auxiliar para mapear el carrito al formato requerido por el backend.
  * Extrae screeningId del primer ticket, y los seatIds y snacks reales.
  */
-function mapCartToPaymentData(cart, defaultMultiplexId = null) {
+function mapCartToPaymentData(cart, defaultMultiplexId) {
   const seats = []
   const snacksMap = new Map()
   let screeningId = null
@@ -40,6 +40,7 @@ function mapCartToPaymentData(cart, defaultMultiplexId = null) {
         snacksMap.set(item.id, {
           snackId: item.id,
           quantity: item.qty,
+          //Se está enviamdo un multiplex id nulo // corregfitr
           ...(snackMultiplexId ? { multiplexId: snackMultiplexId } : {}),
         })
       }
@@ -75,6 +76,7 @@ export default function Checkout() {
     setIntentError(null)
 
     try {
+      //EL multiplexId del usuario (en local storage) es nulo, debe asignarse según el multiplexId del snack o la función (el primero que ocurra) -> {Obligar al usuario a seleciconar pimero fuinción} luego, escoge primero una función, entonces, el sistema solo debe mostrar únicamente snacks de ese multiplex. Si no se asigna ningún multiplexId, se puede usar un valor por defecto o mostrar un error.
       const defaultMultiplexId = user?.multiplexId || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
       const paymentData = mapCartToPaymentData(cart, defaultMultiplexId)
       const buyerEmailToSend = isEmployeeOrManager ? buyerEmail.trim() : null

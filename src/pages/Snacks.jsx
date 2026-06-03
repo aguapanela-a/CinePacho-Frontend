@@ -29,13 +29,15 @@ export default function Snacks() {
         if (isAdmin) {
           data = await getAdminSnacks();
         } else {
-          const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
+          const multiplexId = localStorage.getItem('multiplexId') || user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
           
           if (multiplexId) {
+            // Primero intenta cargar snacks específicos del multiplex
             data = await getAllSnacks(multiplexId);
-            if (!data || data.length === 0) {
-              data = await getAllPublicSnacks();
-            }
+            // no no hay snaks especificos muestra mejsaje de uqe debe elegir una función primero
+              if (data.length === 0) {
+                setError( 'Selecciona una función para ver los snacks disponibles')
+              }
           } else {
             data = await getAllPublicSnacks();
           }
@@ -68,7 +70,7 @@ export default function Snacks() {
       showtime: null, 
       image: snack.imageUrl || DEFAULT_SNACK_IMAGE,
       points: Number(snack.pointsSnack) || 0, 
-      multiplexId: user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
+      multiplexId: localStorage.getItem('multiplexId') || user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID,
     }
   }
 

@@ -70,7 +70,7 @@ export default function CartDrawer() {
                         <Trash2 size={15} />
                       </button>
                     </div>
-                    <p className="text-xs text-text-secondary font-medium mt-0.5 uppercase tracking-wide">{item.type === 'ticket' ? t('cart.typeTicket') || 'Boleta' : t('cart.typeSnack') || 'Confitería'}</p>
+                    <p className="text-xs text-text-secondary font-medium mt-0.5 uppercase tracking-wide">{item.type === 'ticket' ? t('cart.typeTicket') || 'Boleta' : t('cart.typeSnack') || 'Productos'}</p>
                     <div className="flex items-center justify-between mt-4">
                       <span className="text-xs text-text-secondary font-bold bg-surface-light px-2 py-1 rounded-md border border-border/40">Cant: {item.qty}</span>
                       <span className="text-white font-bold font-display tracking-wide">{formatCurrency(item.unitPrice * item.qty)}</span>
