@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Star, AlertCircle } from 'lucide-react'
 import Button from '../components/Button'
 import { useApp } from '../context/useApp'
-import { getAllSnacks } from '../services/snackService'
+import { getAllSnacks, getAdminSnacks } from '../services/snackService'
 import { useLanguage } from '../context/useLanguage'
 import { useToast } from '../context/useToast'
 
@@ -20,39 +20,40 @@ export default function Snacks() {
       setLoading(true)
       setError(null)
       
-      const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID
-
-      if (!multiplexId) {
-        setSnacks([])
-        setError('Multiplex no definido. Inicia sesión o configura VITE_DEFAULT_MULTIPLEX_ID en el entorno.')
-        setLoading(false)
-        return
-      }
-
       try {
-        const data = await getAllSnacks(multiplexId)
+        let data;
         
-        // --- LÓGICA DE APLANAMIENTO ---
-        // Si el backend devuelve grupos, los aplanamos para que snacks sea siempre un array simple
-        let processedSnacks = []
-        if (Array.isArray(data)) {
-          if (data.length > 0 && data[0].snacks) {
-            processedSnacks = data.flatMap(group => group.snacks)
-          } else {
-            processedSnacks = data
-          }
+        // Determinar si el usuario tiene privilegios de administrador
+        const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+        
+        if (isAdmin) {
+          // Llama al endpoint de admin que retorna List<SnackByMultiplex>
+          data = await getAdminSnacks();
+        } else {
+          // Llama al endpoint público para compradores
+          const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
+          if (!multiplexId) throw new Error('Multiplex no definido');
+          data = await getAllSnacks(multiplexId);
         }
-        setSnacks(processedSnacks)
-        // ------------------------------
+
+        // Lógica de aplanamiento:
+        // Si el backend devuelve grupos (estructura admin), aplanamos.
+        // Si ya es un array de snacks (estructura pública), lo usamos tal cual.
+        const flatSnacks = Array.isArray(data) 
+          ? data.flatMap(item => item.snacks ? item.snacks : [item])
+          : [];
+          
+        setSnacks(flatSnacks);
         
       } catch (err) {
-        setError(err.message)
+        console.error("Error cargando snacks:", err);
+        setError(err.message || 'Error al conectar con el servidor');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-    fetchSnacks()
-  }, [user])
+    fetchSnacks();
+  }, [user]);
 
   const toCartItem = (snack) => {
     return {
@@ -81,33 +82,23 @@ export default function Snacks() {
         </h1>
         <p className="text-text-secondary text-lg max-w-2xl mx-auto">
           {t('snacks.subtitle')}
-          <span className="block mt-2 text-gold font-semibold">
-            {t('snacks.pointsReminder')}
-          </span>
         </p>
       </div>
 
       {error && (
         <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-5 py-4 mb-8 max-w-xl mx-auto">
           <AlertCircle size={18} />
-          {t('snacks.errorLoading')} {error}
+          {error}
         </div>
       )}
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-surface border border-border/50 rounded-3xl overflow-hidden animate-pulse">
-              <div className="h-48 sm:h-56 bg-carbon/60" />
-              <div className="p-6 space-y-3">
-                <div className="h-4 bg-carbon rounded-xl w-3/4" />
-                <div className="h-3 bg-carbon rounded-xl w-full" />
-                <div className="h-10 bg-carbon rounded-2xl mt-4" />
-              </div>
-            </div>
+            <div key={i} className="bg-surface border border-border/50 rounded-3xl h-64 animate-pulse" />
           ))}
         </div>
-      ) : snacks.length === 0 && !error ? (
+      ) : snacks.length === 0 ? (
         <div className="text-center py-24 text-text-secondary">
           <p className="text-lg">{t('snacks.emptyCatalog')}</p>
         </div>
@@ -116,54 +107,31 @@ export default function Snacks() {
           {snacks.map((snack, index) => (
             <div
               key={snack.idSnack}
-              className="group relative bg-surface border border-border/50 rounded-3xl overflow-hidden hover:border-magenta/40 transition-all duration-300 hover:shadow-2xl hover:shadow-magenta/20 flex flex-col h-full animate-[fadeUp_0.5s_ease-out_forwards]"
-              style={{ animationDelay: `${index * 0.07}s` }}
+              className="group relative bg-surface border border-border/50 rounded-3xl overflow-hidden flex flex-col h-full hover:border-magenta/40 transition-all duration-300"
             >
-              <div className="relative h-48 sm:h-56 overflow-hidden bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center">
-                <div className="absolute inset-0 bg-carbon/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
-                <img 
-                  src="/comboFamiliar.png" 
-                  alt={snack.nameSnack}
-                  className="w-full h-full object-cover z-0 animate-[fadeIn_0.6s_ease-out_forwards]"
-                  onError={(e) => { e.target.style.display = 'none' }}
-                />
-
-                <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold shadow-lg">
+              <div className="relative h-48 bg-gradient-to-br from-magenta/10 to-vinotinto/10 flex items-center justify-center">
+                <div className="absolute top-4 left-4 z-20 bg-carbon/80 backdrop-blur-md border border-gold/40 text-gold px-3.5 py-1.5 rounded-full text-sm font-bold">
                   <Star size={14} fill="currentColor" />
-                  <span>+{snack.pointsSnack || 0} {t('common.points')}</span>
+                  <span>+{snack.pointsSnack || 0}</span>
                 </div>
-
-                {snack.quantitySnack <= 5 && snack.quantitySnack > 0 && (
-                  <div className="absolute top-4 right-4 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 px-2.5 py-1 rounded-full text-xs font-bold">
-                    {t('snacks.lastUnits')}
-                  </div>
-                )}
               </div>
 
               <div className="p-6 flex flex-col flex-1">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <h3 className="text-xl font-display tracking-wide text-white group-hover:text-magenta transition-colors">
-                    {snack.nameSnack}
-                  </h3>
-                  <span className="text-xl font-bold font-display text-gold whitespace-nowrap">
-                    ${Number(snack.priceSnack).toLocaleString('es-CO')}
-                  </span>
-                </div>
-                <p className="text-text-secondary text-sm mb-6 flex-1 hidden sm:block">
+                <h3 className="text-xl font-display text-white mb-2">{snack.nameSnack}</h3>
+                <span className="text-xl font-bold text-gold mb-4">
+                  ${Number(snack.priceSnack).toLocaleString('es-CO')}
+                </span>
+                <p className="text-text-secondary text-sm mb-6 flex-1">
                   {snack.descriptionSnack}
                 </p>
 
                 <Button
                   variant="secondary"
-                  className="w-full mt-auto"
+                  className="w-full"
                   disabled={snack.quantitySnack <= 0}
                   onClick={() => handleAddSnack(snack)}
                 >
-                  {snack.quantitySnack <= 0 ? (
-                    t('snacks.outOfStock')
-                  ) : (
-                    <><Plus size={18} /> {t('snacks.addToOrder')}</>
-                  )}
+                  {snack.quantitySnack <= 0 ? t('snacks.outOfStock') : t('snacks.addToOrder')}
                 </Button>
               </div>
             </div>
