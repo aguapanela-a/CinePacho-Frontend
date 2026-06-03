@@ -34,7 +34,8 @@ export default function Snacks() {
           const multiplexId = user?.multiplexId || user?.idMultiplex || import.meta.env.VITE_DEFAULT_MULTIPLEX_ID;
       console.log("Estoy pidiendo snacks para este Multiplex ID:", multiplexId);
           if (!multiplexId) throw new Error('Multiplex no definido');
-          data = await getAllSnacks(multiplexId);
+       //   data = await getAllSnacks(multiplexId);
+            data = await getAdminSnacks();
         }
 
         // Lógica de aplanamiento:
