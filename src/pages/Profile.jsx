@@ -311,50 +311,98 @@ export default function Profile() {
 
             {!loadingOrders && orderHistory.length > 0 && (
               <div className="space-y-4">
-                {orderHistory.map((order) => (
-                  <div
-                    key={order.id}
-                    className="bg-carbon border border-border/40 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-magenta/30 transition-colors"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-magenta/10 rounded-xl flex items-center justify-center shrink-0">
-                        <Ticket className="text-magenta" size={20} />
-                      </div>
-                      <div>
-                        <p className="text-white font-bold mb-1">{order.items}</p>
-                        <div className="flex items-center gap-3 text-xs text-text-secondary">
-                          <span className="flex items-center gap-1"><Clock size={12} /> {order.date}</span>
-                          <span>•</span>
-                          <span>{t('profile.orderLabel')} {order.id}</span>
+                {orderHistory.map((order, index) => {
+                  // ID compuesto porque el backend no devuelve un id de orden
+                  const orderId = `${order.movieTitle}_${order.screeningDate}`
+
+                  // Formatear "2026-06-03T18:00" → "3 jun. 2026, 6:00 p.m."
+                  const screeningFormatted = order.screeningDate
+                    ? new Date(order.screeningDate).toLocaleString('es-CO', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })
+                    : '—'
+
+                  // Colores dinámicos según el status
+                  const statusStyle = {
+                    COMPLETED: 'text-green-400 bg-green-500/10 border-green-500/20',
+                    PENDING:   'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+                    CANCELLED: 'text-red-400   bg-red-500/10   border-red-500/20',
+                  }[order.status] ?? 'text-text-secondary bg-carbon border-border/30'
+
+                  return (
+                    <div
+                      key={orderId || index}
+                      className="bg-carbon border border-border/40 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-magenta/30 transition-colors"
+                    >
+                      {/* ── Lado izquierdo ──────────────────────── */}
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-magenta/10 rounded-xl flex items-center justify-center shrink-0">
+                          <Ticket className="text-magenta" size={20} />
+                        </div>
+                        <div>
+                          <p className="text-white font-bold mb-1">{order.movieTitle}</p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
+                            <span className="flex items-center gap-1">
+                              <Clock size={12} /> {screeningFormatted}
+                            </span>
+                            {order.roomNumber && (
+                              <>
+                                <span>•</span>
+                                <span>Sala {order.roomNumber.trim()}</span>
+                              </>
+                            )}
+                          </div>
+                          <span className={`inline-block mt-2 text-xs font-bold px-2 py-0.5 rounded-lg border ${statusStyle}`}>
+                            {order.message || order.status}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 border-t border-border/50 md:border-0 pt-4 md:pt-0 mt-2 md:mt-0">
-                      <div className="text-right">
-                        <span className="text-white font-bold text-lg block">
-                          ${order.total.toLocaleString('es-CO')}
-                        </span>
-                        <span className="text-xs font-bold text-gold flex items-center justify-end gap-1">
-                          <Star size={10} /> +{order.points} {t('common.points')}
-                        </span>
+
+                      {/* ── Lado derecho ────────────────────────── */}
+                      <div className="flex items-center gap-3 border-t border-border/50 md:border-0 pt-4 md:pt-0 mt-2 md:mt-0">
+                        <div className="text-right">
+                          <span className="text-white font-bold text-lg block">
+                            ${order.totalPurchase?.toLocaleString('es-CO') ?? '0'}
+                          </span>
+                          {/* Desglose sólo si hay snacks */}
+                          {order.totalSnacks > 0 ? (
+                            <span className="text-xs text-text-secondary block">
+                              Entradas ${order.totalSeats?.toLocaleString('es-CO')}
+                              {' · '}
+                              Snacks ${order.totalSnacks?.toLocaleString('es-CO')}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-text-secondary block">
+                              Solo entradas
+                            </span>
+                          )}
+                        </div>
+
+                        {isReviewed(orderId) ? (
+                          <span className="text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl">
+                            ✓ {t('review.reviewed') || 'Evaluado'}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setReviewOrder({ ...order, id: orderId })}
+                            disabled={!buyerId}
+                            className={`text-xs font-bold ${
+                              buyerId
+                                ? 'text-gold bg-gold/10 border border-gold/30 hover:bg-gold/20'
+                                : 'text-text-secondary bg-carbon border border-border/30 cursor-not-allowed'
+                            } px-3 py-2 rounded-xl transition-colors`}
+                          >
+                            <Star size={12} className="inline mr-1" />
+                            {buyerId
+                              ? (t('review.evaluate') || 'Evaluar')
+                              : (t('review.unavailable') || 'No disponible')}
+                          </button>
+                        )}
                       </div>
-                      {isReviewed(order.id) ? (
-                        <span className="text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl">
-                          ✓ {t('review.reviewed') || 'Evaluado'}
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setReviewOrder(order)}
-                          disabled={!buyerId}
-                          className={`text-xs font-bold ${buyerId ? 'text-gold bg-gold/10 border border-gold/30 hover:bg-gold/20' : 'text-text-secondary bg-carbon border border-border/30 cursor-not-allowed'} px-3 py-2 rounded-xl transition-colors`}
-                        >
-                          <Star size={12} className="inline mr-1" />
-                          {buyerId ? (t('review.evaluate') || 'Evaluar') : (t('review.unavailable') || 'No disponible')}
-                        </button>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
 
                 <button className="w-full mt-2 py-4 rounded-xl border border-border/50 text-text-secondary font-bold hover:text-white hover:bg-carbon transition-colors">
                   {t('profile.seeAllPurchases')}
