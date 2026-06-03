@@ -49,10 +49,11 @@ export default function CashierDashboard() {
         if (Array.isArray(moviesResp)) {
           setMovies(moviesResp.map(item => ({
             id: item.movieInfo?.id,
-            title: item.movieInfo?.originalTitle,
-            // FIX 2: Prepend TMDB base URL so poster images actually load
-            posterUrl: item.movieInfo?.posterPath
-              ? `${TMDB_IMAGE_BASE}${item.movieInfo.posterPath}`
+  // "originalTitle" no existe — el campo es "title"
+            title: item.movieInfo?.title,
+  // "posterPath" no existe — el campo es "poster_path"
+            posterUrl: item.movieInfo?.poster_path
+              ? `${TMDB_IMAGE_BASE}${item.movieInfo.poster_path}`
               : 'https://via.placeholder.com/200x300?text=Sin+imagen',
             screenings: item.screenings || [],
           })))
