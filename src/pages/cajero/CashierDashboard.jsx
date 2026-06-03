@@ -373,8 +373,7 @@ export default function CashierDashboard() {
         return;
       }
 
-      const seats = resolvedSeatIds.map((seatId) => ({ seatId }));
-
+      const seats = resolvedSeatIds;
       cart.forEach((item) => {
         if (item.type === "snack") {
           if (snacksPayloadMap.has(item.id)) {
