@@ -533,7 +533,7 @@ export default function Home() {
       {selectedMovie && (
         <MovieModal
           movie={selectedMovie}
-          multiplexId={currentMultiplexId}  {/* ✅ Agregar esto */}
+          multiplexId={currentMultiplexId}  
           multiplexName={
             multiplexesList.find(p => p.multiplexId === displayMultiplex)?.nameMultiplex 
             || 'Cartelera General'
