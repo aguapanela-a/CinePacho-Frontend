@@ -10,15 +10,14 @@ const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
 const COLS = 10
 
 export default function SeatSelector({
-  onBack,
-  onConfirm,
-  roomId = null,
-  screeningId,
-  selectedFormat = '2D',
-  maxSeats = 6,
-  isLoading = false
+  onBack, onConfirm, roomId = null, screeningId,
+  selectedFormat = '2D', maxSeats = 6, isLoading = false,
+  initialSeats = [],
+  generalPrice = 0,
+  preferentialPrice = 0,
 }) {
-  const [selectedSeats, setSelectedSeats] = useState([])
+  const [selectedSeats, setSelectedSeats] = useState(initialSeats)
+
   const { t } = useLanguage()
   const toast = useToast()
 
@@ -106,9 +105,7 @@ export default function SeatSelector({
     }
   }
 
-  const formatPricing = ticketFormats?.find(f => f.fmt === selectedFormat) || ticketFormats?.[0] || { generalPrice: 0, preferentialPrice: 0 }
-  const generalPrice = formatPricing.generalPrice
-  const prefPrice = formatPricing.preferentialPrice
+  const prefPrice = preferentialPrice
 
   const total = selectedSeats.reduce((acc, id) => {
     const s = backendSeats.find(seat => seat.idSeat === id)

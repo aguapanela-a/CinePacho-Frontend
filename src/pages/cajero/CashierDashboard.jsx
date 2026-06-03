@@ -819,12 +819,16 @@ export default function CashierDashboard() {
           <div className="w-full max-w-5xl bg-surface border border-border/50 rounded-3xl overflow-hidden shadow-2xl">
             <SeatSelector
               onBack={() => setIsSeatSelectorOpen(false)}
+              onBack={() => setIsSeatSelectorOpen(false)}
               onConfirm={handleConfirmSeatSelection}
               roomId={ticketRoomId}
               screeningId={ticketScreeningId}
               selectedFormat={ticketFormat}
               maxSeats={ticketCount}
               isLoading={false}
+              initialSeats={selectedSeatIds}
+              generalPrice={ticketItems[0]?.price ?? 0}
+              preferentialPrice={ticketItems[0]?.price ?? 0}
             />
           </div>
         </div>
