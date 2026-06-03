@@ -393,7 +393,7 @@ export default function Home() {
                     className="group-hover:scale-110 transition-transform"
                   />
 
-                  {t("home.getTicketsBtn") || "RESERVAR FUNCIONES"}
+                  {t("¡Reservar Ahora!") || "RESERVAR FUNCIONES"}
                 </Button>
               </div>
             </div>
