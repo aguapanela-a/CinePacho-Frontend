@@ -70,7 +70,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
         const allMultiplexes = await getAllMultiplexes().catch(() => [])
         const results = await Promise.allSettled(
           allMultiplexes.map(plex =>
-            getMovieSelectorsById(plex.multiplexId, movie.id)
+            getMovieSelectorsById(plex.idMultiplex, movie.id)
           )
         )
         const allScreenings = results
