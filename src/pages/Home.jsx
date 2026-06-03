@@ -115,9 +115,9 @@ export default function Home() {
           </button>
           {multiplexesList.map(plex => (
             <button 
-              key={plex.idMultiplex} 
-              onClick={() => setDisplayMultiplex(plex.idMultiplex)} 
-              className={`px-4 py-2 rounded-xl text-xs uppercase border ${displayMultiplex === plex.idMultiplex ? 'bg-magenta border-magenta text-white' : 'bg-surface/40 border-border/40 text-text-secondary'}`}
+              key={plex.multiplexId} 
+              onClick={() => setDisplayMultiplex(plex.multiplexId)} 
+              className={`px-4 py-2 rounded-xl text-xs uppercase border ${displayMultiplex === plex.multiplexId ? 'bg-magenta border-magenta text-white' : 'bg-surface/40 border-border/40 text-text-secondary'}`}
             >
               {plex.nameMultiplex}
             </button>
@@ -158,7 +158,7 @@ export default function Home() {
       {selectedMovie && (
         <MovieModal 
           movie={selectedMovie}
-          multiplexName={multiplexesList.find(p => p.idMultiplex === displayMultiplex)?.nameMultiplex || 'Cartelera General'}
+          multiplexName={multiplexesList.find(p => p.multiplexId === displayMultiplex)?.nameMultiplex || 'Cartelera General'}
           onClose={() => setSelectedMovie(null)} 
         />
       )}
