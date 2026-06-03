@@ -1,12 +1,9 @@
-import { Star, Clock, Calendar, Clapperboard } from 'lucide-react'
+import { Star, Clock, Calendar } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
   
-  // Log para verificar qué llega exactamente
-  console.log("MovieSummary data:", movie);
-
   // 1. Si no hay objeto movie, evitamos que la aplicación falle
   if (!movie) return <div className="p-4 text-white">Cargando detalles...</div>;
 
@@ -46,37 +43,13 @@ export default function MovieSummary({ movie }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 mt-6">
-        <div>
-          <h3 className="text-xs font-display tracking-widest text-magenta mb-1">
-            {t('movie.synopsisLabel')}
-          </h3>
-          <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-            {info.overview || t('movie.noSynopsis')}
-          </p>
-        </div>
-
-        <div className="sm:w-52 bg-carbon/50 p-3.5 rounded-xl border border-white/5 space-y-2">
-          <div>
-            <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
-              <Clapperboard size={9} /> {t('movie.director')}
-            </p>
-            <p className="text-white text-sm font-medium">
-              {info.director || t('movie.notAvailable')}
-            </p>
-          </div>
-          
-          <div className="h-px bg-border/20" />
-          
-          <div>
-            <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">
-              {t('movie.cast')}
-            </p>
-            <p className="text-white/75 text-[11px] leading-relaxed">
-              {info.cast || t('movie.notAvailable')}
-            </p>
-          </div>
-        </div>
+      <div className="mt-6">
+        <h3 className="text-xs font-display tracking-widest text-magenta mb-1">
+          {t('movie.synopsisLabel')}
+        </h3>
+        <p className="text-text-primary/85 text-[13px] leading-relaxed font-body max-w-2xl">
+          {info.overview || t('movie.noSynopsis')}
+        </p>
       </div>
     </>
   )
