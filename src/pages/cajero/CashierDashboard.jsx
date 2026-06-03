@@ -15,8 +15,7 @@ import { scanTicket } from '../../services/employeeService'
 import { validateVoucher } from '../../services/pointsService'
 import { saveOrderSnapshot } from '../../utils/orderSnapshot'
 // FIX 1: SeatSelector was used but never imported
-import SeatSelector from '../SeatSelector'
-
+import SeatSelector from '../../components/SeatSelector'
 // FIX 2: TMDB image base URL was missing — posterPath is just a path like "/abc.jpg"
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
 
