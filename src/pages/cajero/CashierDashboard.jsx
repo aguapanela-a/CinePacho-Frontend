@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ShoppingCart, Popcorn, Ticket, UserCheck, X, LogOut, CheckCircle, Film, Clock, QrCode
 } from 'lucide-react'
@@ -7,7 +7,6 @@ import { useApp } from '../../context/useApp'
 import { useToast } from '../../context/ToastContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
 import { getUnitPrice } from '../../utils/formatCurrency'
 import { getMovieSelectorsByMultiplex } from '../../services/movieService'
 import { getAllSnacks } from '../../services/snackService'
@@ -15,15 +14,19 @@ import { createCheckoutSession } from '../../services/paymentService'
 import { scanTicket } from '../../services/employeeService'
 import { validateVoucher } from '../../services/pointsService'
 import { saveOrderSnapshot } from '../../utils/orderSnapshot'
+// FIX 1: SeatSelector was used but never imported
+import SeatSelector from '../SeatSelector'
+
+// FIX 2: TMDB image base URL was missing — posterPath is just a path like "/abc.jpg"
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
 
 export default function CashierDashboard() {
-  const { user, logoutUser, cart, addToCart, removeFromCart, setCart } = useApp() // Usar el carrito global
+  const { user, logoutUser, cart, addToCart, removeFromCart, setCart } = useApp()
   const toast = useToast()
   const { t } = useLanguage()
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
-    const CUSTOMER_SEARCH_ENABLED = false
   const [movies, setMovies] = useState([])
   const [snacks, setSnacks] = useState([])
 
@@ -47,8 +50,11 @@ export default function CashierDashboard() {
           setMovies(moviesResp.map(item => ({
             id: item.movieInfo?.id,
             title: item.movieInfo?.originalTitle,
-            posterUrl: item.movieInfo?.posterPath,
-            screenings: item.screenings || [], // Guardar screenings reales
+            // FIX 2: Prepend TMDB base URL so poster images actually load
+            posterUrl: item.movieInfo?.posterPath
+              ? `${TMDB_IMAGE_BASE}${item.movieInfo.posterPath}`
+              : 'https://via.placeholder.com/200x300?text=Sin+imagen',
+            screenings: item.screenings || [],
           })))
         } else {
           setMovies([])
@@ -61,11 +67,11 @@ export default function CashierDashboard() {
         const snacksResp = await getAllSnacks(multiplexId)
         if (Array.isArray(snacksResp) && snacksResp.length > 0) {
           setSnacks(snacksResp.map(s => ({
-            id: s.idSnack, // UUID real del backend
+            id: s.idSnack,
             name: s.nameSnack,
             price: Number(s.priceSnack) || 0,
             multiplexId,
-            imageUrl: s.imageUrl || 'https://via.placeholder.com/150' // Placeholder para imágenes si no vienen del backend
+            imageUrl: s.imageUrl || null
           })))
         } else {
           setSnacks([])
@@ -94,21 +100,34 @@ export default function CashierDashboard() {
   const [selectedSeatIdsByScreening, setSelectedSeatIdsByScreening] = useState({})
   const [isSeatSelectorOpen, setIsSeatSelectorOpen] = useState(false)
 
-  // Extraer las funciones reales si existen, sino fallback
+  // FIX 3: Only show ACTIVE screenings
   const movieScreenings = selectedMovie?.screenings?.filter(s => s.status === 'ACTIVE') || []
 
-  // Agrupar screenings por hora (HH:mm)
+  // Agrupar horarios únicos
   const availableShowtimes = movieScreenings.length > 0
     ? [...new Set(movieScreenings.map(s => s.screeningDate?.substring(11, 16)).filter(Boolean))].sort()
     : []
 
   const [selectedTime, setSelectedTime] = useState(null)
 
-  // Salas disponibles para la hora seleccionada
+  // FIX 4: Extract price and formats correctly from screening data
+  // The backend returns screenings with screeningId, roomId, roomNumber, screeningDate, status, format
+  // Price comes from the multiplex general/preferential price — we pass it through as generalPrice
   const availableRooms = movieScreenings.length > 0 && selectedTime
     ? movieScreenings
-      .filter(s => s.screeningDate?.substring(11, 16) === selectedTime)
-      .map(s => ({ id: s.roomId, name: s.roomNumber, screeningId: s.screeningId, price: s.price, formats: s.formats || [] }))
+        .filter(s => s.screeningDate?.substring(11, 16) === selectedTime)
+        .map(s => ({
+          id: s.roomId,
+          name: s.roomNumber ?? `Sala ${s.roomId?.toString().slice(-4)}`,
+          screeningId: s.screeningId,
+          // FIX 4: Build a formats array from the format string on the screening
+          // If the backend sends a single format string (e.g. "2D", "3D"), wrap it
+          formats: s.format
+            ? [{ fmt: s.format, generalPrice: s.price ?? 0 }]
+            : [],
+          // Keep raw price as fallback for the "General" button
+          price: s.price ?? 0,
+        }))
     : []
 
   const [selectedRoomObj, setSelectedRoomObj] = useState(null)
@@ -131,8 +150,7 @@ export default function CashierDashboard() {
     }
   }, [cart])
 
-  // Puntos fijos por compra
-  const POINTS_PER_PURCHASE = 10 // Esto podría venir del backend o ser dinámico
+  const POINTS_PER_PURCHASE = 10
 
   const handleLogout = () => {
     logoutUser()
@@ -179,10 +197,10 @@ export default function CashierDashboard() {
     const item = {
       id: snack.id,
       name: snack.name,
-      price: Number(snack.price) || 0, // Ensure price is numeric
+      price: Number(snack.price) || 0,
       type: 'snack',
       qty: 1,
-      image: snack.imageUrl || null, // Asumiendo que snack tiene imageUrl
+      image: snack.imageUrl || null,
       multiplexId: snack.multiplexId || user?.multiplexId || null,
     }
     addToCart(item)
@@ -212,7 +230,7 @@ export default function CashierDashboard() {
   // Calcular total sin descuento
   const subtotal = cart.reduce((acc, item) => acc + getUnitPrice(item) * item.qty, 0)
 
-  // Calcular descuento (la boleta más barata)
+  // FIX 5: Descuento — voucher ahora también aplica con manualEmail (no solo activeCustomer)
   let discount = 0
   if (appliedVoucher) {
     let cheapestTicketPrice = Infinity
@@ -235,20 +253,20 @@ export default function CashierDashboard() {
     try {
       const snacksPayloadMap = new Map()
 
-      // Agrupar tickets por screeningId — el cajero debe tener todos los tickets de la misma función
       const ticketItems = cart.filter(item => item.type === 'ticket')
       const screeningIds = [...new Set(ticketItems.map(item => item.screeningId).filter(Boolean))]
       const ticketQty = ticketItems.reduce((acc, item) => acc + (item.qty || 0), 0)
       const screeningId = screeningIds[0] || null
       const seatIdsFromCart = [...new Set(ticketItems.flatMap(item => Array.isArray(item.seatIds) ? item.seatIds : []))]
-      const selectedSeatIds = seatIdsFromCart.length > 0 ? seatIdsFromCart : (screeningId ? selectedSeatIdsByScreening[screeningId] || [] : [])
+      const resolvedSeatIds = seatIdsFromCart.length > 0
+        ? seatIdsFromCart
+        : (screeningId ? selectedSeatIdsByScreening[screeningId] || [] : [])
 
       if (ticketItems.length === 0) {
-        toast.error('Este punto de venta solo admite ventas que incluyan tickets. Agrega al menos una boleta y vuelve a intentar.')
+        toast.error('Este punto de venta solo admite ventas que incluyan tickets. Agrega al menos una boleta.')
         return
       }
-
-      if (ticketItems.length > 0 && screeningIds.length === 0) {
+      if (screeningIds.length === 0) {
         toast.error('Los tickets no tienen una función válida asociada.')
         return
       }
@@ -256,13 +274,12 @@ export default function CashierDashboard() {
         toast.error('Solo se puede procesar una función por venta. Separa los tickets por función.')
         return
       }
-
-      if (ticketQty > 0 && selectedSeatIds.length !== ticketQty) {
-        toast.error('Debes seleccionar asientos para todas las boletas antes de cobrar. Usa el botón "Seleccionar sillas" en la orden actual.')
+      if (ticketQty > 0 && resolvedSeatIds.length !== ticketQty) {
+        toast.error('Debes seleccionar asientos para todas las boletas antes de cobrar.')
         return
       }
 
-      const seats = selectedSeatIds.map(seatId => ({ seatId }))
+      const seats = resolvedSeatIds.map(seatId => ({ seatId }))
 
       cart.forEach(item => {
         if (item.type === 'snack') {
@@ -281,20 +298,8 @@ export default function CashierDashboard() {
       const buyerEmail = activeCustomer ? activeCustomer.email : manualEmail
 
       if (!cashOnlyMode && !buyerEmail) {
-        toast.error('Debe seleccionar un cliente o ingresar un correo electrónico antes de cobrar.')
+        toast.error('Debe ingresar un correo electrónico antes de cobrar.')
         return
-      }
-
-      if (ticketItems.length > 0 && !screeningId) {
-        toast.error('No se encontró la función para los tickets seleccionados.')
-        return
-      }
-
-      const payload = {
-        screeningId,
-        seats,
-        snacks: Array.from(snacksPayloadMap.values()),
-        buyerEmail
       }
 
       if (cashOnlyMode) {
@@ -304,14 +309,14 @@ export default function CashierDashboard() {
       }
 
       const result = await createCheckoutSession(
-        payload.screeningId,
-        payload.seats,
-        payload.snacks,
-        payload.buyerEmail
+        screeningId,
+        seats,
+        Array.from(snacksPayloadMap.values()),
+        buyerEmail
       )
 
       if (result.sessionUrl) {
-        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify(payload))
+        localStorage.setItem('cinepacho_checkout_payload', JSON.stringify({ screeningId, seats, snacks: Array.from(snacksPayloadMap.values()), buyerEmail }))
         if (result.paymentId) {
           localStorage.setItem('cinepacho_payment_id', result.paymentId)
         }
@@ -326,7 +331,7 @@ export default function CashierDashboard() {
   }
 
   const resetPOS = () => {
-    setCart([]) // Limpiar carrito global
+    setCart([])
     setActiveCustomer(null)
     setWantsPoints(false)
     setShowSuccess(false)
@@ -336,17 +341,15 @@ export default function CashierDashboard() {
     setSelectedSeatIdsByScreening({})
   }
 
-  const [scanResultUI, setScanResultUI] = useState(null) // { type: 'success' | 'error', message: '' }
+  const [scanResultUI, setScanResultUI] = useState(null)
 
   const handleScan = async (result) => {
     if (!result || isScanProcessing) return
-    const billingId = result[0]?.rawValue || result // Asegúrate de que extraiga el UUID del QR
+    const billingId = result[0]?.rawValue || result
 
     if (billingId) {
       setIsScanProcessing(true)
       try {
-        // LLAMADA EXACTA: PUT /api/checkout/employee/billing/{billingId}/scan
-        // Pasa el token del empleado en los headers dentro de tu servicio
         const response = await scanTicket(billingId)
         setScanResultUI({
           type: 'success',
@@ -370,7 +373,7 @@ export default function CashierDashboard() {
     try {
       const data = await validateVoucher(voucherCode)
       toast.success('Cupón validado. Descuento aplicado.')
-      setAppliedVoucher(data || true) // Save voucher data
+      setAppliedVoucher(data || true)
     } catch (err) {
       toast.error(err.message || 'Cupón inválido o expirado')
       setVoucherCode('')
@@ -378,6 +381,9 @@ export default function CashierDashboard() {
       setValidatingVoucher(false)
     }
   }
+
+  // FIX 5: Voucher visible con manualEmail también (no solo activeCustomer)
+  const canUseVoucher = (activeCustomer || manualEmail.includes('@')) && cart.some(i => i.type === 'ticket') && !cashOnlyMode
 
   return (
     <div className="min-h-screen bg-carbon text-white flex flex-col h-screen overflow-hidden">
@@ -451,7 +457,13 @@ export default function CashierDashboard() {
                     className="bg-carbon border border-border/50 rounded-2xl overflow-hidden hover:border-magenta/50 hover:shadow-[0_0_15px_rgba(200,22,122,0.3)] transition-all group cursor-pointer text-left flex flex-col"
                   >
                     <div className="aspect-[2/3] overflow-hidden w-full relative">
-                      <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img
+                        src={movie.posterUrl}
+                        alt={movie.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        // FIX 2: Fallback if TMDB image fails
+                        onError={e => { e.currentTarget.src = 'https://via.placeholder.com/200x300?text=Sin+imagen' }}
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-carbon via-transparent to-transparent" />
                     </div>
                     <div className="p-4 pt-2">
@@ -467,7 +479,7 @@ export default function CashierDashboard() {
                 {snacks.map(snack => (
                   <button
                     key={snack.id}
-                    onClick={() => handleAddSnackToCart(snack)} // Usar la nueva función
+                    onClick={() => handleAddSnackToCart(snack)}
                     className="bg-carbon border border-border/50 rounded-2xl p-5 text-left hover:border-gold/50 hover:bg-gold/5 transition-all group flex flex-col h-32 cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -508,50 +520,42 @@ export default function CashierDashboard() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <div className="rounded-2xl border border-border/50 bg-carbon p-4 text-sm text-text-secondary">
-                  <p className="font-semibold text-white mb-2">Búsqueda de cliente no disponible</p>
-                  <p>El backend actual no expone un endpoint de búsqueda de clientes. Ingresa el correo manualmente para procesar la venta.</p>
+                <div className="flex items-start gap-2">
+                  <input
+                    id="cash-only-mode"
+                    type="checkbox"
+                    checked={cashOnlyMode}
+                    onChange={() => {
+                      setCashOnlyMode(prev => {
+                        const next = !prev
+                        if (next) setActiveCustomer(null)
+                        return next
+                      })
+                    }}
+                    className="mt-1 h-4 w-4 rounded border border-border bg-carbon text-gold focus:ring-gold"
+                  />
+                  <label htmlFor="cash-only-mode" className="text-sm text-text-secondary">
+                    Cliente genérico (pago en efectivo, sin Stripe)
+                  </label>
                 </div>
-                <div className="border-t border-border/50 pt-3">
-                  <div className="flex items-start gap-2 mb-3">
+                {cashOnlyMode ? (
+                  <p className="text-xs text-text-secondary">
+                    Este modo registra la venta como efectivo. No se abrirá Stripe ni se acumularán puntos.
+                  </p>
+                ) : (
+                  <>
                     <input
-                      id="cash-only-mode"
-                      type="checkbox"
-                      checked={cashOnlyMode}
-                      onChange={() => {
-                        setCashOnlyMode(prev => {
-                          const next = !prev
-                          if (next) {
-                            setActiveCustomer(null)
-                          }
-                          return next
-                        })
-                      }}
-                      className="mt-1 h-4 w-4 rounded border border-border bg-carbon text-gold focus:ring-gold"
+                      type="email"
+                      placeholder="Correo del comprador"
+                      value={manualEmail}
+                      onChange={(e) => setManualEmail(e.target.value)}
+                      className="w-full bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-gold transition-colors placeholder-text-secondary"
                     />
-                    <label htmlFor="cash-only-mode" className="text-sm text-text-secondary">
-                      Cliente genérico (pago en efectivo, sin Stripe)
-                    </label>
-                  </div>
-                  {cashOnlyMode ? (
-                    <p className="text-xs text-text-secondary mt-2">
-                      Este modo registra la venta como efectivo en el frontend. No se abrirá Stripe y no se acumularán puntos.
+                    <p className="text-xs text-text-secondary">
+                      Si el cliente no está registrado en la app, ingresa su correo y la compra se procesará normalmente.
                     </p>
-                  ) : (
-                    <>
-                      <input
-                        type="email"
-                        placeholder="Correo del comprador"
-                        value={manualEmail}
-                        onChange={(e) => setManualEmail(e.target.value)}
-                        className="w-full bg-carbon border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-gold transition-colors placeholder-text-secondary"
-                      />
-                      <p className="text-xs text-text-secondary mt-2">
-                        Si el cliente no está registrado en la app, ingresa su correo y la compra se procesará normalmente sin acumular puntos. Recuérdale usar la app para su próxima visita y así podrá obtener puntos y mejores beneficios.
-                      </p>
-                    </>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -614,8 +618,8 @@ export default function CashierDashboard() {
 
           {/* Checkout Footer */}
           <div className="p-5 border-t border-border/50 bg-carbon/50 mt-auto">
-            {/* Voucher Section */}
-            {activeCustomer && cart.some(i => i.type === 'ticket') && (
+            {/* FIX 5: Voucher visible con email manual también */}
+            {canUseVoucher && (
               <div className="mb-4">
                 <div className="flex gap-2">
                   <input
@@ -636,7 +640,7 @@ export default function CashierDashboard() {
                     </button>
                   ) : (
                     <button
-                      onClick={() => { setAppliedVoucher(null); setVoucherCode(''); }}
+                      onClick={() => { setAppliedVoucher(null); setVoucherCode('') }}
                       className="px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-sm cursor-pointer"
                     >
                       <X size={16} />
@@ -664,39 +668,26 @@ export default function CashierDashboard() {
 
             {activeCustomer && cart.length > 0 && (
               <div className="mb-4 bg-gold/10 border border-gold/30 rounded-xl p-4">
-
                 <p className="text-xs font-bold text-gold uppercase tracking-widest mb-3">
                   ¿Desea acumular puntos?
                 </p>
-
                 <div className="flex gap-2">
                   <button
                     onClick={() => setWantsPoints(true)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${wantsPoints
-                      ? 'bg-gold text-carbon'
-                      : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
-                      }`}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${wantsPoints ? 'bg-gold text-carbon' : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'}`}
                   >
                     Sí
                   </button>
-
                   <button
                     onClick={() => setWantsPoints(false)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${!wantsPoints
-                      ? 'bg-red-500 text-white'
-                      : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'
-                      }`}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${!wantsPoints ? 'bg-red-500 text-white' : 'bg-carbon border border-border/50 text-text-secondary hover:text-white'}`}
                   >
                     No
                   </button>
                 </div>
-
                 {wantsPoints && (
                   <p className="text-xs text-gold font-bold mt-3 text-center">
-                    🌟 El cliente ganará{' '}
-                    <span className="text-white">
-                      {POINTS_PER_PURCHASE} puntos
-                    </span>
+                    🌟 El cliente ganará <span className="text-white">{POINTS_PER_PURCHASE} puntos</span>
                   </p>
                 )}
               </div>
@@ -728,7 +719,12 @@ export default function CashierDashboard() {
             </button>
 
             <div className="flex gap-6 mb-6">
-              <img src={selectedMovie.posterUrl} alt={selectedMovie.title} className="w-24 h-auto rounded-xl object-cover shadow-lg" />
+              <img
+                src={selectedMovie.posterUrl}
+                alt={selectedMovie.title}
+                className="w-24 h-auto rounded-xl object-cover shadow-lg"
+                onError={e => { e.currentTarget.src = 'https://via.placeholder.com/96x144?text=?' }}
+              />
               <div>
                 <h2 className="text-2xl font-display text-white uppercase tracking-widest mb-1">{selectedMovie.title}</h2>
                 <p className="text-magenta font-bold text-sm">Selecciona una función</p>
@@ -740,28 +736,29 @@ export default function CashierDashboard() {
                 <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
                   <Clock size={14} /> Horarios Disponibles
                 </h3>
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {availableShowtimes.map(time => (
-                    <button
-                      key={time}
-                      onClick={() => {
-                        setSelectedTime(time)
-                        setSelectedRoomObj(null)
-                      }}
-                      className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${selectedTime === time
-                        ? 'bg-magenta text-white'
-                        : 'bg-carbon border border-border/50 text-text-secondary hover:border-magenta/50 hover:text-white'
-                        }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
+                {availableShowtimes.length === 0 ? (
+                  <p className="text-text-secondary text-sm">No hay funciones activas para esta película.</p>
+                ) : (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {availableShowtimes.map(time => (
+                      <button
+                        key={time}
+                        onClick={() => { setSelectedTime(time); setSelectedRoomObj(null) }}
+                        className={`py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${selectedTime === time
+                          ? 'bg-magenta text-white'
+                          : 'bg-carbon border border-border/50 text-text-secondary hover:border-magenta/50 hover:text-white'
+                          }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {selectedTime && availableRooms.length > 0 && (
                 <div>
-                  <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <h3 className="text-text-secondary font-bold text-xs uppercase tracking-widest mb-3">
                     Sala
                   </h3>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-4">
@@ -783,23 +780,23 @@ export default function CashierDashboard() {
                     <div className="bg-carbon border border-border/50 rounded-xl p-4 text-center mt-4">
                       <p className="font-bold text-white mb-3 text-sm">Selecciona el Formato</p>
                       <div className="flex flex-wrap justify-center gap-3">
-                        {(selectedRoomObj.formats || []).length > 0 ? (
+                        {/* FIX 4: Use formats array built from screening data */}
+                        {selectedRoomObj.formats.length > 0 ? (
                           selectedRoomObj.formats.map(({ fmt, generalPrice }) => (
                             <button
                               key={fmt}
                               onClick={() => handleAddTicket(selectedTime, fmt, generalPrice)}
                               className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
                             >
-                              {fmt}: ${(generalPrice / 1000).toFixed(0)}k
+                              {fmt}{generalPrice > 0 ? `: $${(generalPrice / 1000).toFixed(0)}k` : ''}
                             </button>
                           ))
                         ) : (
-                          // Si el backend no devuelve formatos en el screening, ofrecer entrada general con el precio del screening
                           <button
                             onClick={() => handleAddTicket(selectedTime, 'General', selectedRoomObj.price || 0)}
                             className="bg-surface hover:bg-magenta/10 border border-border/50 hover:border-magenta/50 text-xs font-bold py-2 px-4 rounded-lg transition-colors cursor-pointer text-text-primary hover:text-white"
                           >
-                            General{selectedRoomObj.price ? `: $${(selectedRoomObj.price / 1000).toFixed(0)}k` : ''}
+                            General{selectedRoomObj.price > 0 ? `: $${(selectedRoomObj.price / 1000).toFixed(0)}k` : ''}
                           </button>
                         )}
                       </div>
@@ -812,6 +809,7 @@ export default function CashierDashboard() {
         </div>
       )}
 
+      {/* ── Modal de Selección de Asientos ── */}
       {isSeatSelectorOpen && ticketScreeningId && ticketRoomId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-5xl bg-surface border border-border/50 rounded-3xl overflow-hidden shadow-2xl">
@@ -886,10 +884,8 @@ export default function CashierDashboard() {
               />
             </div>
 
-            {/* Feedback visual gigante para el portero */}
             {scanResultUI && (
-              <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center animate-[scaleIn_0.3s_ease-out_forwards] ${scanResultUI.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
+              <div className={`absolute inset-0 rounded-3xl z-20 flex flex-col items-center justify-center p-6 text-center animate-[scaleIn_0.3s_ease-out_forwards] ${scanResultUI.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                 <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   {scanResultUI.type === 'success' ? <CheckCircle size={48} /> : <X size={48} />}
                 </div>
