@@ -4,18 +4,27 @@ import { useLanguage } from '../../context/LanguageContext'
 export default function MovieSummary({ movie }) {
   const { t } = useLanguage()
 
-  // 1. Verificación de seguridad: si no hay movie, no renderizamos
-  if (!movie) return null;
+  // 1. Si no hay objeto movie, evitamos que la aplicación falle
+  if (!movie) return <div className="p-4 text-white">Cargando detalles...</div>;
 
-  // 2. Definimos info apuntando a movieInfo
-  const info = movie.movieInfo || {};
+  // 2. Extraemos info de forma segura. 
+  // Si movie.movieInfo no existe, intentamos usar 'movie' directamente
+  const info = movie.movieInfo || movie;
+
+  // 3. Verificamos si realmente tenemos datos básicos para mostrar
+  const hasData = info.originalTitle || info.title;
+
+  if (!hasData) {
+    return <div className="p-4 text-white">Cargando información...</div>;
+  }
 
   return (
     <>
       <div>
         <h2 id="movie-modal-title" className="text-3xl sm:text-4xl font-display uppercase tracking-widest text-white leading-none mb-3 pr-8">
-          {info.originalTitle || 'Cargando...'}
+          {info.originalTitle || info.title}
         </h2>
+        
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1 text-gold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/30 text-xs font-bold">
             <Star size={11} fill="currentColor" />
@@ -25,12 +34,13 @@ export default function MovieSummary({ movie }) {
             <Clock size={11} />
             {info.duration || 'N/A'}
           </span>
+          {/* Mapeo de géneros seguro */}
           <span className="bg-magenta/10 px-2.5 py-1 rounded-full border border-magenta/30 text-xs font-bold text-magenta">
-            {info.genreIds?.map(g => g.name).join(', ') || 'N/A'}
+            {info.genres ? info.genres.map(g => g.name).join(', ') : (info.genre || 'N/A')}
           </span>
           <span className="inline-flex items-center gap-1 bg-surface-light px-2.5 py-1 rounded-full border border-border text-xs font-bold text-text-primary">
             <Calendar size={11} />
-            {info.releaseDate || 'N/A'}
+            {info.releaseDate || info.year || 'N/A'}
           </span>
         </div>
       </div>
@@ -41,7 +51,7 @@ export default function MovieSummary({ movie }) {
             {t('movie.synopsisLabel')}
           </h3>
           <p className="text-text-primary/85 text-[13px] leading-relaxed font-body">
-            {info.overview || t('movie.noSynopsis')}
+            {info.overview || 'Sin sinopsis disponible'}
           </p>
         </div>
 
@@ -50,9 +60,8 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase flex items-center gap-1">
               <Clapperboard size={9} /> {t('movie.director')}
             </p>
-            {/* Aquí accedemos explícitamente a info.director */}
             <p className="text-white text-sm font-medium">
-              {info.director ?? t('movie.notAvailable')}
+              {info.director || 'No disponible'}
             </p>
           </div>
           
@@ -62,9 +71,8 @@ export default function MovieSummary({ movie }) {
             <p className="text-[10px] font-bold text-magenta tracking-widest uppercase">
               {t('movie.cast')}
             </p>
-            {/* Aquí accedemos explícitamente a info.cast */}
             <p className="text-white/75 text-[11px] leading-relaxed">
-              {info.cast ?? t('movie.notAvailable')}
+              {info.cast || 'No disponible'}
             </p>
           </div>
         </div>
