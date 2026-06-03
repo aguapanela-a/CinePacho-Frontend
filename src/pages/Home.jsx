@@ -445,7 +445,7 @@ export default function Home() {
                     key={plex.multiplexId}
                     onClick={() => setDisplayMultiplex(plex.multiplexId)}
                     className={`px-4 py-2 rounded-xl text-xs font-display tracking-wider font-semibold uppercase border transition-all duration-300 ${
-                      displayMultiplex === plex.idMultiplex
+                      displayMultiplex === plex.multiplexId
                         ? "bg-magenta border-magenta text-white shadow-lg shadow-magenta/20"
                         : "bg-surface/40 border-border/40 text-text-secondary hover:border-magenta/40 hover:text-white"
                     }`}
