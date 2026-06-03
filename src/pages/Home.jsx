@@ -79,8 +79,10 @@ export default function Home() {
       setMultiplexesError(null);
 
       try {
-        const data = await getAllMultiplexes();
+        const data = getAllMultiplexes();
         console.log('multiplexesList[0]:', multiplexesList[0])
+        console.log('data raw:', data)        // ← ver estructura real
+        console.log('data[0]:', data?.[0])    // ← ver primer elemento
 
         if (Array.isArray(data)) {
           setMultiplexesList(data);
