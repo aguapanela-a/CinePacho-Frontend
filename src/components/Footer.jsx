@@ -20,7 +20,7 @@ export default function Footer() {
             <p className="text-sm text-text-secondary leading-relaxed">
               {t('footer.description')}
             </p>
-            <div className="w-full max-w-[322px] h-[126px] flex items-center justify-center overflow-hidden">
+            <div className="w-full max-w-[250px] h-[125px] flex items-center justify-center overflow-hidden">
               <img
                 src="/themoviebd.svg"
                 alt="The Movie DB API"
