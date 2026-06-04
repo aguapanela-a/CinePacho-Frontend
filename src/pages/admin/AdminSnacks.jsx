@@ -213,7 +213,7 @@ export default function AdminSnacks() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border/50">
-                  {['Nombre', 'Multiplex', 'Descripción', 'Precio', 'Stock', 'Puntos', 'Estado', 'Acción'].map(h => (
+                  {['Nombre', 'Descripción', 'Precio', 'Mutiplex', 'Stock', 'Puntos', 'Estado', 'Acción'].map(h => (
                     <th key={h} className="py-4 px-4 text-xs font-bold text-text-secondary uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
