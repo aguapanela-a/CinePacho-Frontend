@@ -8,12 +8,22 @@ import {
   ChevronRight,
   Loader2,
   AlertTriangle,
-  FileBarChart2,
+  Download,
+  FileSpreadsheet,
+  Filter,
   Building2,
   Film,
   Package,
 } from 'lucide-react'
 import { generateSalesReport, generateSnackSalesReport } from '../../services/reportService'
+import { getAllMultiplexes } from '../../services/multiplexService'
+import {
+  exportTicketsReportToPDF,
+  exportSnacksReportToPDF,
+  exportToCSV,
+  prepareTicketsCSVData,
+  prepareSnacksCSVData,
+} from '../../utils/exportUtils'
 
 const formatCOP = (value) => {
   if (!value || isNaN(value)) return '$0'
@@ -28,15 +38,32 @@ const formatDate = (dateStr) => {
 
 const todayISO = () => new Date().toISOString().split('T')[0]
 
+// Helpers resilientes para propiedades de multiplex
+const getMultiplexId = (m) => m?.id || m?.multiplexId || ''
+const getMultiplexName = (m) => m?.nameMultiplex || m?.name || m?.multiplexName || 'Sin nombre'
+
 export default function AdminReports() {
-  const [activeTab, setActiveTab] = useState('tickets') // 'tickets' | 'snacks'
+  const [activeTab, setActiveTab] = useState('tickets')
   const [endDate, setEndDate] = useState(todayISO())
+  const [selectedMultiplex, setSelectedMultiplex] = useState('all')
+  const [multiplexList, setMultiplexList] = useState([])
   const [ticketData, setTicketData] = useState(null)
   const [snackData, setSnackData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [exporting, setExporting] = useState(false)
   const [expandedMultiplex, setExpandedMultiplex] = useState(null)
   const [expandedDay, setExpandedDay] = useState(null)
+
+  useEffect(() => {
+    getAllMultiplexes()
+      .then((data) => {
+        if (Array.isArray(data)) setMultiplexList(data)
+        else if (data?.content) setMultiplexList(data.content)
+        else if (data?.data) setMultiplexList(data.data)
+      })
+      .catch(() => setMultiplexList([]))
+  }, [])
 
   const loadReports = async () => {
     setLoading(true)
@@ -59,6 +86,22 @@ export default function AdminReports() {
     loadReports()
   }, [endDate])
 
+  const filteredTicketData = useMemo(() => {
+    if (!ticketData || selectedMultiplex === 'all') return ticketData
+    const filtered = ticketData.multiplexes?.filter(
+      (m) => m.multiplexId === selectedMultiplex
+    )
+    return { ...ticketData, multiplexes: filtered || [] }
+  }, [ticketData, selectedMultiplex])
+
+  const filteredSnackData = useMemo(() => {
+    if (!snackData || selectedMultiplex === 'all') return snackData
+    const filtered = snackData.multiplexes?.filter(
+      (m) => m.multiplexId === selectedMultiplex
+    )
+    return { ...snackData, multiplexes: filtered || [] }
+  }, [snackData, selectedMultiplex])
+
   const toggleMultiplex = (id) => {
     setExpandedMultiplex((prev) => (prev === id ? null : id))
     setExpandedDay(null)
@@ -69,11 +112,11 @@ export default function AdminReports() {
   }
 
   const ticketSummary = useMemo(() => {
-    if (!ticketData) return null
+    if (!filteredTicketData) return null
     let totalRevenue = 0
     let totalTickets = 0
     let totalScreenings = 0
-    const multiplexes = ticketData.multiplexes?.map((mp) => {
+    const multiplexes = filteredTicketData.multiplexes?.map((mp) => {
       let mpRevenue = 0
       let mpTickets = 0
       let mpScreenings = 0
@@ -90,14 +133,14 @@ export default function AdminReports() {
       return { ...mp, mpRevenue, mpTickets, mpScreenings }
     }) || []
     return { totalRevenue, totalTickets, totalScreenings, multiplexes }
-  }, [ticketData])
+  }, [filteredTicketData])
 
   const snackSummary = useMemo(() => {
-    if (!snackData) return null
+    if (!filteredSnackData) return null
     let totalRevenue = 0
     let totalQuantity = 0
     let totalItems = 0
-    const multiplexes = snackData.multiplexes?.map((mp) => {
+    const multiplexes = filteredSnackData.multiplexes?.map((mp) => {
       let mpRevenue = 0
       let mpQuantity = 0
       let mpItems = 0
@@ -114,29 +157,128 @@ export default function AdminReports() {
       return { ...mp, mpRevenue, mpQuantity, mpItems }
     }) || []
     return { totalRevenue, totalQuantity, totalItems, multiplexes }
-  }, [snackData])
+  }, [filteredSnackData])
+
+  const handleExportPDF = () => {
+    if (activeTab === 'tickets' && !filteredTicketData) return
+    if (activeTab === 'snacks' && !filteredSnackData) return
+    setExporting(true)
+    try {
+      if (activeTab === 'tickets') {
+        exportTicketsReportToPDF({
+          ticketData: filteredTicketData,
+          endDate,
+          selectedMultiplex: selectedMultiplex === 'all' ? 'Todas las sedes' : selectedMultiplex,
+        })
+      } else {
+        exportSnacksReportToPDF({
+          snackData: filteredSnackData,
+          endDate,
+          selectedMultiplex: selectedMultiplex === 'all' ? 'Todas las sedes' : selectedMultiplex,
+        })
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleExportCSV = () => {
+    if (activeTab === 'tickets' && !filteredTicketData) return
+    if (activeTab === 'snacks' && !filteredSnackData) return
+    setExporting(true)
+    try {
+      if (activeTab === 'tickets') {
+        const rows = prepareTicketsCSVData(filteredTicketData)
+        exportToCSV(rows, `reporte-tickets-${endDate}`)
+      } else {
+        const rows = prepareSnacksCSVData(filteredSnackData)
+        exportToCSV(rows, `reporte-snacks-${endDate}`)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const selectedMultiplexName =
+    selectedMultiplex === 'all'
+      ? 'Todas las sedes'
+      : getMultiplexName(multiplexList.find((m) => getMultiplexId(m) === selectedMultiplex))
 
   return (
     <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display tracking-wider text-white">
             Reportes Detallados
           </h1>
           <p className="text-xs text-text-secondary mt-1">
-            Análisis específico por sede, día y función.
+            {ticketData?.startDate && ticketData?.endDate
+              ? `${ticketData.startDate} → ${ticketData.endDate} • ${selectedMultiplexName}`
+              : 'Análisis específico por sede, día y función.'}
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-surface/50 border border-border/50 rounded-xl px-3 py-2">
-          <Calendar size={16} className="text-magenta" />
-          <input
-            type="date"
-            value={endDate}
-            max={todayISO()}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="bg-transparent text-white text-sm outline-none font-mono"
-          />
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Fecha */}
+          <div className="flex items-center gap-2 bg-surface/50 border border-border/50 rounded-xl px-3 py-2">
+            <Calendar size={16} className="text-magenta" />
+            <input
+              type="date"
+              value={endDate}
+              max={todayISO()}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent text-white text-sm outline-none font-mono"
+            />
+          </div>
+
+          {/* Multiplex */}
+          <div className="relative">
+            <div className="flex items-center gap-2 bg-surface/50 border border-border/50 rounded-xl px-3 py-2 cursor-pointer hover:border-magenta/40 transition-colors">
+              <Filter size={16} className="text-cyan-400" />
+              <select
+                value={selectedMultiplex}
+                onChange={(e) => {
+                  setSelectedMultiplex(e.target.value)
+                  setExpandedMultiplex(null)
+                  setExpandedDay(null)
+                }}
+                className="bg-transparent text-white text-sm outline-none cursor-pointer appearance-none pr-6"
+              >
+                <option value="all" className="bg-carbon text-white">Todas las sedes</option>
+                {multiplexList.map((m) => (
+                  <option key={getMultiplexId(m)} value={getMultiplexId(m)} className="bg-carbon text-white">
+                    {getMultiplexName(m)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="text-text-secondary absolute right-3 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Exportar PDF */}
+          <button
+            onClick={handleExportPDF}
+            disabled={exporting || (!ticketSummary && !snackSummary)}
+            className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold tracking-wider uppercase hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={14} />
+            PDF
+          </button>
+
+          {/* Exportar CSV */}
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting || (!ticketSummary && !snackSummary)}
+            className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold tracking-wider uppercase hover:bg-green-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileSpreadsheet size={14} />
+            CSV
+          </button>
         </div>
       </div>
 
@@ -247,7 +389,6 @@ export default function AdminReports() {
                   key={mp.multiplexId}
                   className="border border-border/30 rounded-xl overflow-hidden"
                 >
-                  {/* Multiplex Header */}
                   <button
                     onClick={() => toggleMultiplex(mp.multiplexId)}
                     className="w-full flex items-center justify-between p-4 bg-carbon/40 hover:bg-carbon/60 transition-colors"
@@ -270,7 +411,6 @@ export default function AdminReports() {
                     </div>
                   </button>
 
-                  {/* Days Detail */}
                   {expandedMultiplex === mp.multiplexId && (
                     <div className="p-4 space-y-2 bg-surface/20">
                       {mp.days?.length > 0 ? (

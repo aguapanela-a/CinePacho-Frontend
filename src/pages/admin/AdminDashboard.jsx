@@ -18,8 +18,8 @@ import { generateSalesReport, generateSnackSalesReport } from '../../services/re
 import { getAllMultiplexes } from '../../services/multiplexService'
 import {
   exportDashboardToPDF,
-  exportToExcel,
-  prepareDashboardExcelData,
+  exportToCSV,
+  prepareDashboardCSVData,
 } from '../../utils/exportUtils'
 
 const formatCOP = (value) => {
@@ -28,6 +28,10 @@ const formatCOP = (value) => {
 }
 
 const todayISO = () => new Date().toISOString().split('T')[0]
+
+// Helpers resilientes para propiedades de multiplex
+const getMultiplexId = (m) => m?.id || m?.multiplexId || ''
+const getMultiplexName = (m) => m?.nameMultiplex || m?.name || m?.multiplexName || 'Sin nombre'
 
 export default function AdminDashboard() {
   const [endDate, setEndDate] = useState(todayISO())
@@ -39,12 +43,12 @@ export default function AdminDashboard() {
   const [error, setError] = useState(null)
   const [exporting, setExporting] = useState(false)
 
-  // Cargar lista de multiplexes al montar
   useEffect(() => {
     getAllMultiplexes()
       .then((data) => {
         if (Array.isArray(data)) setMultiplexList(data)
         else if (data?.content) setMultiplexList(data.content)
+        else if (data?.data) setMultiplexList(data.data)
       })
       .catch(() => setMultiplexList([]))
   }, [])
@@ -71,11 +75,10 @@ export default function AdminDashboard() {
     loadReports()
   }, [endDate])
 
-  // Filtrar datos por multiplex seleccionado
   const filteredTicketData = useMemo(() => {
     if (!ticketData || selectedMultiplex === 'all') return ticketData
     const filtered = ticketData.multiplexes?.filter(
-      (m) => m.multiplexId === selectedMultiplex || m.multiplexName === selectedMultiplex
+      (m) => m.multiplexId === selectedMultiplex
     )
     return { ...ticketData, multiplexes: filtered || [] }
   }, [ticketData, selectedMultiplex])
@@ -83,7 +86,7 @@ export default function AdminDashboard() {
   const filteredSnackData = useMemo(() => {
     if (!snackData || selectedMultiplex === 'all') return snackData
     const filtered = snackData.multiplexes?.filter(
-      (m) => m.multiplexId === selectedMultiplex || m.multiplexName === selectedMultiplex
+      (m) => m.multiplexId === selectedMultiplex
     )
     return { ...snackData, multiplexes: filtered || [] }
   }, [snackData, selectedMultiplex])
@@ -181,12 +184,12 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleExportExcel = () => {
-    if (!kpis || !ticketData) return
+  const handleExportCSV = () => {
+    if (!kpis || !ticketData || !snackData) return
     setExporting(true)
     try {
-      const rows = prepareDashboardExcelData(kpis, filteredTicketData)
-      exportToExcel(rows, 'Dashboard', `dashboard-${endDate}`)
+      const rows = prepareDashboardCSVData(kpis, filteredTicketData, filteredSnackData)
+      exportToCSV(rows, `dashboard-${endDate}`)
     } catch (e) {
       console.error(e)
     } finally {
@@ -197,7 +200,7 @@ export default function AdminDashboard() {
   const selectedMultiplexName =
     selectedMultiplex === 'all'
       ? 'Todas las sedes'
-      : multiplexList.find((m) => m.id === selectedMultiplex || m.name === selectedMultiplex)?.name || selectedMultiplex
+      : getMultiplexName(multiplexList.find((m) => getMultiplexId(m) === selectedMultiplex))
 
   return (
     <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
@@ -238,8 +241,8 @@ export default function AdminDashboard() {
               >
                 <option value="all" className="bg-carbon text-white">Todas las sedes</option>
                 {multiplexList.map((m) => (
-                  <option key={m.id || m.multiplexId} value={m.id || m.multiplexId} className="bg-carbon text-white">
-                    {m.name || m.multiplexName}
+                  <option key={getMultiplexId(m)} value={getMultiplexId(m)} className="bg-carbon text-white">
+                    {getMultiplexName(m)}
                   </option>
                 ))}
               </select>
@@ -257,14 +260,14 @@ export default function AdminDashboard() {
             PDF
           </button>
 
-          {/* Exportar Excel */}
+          {/* Exportar CSV */}
           <button
-            onClick={handleExportExcel}
+            onClick={handleExportCSV}
             disabled={exporting || !kpis}
             className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold tracking-wider uppercase hover:bg-green-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileSpreadsheet size={14} />
-            Excel
+            CSV
           </button>
         </div>
       </div>
