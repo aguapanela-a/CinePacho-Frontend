@@ -1,3 +1,4 @@
+import AdminLayout from '../../components/admin/AdminLayout'
 import { useState, useEffect, useMemo } from 'react'
 import {
   TrendingUp,
