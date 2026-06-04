@@ -145,9 +145,9 @@ export default function AdminDashboard() {
                 </span>
 
                 <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${plex.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-                  <span className={`text-sm font-bold ${plex.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                    {plex.status === 'active' ? 'Activo' : 'Inactivo'}
+                  <div className={`w-2.5 h-2.5 rounded-full ${plex.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-green-400'}`} />
+                  <span className={`text-sm font-bold ${plex.status === 'active' ? 'text-green-400' : 'text-green-400'}`}>
+                    {'Activo'}
                   </span>
                 </div>
               </Link>
