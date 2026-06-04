@@ -469,6 +469,15 @@ export default function CashierDashboard() {
   const handleScan = async (result) => {
     if (!result || isScanProcessing) return;
     const billingId = result[0]?.rawValue || result;
+    if (typeof billingId === 'string' && billingId.includes('/')) {
+        const parts = billingId.split('/');
+        // Busca el segmento que es un UUID (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const uuidPart = parts.find(part => uuidPattern.test(part));
+        if (uuidPart) {
+            billingId = uuidPart;
+        }
+    }
 
     if (billingId) {
       setIsScanProcessing(true);
