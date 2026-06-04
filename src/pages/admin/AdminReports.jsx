@@ -73,7 +73,11 @@ export default function AdminReports() {
       const [tickets, snacks] = await Promise.all([
         generateSalesReport(endDate),
         generateSnackSalesReport(endDate),
+        
       ])
+
+    console.log('TICKETS:', JSON.stringify(tickets, null, 2))
+    console.log('SNACKS:', JSON.stringify(snacks, null, 2))
       setTicketData(tickets)
       setSnackData(snacks)
     } catch (err) {
