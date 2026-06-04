@@ -4,6 +4,7 @@ import AdminLayout from '../../components/admin/AdminLayout'
 import { getAdminSnacks, createSnack, updateSnack, deleteSnack } from '../../services/snackService'
 import { getAllMultiplexes } from '../../services/multiplexService'
 import { useApp } from '../../context/useApp'
+import { setPointsMode } from '../../services/pointsService'
 
 const EMPTY_FORM = {
   nameSnack: '',
@@ -24,6 +25,8 @@ export default function AdminSnacks(
   const [search, setSearch]       = useState('')
   const [multiplexes, setMultiplexes] = useState([])
   const [loadingMultiplexes, setLoadingMultiplexes] = useState(false)
+  const [byUnitMode, setByUnitModeState] = useState(true)
+  const [changingMode, setChangingMode] = useState(false)
 
   // ── Modal ──────────────────────────────────────────────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -175,6 +178,23 @@ const openDeleteModal = (snack) => {
     }
   }
 
+
+  // ── Cambiar modo de puntos ────────────────────────────
+
+    const handleTogglePointsMode = async () => {
+    try {
+      setChangingMode(true)
+
+      await setPointsMode(!byUnitMode)
+
+      setByUnitModeState(!byUnitMode)
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setChangingMode(false)
+    }
+  }
+
   // Agrega esto debajo de handleSave
 
   const handleDeleteSnack = async (snack) => {
@@ -206,20 +226,40 @@ const openDeleteModal = (snack) => {
   return (
     <AdminLayout>
       {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 animate-[fadeUp_0.5s_ease-out_forwards]">
-        <div>
-          <h1 className="text-4xl font-display uppercase tracking-widest text-white">
-            <span className="gradient-brand">Snacks</span>
-          </h1>
-          <p className="text-text-secondary text-sm mt-1">Gestión del catálogo de snacks y combos</p>
-        </div>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 animate-[fadeUp_0.5s_ease-out_forwards]">
+      <div>
+        <h1 className="text-4xl font-display uppercase tracking-widest text-white">
+          <span className="gradient-brand">Snacks</span>
+        </h1>
+        <p className="text-text-secondary text-sm mt-1">
+          Gestión del catálogo de snacks y combos
+        </p>
+      </div>
+
+      <div className="flex gap-3">
+
+        <button
+          onClick={handleTogglePointsMode}
+          disabled={changingMode}
+          className="px-5 py-3 rounded-2xl border border-border/50 text-white hover:bg-carbon transition-all"
+        >
+          {changingMode
+            ? 'Cambiando...'
+            : byUnitMode
+            ? 'Modo por unidad'
+            : 'Modo por precio'}
+        </button>
+
         <button
           onClick={openCreate}
           className="flex items-center gap-2 bg-gradient-to-r from-magenta to-vinotinto text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 hover:opacity-90 transition-all cursor-pointer"
         >
           <Plus size={18} /> Nuevo Snack
         </button>
+
       </div>
+    </div>
+    
 
       {/* Error */}
       {error && (
