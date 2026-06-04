@@ -23,9 +23,8 @@ import { createCheckoutSession } from "../../services/paymentService";
 import { scanTicket } from "../../services/employeeService";
 import { validateVoucher } from "../../services/pointsService";
 import { saveOrderSnapshot } from "../../utils/orderSnapshot";
-// FIX 1: SeatSelector was used but never imported
 import SeatSelector from "../../components/SeatSelector";
-// FIX 2: TMDB image base URL was missing — posterPath is just a path like "/abc.jpg"
+
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
 export default function CashierDashboard() {
@@ -35,19 +34,16 @@ export default function CashierDashboard() {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("tickets"); // 'tickets' | 'snacks'
+  const [activeTab, setActiveTab] = useState("tickets");
   const [movies, setMovies] = useState([]);
   const [snacks, setSnacks] = useState([]);
 
-  // QR Scanner
   const [isScanning, setIsScanning] = useState(false);
   const [isScanProcessing, setIsScanProcessing] = useState(false);
 
-  // Cargar datos
   useEffect(() => {
     const loadData = async () => {
       const multiplexId = user?.multiplexId;
-      console.log("loadData ejecutado, multiplexId:", multiplexId);
       if (!multiplexId) {
         setMovies([]);
         setSnacks([]);
@@ -56,7 +52,6 @@ export default function CashierDashboard() {
 
       try {
         const moviesResp = await getMovieSelectorsByMultiplex(multiplexId);
-        console.log("moviesResp:", moviesResp);
         if (Array.isArray(moviesResp)) {
           const mapped = moviesResp.map((item) => ({
             id: item.movieInfo?.id,
@@ -66,9 +61,6 @@ export default function CashierDashboard() {
               : "https://via.placeholder.com/200x300?text=Sin+imagen",
             screenings: item.screenings || [],
           }));
-          console.log("mappeados:", mapped);
-          console.log("moviesResp:", moviesResp);
-          console.log("Es array:", Array.isArray(moviesResp));
           setMovies(mapped);
         } else {
           setMovies([]);
@@ -99,32 +91,27 @@ export default function CashierDashboard() {
     loadData();
   }, [user?.multiplexId]);
 
-  // Customer
   const [activeCustomer, setActiveCustomer] = useState(null);
   const [manualEmail, setManualEmail] = useState("");
   const [cashOnlyMode, setCashOnlyMode] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [wantsPoints, setWantsPoints] = useState(false);
 
-  // Voucher / Cupón
   const [voucherCode, setVoucherCode] = useState("");
   const [validatingVoucher, setValidatingVoucher] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState(null);
 
-  // Ticket Selection Modal
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [selectedSeatIdsByScreening, setSelectedSeatIdsByScreening] = useState(
     {},
   );
   const [isSeatSelectorOpen, setIsSeatSelectorOpen] = useState(false);
 
-  // FIX 3: Only show ACTIVE screenings
   const movieScreenings =
     selectedMovie?.screenings?.filter(
       (s) => s.status?.toUpperCase() === "ACTIVE",
     ) || [];
 
-  // Agrupar horarios únicos
   const availableShowtimes =
     movieScreenings.length > 0
       ? [
@@ -138,9 +125,6 @@ export default function CashierDashboard() {
 
   const [selectedTime, setSelectedTime] = useState(null);
 
-  // FIX 4: Extract price and formats correctly from screening data
-  // The backend returns screenings with screeningId, roomId, roomNumber, screeningDate, status, format
-  // Price comes from the multiplex general/preferential price — we pass it through as generalPrice
   const availableRooms =
     movieScreenings.length > 0 && selectedTime
       ? movieScreenings
@@ -149,12 +133,9 @@ export default function CashierDashboard() {
             id: s.roomId,
             name: s.roomNumber ?? `Sala ${s.roomId?.toString().slice(-4)}`,
             screeningId: s.screeningId,
-            // FIX 4: Build a formats array from the format string on the screening
-            // If the backend sends a single format string (e.g. "2D", "3D"), wrap it
             formats: s.format
               ? [{ fmt: s.format, generalPrice: s.price ?? 0 }]
               : [],
-            // Keep raw price as fallback for the "General" button
             price: s.price ?? 0,
           }))
       : [];
@@ -257,24 +238,14 @@ export default function CashierDashboard() {
     setIsSeatSelectorOpen(true);
   };
 
-    const handleConfirmSeatSelection = (seats, seatsTotal) => {
+  const handleConfirmSeatSelection = (seats, seatsTotal) => {
     if (!ticketScreeningId) return;
-    
+
     setSelectedSeatIdsByScreening((prev) => ({
       ...prev,
       [ticketScreeningId]: seats,
     }));
-    const updatedCart = cart.map((item) => {
-    if (item.type === "ticket" && item.screeningId === ticketScreeningId) {
-      return {
-        ...item,
-        seatIds: seats, // ← ESTO FALTA
-      };
-    }
-    return item;
-  });
 
-    setCart(updatedCart);
     const totalTicketsQty = cart
       .filter(
         (item) =>
@@ -282,25 +253,25 @@ export default function CashierDashboard() {
       )
       .reduce((acc, item) => acc + item.qty, 0);
 
-    if (totalTicketsQty > 0 && seatsTotal > 0) {
-      const updatedPricePerTicket = seatsTotal / totalTicketsQty;
-      const updatedCart = cart.map((item) => {
-        if (item.type === "ticket" && item.screeningId === ticketScreeningId) {
-          return {
-            ...item,
-            unitPrice: updatedPricePerTicket,
-            price: updatedPricePerTicket.toLocaleString("es-CO", {
-              style: "currency",
-              currency: "COP",
-              maximumFractionDigits: 0,
-            }),
-          };
+    const updatedCart = cart.map((item) => {
+      if (item.type === "ticket" && item.screeningId === ticketScreeningId) {
+        const updated = { ...item, seatIds: seats };
+
+        if (totalTicketsQty > 0 && seatsTotal > 0) {
+          const updatedPricePerTicket = seatsTotal / totalTicketsQty;
+          updated.unitPrice = updatedPricePerTicket;
+          updated.price = updatedPricePerTicket.toLocaleString("es-CO", {
+            style: "currency",
+            currency: "COP",
+            maximumFractionDigits: 0,
+          });
         }
-        return item;
-      });
-      setCart(updatedCart);
-    }
-    
+        return updated;
+      }
+      return item;
+    });
+
+    setCart(updatedCart);
     setIsSeatSelectorOpen(false);
   };
 
@@ -308,13 +279,11 @@ export default function CashierDashboard() {
     removeFromCart(itemToRemove.id, itemToRemove.type, itemToRemove.showtime);
   };
 
-  // Calcular total sin descuento
   const subtotal = cart.reduce(
     (acc, item) => acc + getUnitPrice(item) * item.qty,
     0,
   );
 
-  // FIX 5: Descuento — voucher ahora también aplica con manualEmail (no solo activeCustomer)
   let discount = 0;
   if (appliedVoucher) {
     let cheapestTicketPrice = Infinity;
@@ -468,15 +437,16 @@ export default function CashierDashboard() {
 
   const handleScan = async (result) => {
     if (!result || isScanProcessing) return;
-    const billingId = result[0]?.rawValue || result;
-    if (typeof billingId === 'string' && billingId.includes('/')) {
-        const parts = billingId.split('/');
-        // Busca el segmento que es un UUID (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const uuidPart = parts.find(part => uuidPattern.test(part));
-        if (uuidPart) {
-            billingId = uuidPart;
-        }
+    let billingId = result[0]?.rawValue || result;
+
+    if (typeof billingId === "string" && billingId.includes("/")) {
+      const parts = billingId.split("/");
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidPart = parts.find((part) => uuidPattern.test(part));
+      if (uuidPart) {
+        billingId = uuidPart;
+      }
     }
 
     if (billingId) {
@@ -515,7 +485,6 @@ export default function CashierDashboard() {
     }
   };
 
-  // FIX 5: Voucher visible con manualEmail también (no solo activeCustomer)
   const canUseVoucher =
     (activeCustomer || manualEmail.includes("@")) &&
     cart.some((i) => i.type === "ticket") &&
@@ -523,7 +492,6 @@ export default function CashierDashboard() {
 
   return (
     <div className="min-h-screen bg-carbon text-white flex flex-col h-screen overflow-hidden">
-      {/* ── Navbar del Cajero ── */}
       <header className="h-16 bg-surface border-b border-border/50 flex items-center justify-between px-6 shrink-0 z-10 relative">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-gold to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-gold/20">
@@ -565,11 +533,8 @@ export default function CashierDashboard() {
         </div>
       </header>
 
-      {/* ── Main Layout ── */}
       <div className="flex-1 flex overflow-hidden relative z-10">
-        {/* Catálogo (Izquierda) */}
         <div className="flex-1 overflow-hidden flex flex-col bg-carbon/50">
-          {/* Tabs */}
           <div className="flex p-6 pb-0 gap-4">
             <button
               onClick={() => setActiveTab("tickets")}
@@ -607,7 +572,6 @@ export default function CashierDashboard() {
                         src={movie.posterUrl}
                         alt={movie.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        // FIX 2: Fallback if TMDB image fails
                         onError={(e) => {
                           e.currentTarget.src =
                             "https://via.placeholder.com/200x300?text=Sin+imagen";
@@ -649,9 +613,7 @@ export default function CashierDashboard() {
           </div>
         </div>
 
-        {/* Panel lateral derecho (Cliente y Carrito) */}
         <div className="w-96 bg-surface border-l border-border/50 flex flex-col shrink-0">
-          {/* Módulo de Cliente */}
           <div className="p-5 border-b border-border/50">
             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-3">
               Cliente (Fidelización)
@@ -729,7 +691,6 @@ export default function CashierDashboard() {
             )}
           </div>
 
-          {/* Carrito de Compras POS */}
           <div className="flex-1 overflow-y-auto p-5">
             <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-4">
               Orden Actual
@@ -809,9 +770,7 @@ export default function CashierDashboard() {
             )}
           </div>
 
-          {/* Checkout Footer */}
           <div className="p-5 border-t border-border/50 bg-carbon/50 mt-auto">
-            {/* FIX 5: Voucher visible con email manual también */}
             {canUseVoucher && (
               <div className="mb-4">
                 <div className="flex gap-2">
@@ -915,7 +874,6 @@ export default function CashierDashboard() {
         </div>
       </div>
 
-      {/* ── Modal de Selección de Función ── */}
       {selectedMovie && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-xl bg-surface border border-border/50 rounded-3xl p-6 relative animate-[scaleIn_0.2s_ease-out_forwards]">
@@ -1004,7 +962,6 @@ export default function CashierDashboard() {
                         Selecciona el Formato
                       </p>
                       <div className="flex flex-wrap justify-center gap-3">
-                        {/* FIX 4: Use formats array built from screening data */}
                         {selectedRoomObj.formats.length > 0 ? (
                           selectedRoomObj.formats.map(
                             ({ fmt, generalPrice }) => (
@@ -1053,12 +1010,10 @@ export default function CashierDashboard() {
         </div>
       )}
 
-      {/* ── Modal de Selección de Asientos ── */}
       {isSeatSelectorOpen && ticketScreeningId && ticketRoomId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-5xl bg-surface border border-border/50 rounded-3xl overflow-hidden shadow-2xl">
             <SeatSelector
-              onBack={() => setIsSeatSelectorOpen(false)}
               onBack={() => setIsSeatSelectorOpen(false)}
               onConfirm={handleConfirmSeatSelection}
               roomId={ticketRoomId}
@@ -1066,7 +1021,7 @@ export default function CashierDashboard() {
               selectedFormat={ticketFormat}
               maxSeats={ticketCount}
               isLoading={false}
-              initialSeats={selectedSeatIds}fv
+              initialSeats={selectedSeatIds}
               generalPrice={ticketItems[0]?.price ?? 0}
               preferentialPrice={ticketItems[0]?.price ?? 0}
             />
@@ -1074,7 +1029,6 @@ export default function CashierDashboard() {
         </div>
       )}
 
-      {/* ── Modal de Venta Exitosa ── */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-surface border border-border/50 rounded-3xl p-8 text-center animate-[scaleIn_0.2s_ease-out_forwards]">
@@ -1113,7 +1067,6 @@ export default function CashierDashboard() {
         </div>
       )}
 
-      {/* ── Modal de Escáner QR ── */}
       {isScanning && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-6 relative animate-[scaleIn_0.2s_ease-out_forwards]">
