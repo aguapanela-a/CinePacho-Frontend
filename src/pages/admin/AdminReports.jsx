@@ -4,6 +4,7 @@ import {
   TrendingUp,
   Ticket,
   Popcorn,
+  DollarSign,
   Calendar,
   ChevronDown,
   ChevronRight,
