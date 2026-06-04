@@ -272,8 +272,12 @@ export default function Home() {
 
               trailerKey: selector.key || null,
 
-              screenings: selector.screenings || [],
+              screenings: (selector.screenings || []).map(scr => ({
+                  ...scr,
+                  multiplexId   // ← closure del useEffect, es el mismo multiplex consultado
+                })),
             };
+            
           });
 
           setMovies(mappedMovies);
@@ -389,10 +393,11 @@ export default function Home() {
                     size={16}
                     fill="currentColor"
                     className="group-hover:scale-110 transition-transform"
-                  />
+                    />
 
                   {t("¡Reservar Ahora!") || "RESERVAR FUNCIONES"}
                 </Button>
+                  
               </div>
             </div>
           </>
@@ -489,7 +494,7 @@ export default function Home() {
                   <MovieCard
                     movie={movie}
                     onClick={() => setSelectedMovie(movie)}
-                  />
+                    />
                 </div>
               ))}
         </div>
@@ -511,12 +516,19 @@ export default function Home() {
       {selectedMovie && (
         <MovieModal
           movie={selectedMovie}
-          multiplexId={currentMultiplexId}  
+          multiplexId={
+            // 1. multiplexId de la función en sí (viene estampado desde el map)
+            selectedMovie.screenings?.[0]?.multiplexId
+            // 2. filtro activo (cuando viene de un multiplex específico pero sin screenings)
+            || (displayMultiplex !== 'Todos' ? displayMultiplex : null)
+            // 3. primer multiplex de la lista como último recurso (nunca null)
+            || multiplexesList[0]?.idMultiplex
+          }
           multiplexName={
-            multiplexesList.find(p => p.idMultiplex  === displayMultiplex)?.nameMultiplex 
+            multiplexesList.find(p => p.idMultiplex === displayMultiplex)?.nameMultiplex
             || 'Cartelera General'
           }
-          onClose={() => setSelectedMovie(null)} 
+          onClose={() => setSelectedMovie(null)}
         />
       )}
     </div>

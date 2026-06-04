@@ -1,8 +1,6 @@
 /**
  * reportService.js
  * Servicios de reportes administrativos.
- *
- * Los contratos deben respetar exactamente las rutas definidas en el backend.
  */
 
 import { apiFetch } from './api'
@@ -27,4 +25,22 @@ export const generateSalesReport = (endDate) =>
   apiFetch('/api/admin/reports/sales', {
     method: 'POST',
     body: JSON.stringify({ endDate }),
+  })
+
+/**
+ * GET /api/admin/reports/sales/{multiplexId}?endDate=YYYY-MM-DD
+ * Reporte de ventas de tickets para un multiplex específico.
+ */
+export const getSalesReportByMultiplex = (multiplexId, endDate) =>
+  apiFetch(`/api/admin/reports/sales/${multiplexId}?endDate=${endDate}`, {
+    method: 'GET',
+  })
+
+/**
+ * GET /api/admin/reports/snacks/{multiplexId}/monthly?endDate=YYYY-MM-DD
+ * Reporte de ventas de snacks para un multiplex específico.
+ */
+export const getSnackSalesReportByMultiplex = (multiplexId, endDate) =>
+  apiFetch(`/api/admin/reports/snacks/${multiplexId}/monthly?endDate=${endDate}`, {
+    method: 'GET',
   })

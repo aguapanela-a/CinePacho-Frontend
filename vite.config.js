@@ -16,7 +16,6 @@ export default defineConfig({
           if (req.method === 'GET' && req.url?.startsWith('/api/checkout/stripe/')) {
             return '/index.html'
           }
-          // CRÍTICO: Indica a Vite que continúe enviando la petición al backend de Spring Boot
           return false 
         },
       },

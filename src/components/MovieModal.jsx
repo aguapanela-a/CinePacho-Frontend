@@ -45,6 +45,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
 
   // ✨ 2. UN SOLO EFECTO PARA TRAER LA DATA OPTIMIZADA
   useEffect(() => {
+    localStorage.setItem('multiplexId', '')
     if (!movie || !movie.id) return
     const fetchFreshData = async () => {
       try {
@@ -66,7 +67,7 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
 
         if (multiplexId) {
           // Modo multiplex específico
-          const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
+        const freshData = await getMovieSelectorsById(multiplexId, movie.id).catch(() => null)
           if (freshData) {
             setLiveScreenings(Array.isArray(freshData.screenings) ? freshData.screenings : [])
             if (freshData.movieInfo) setFetchedMovieInfo(freshData.movieInfo)
@@ -144,6 +145,8 @@ export default function MovieModal({ movie, onClose, multiplexName = 'Multiplex'
     toast.success(t('Entradas agregadas') || 'Entradas agregadas')
     onClose()
     setIsAddingToCart(false)
+    //se está guardando un null en el local storage, corregir para que se guarde el multiplexId correcto según la función seleccionada
+    localStorage.setItem('multiplexId', multiplexId) // Guardar el multiplexId al confirmar la selección de asientos
   }
 
   return createPortal(

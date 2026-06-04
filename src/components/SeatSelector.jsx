@@ -10,15 +10,17 @@ const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
 const COLS = 10
 
 export default function SeatSelector({
-  onBack,
-  onConfirm,
-  roomId = null,
+  onBack, 
+  onConfirm, 
+  roomId = null, 
   screeningId,
-  selectedFormat = '2D',
-  maxSeats = 6,
+  selectedFormat = '2D', 
+  maxSeats = 6, 
   isLoading = false
-}) {
+})
+ {
   const [selectedSeats, setSelectedSeats] = useState([])
+
   const { t } = useLanguage()
   const toast = useToast()
 
@@ -191,5 +193,5 @@ export default function SeatSelector({
          </Button>
       </div>
     </div>
-  )
+  )// JAJAJJAJA"
 }
