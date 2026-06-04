@@ -1,6 +1,6 @@
 let BASE_URL = import.meta.env.VITE_API_URL || ''
 
-BASE_URL = 'http://localhost:8010'
+//BASE_URL = 'http://localhost:8010'
 
 if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
   BASE_URL = 'https://back-cinepacho-production.up.railway.app'
