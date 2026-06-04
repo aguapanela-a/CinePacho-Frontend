@@ -257,14 +257,24 @@ export default function CashierDashboard() {
     setIsSeatSelectorOpen(true);
   };
 
-  const handleConfirmSeatSelection = (seats, seatsTotal) => {
+    const handleConfirmSeatSelection = (seats, seatsTotal) => {
     if (!ticketScreeningId) return;
     
     setSelectedSeatIdsByScreening((prev) => ({
       ...prev,
       [ticketScreeningId]: seats,
     }));
+    const updatedCart = cart.map((item) => {
+    if (item.type === "ticket" && item.screeningId === ticketScreeningId) {
+      return {
+        ...item,
+        seatIds: seats, // ← ESTO FALTA
+      };
+    }
+    return item;
+  });
 
+    setCart(updatedCart);
     const totalTicketsQty = cart
       .filter(
         (item) =>
@@ -344,10 +354,10 @@ export default function CashierDashboard() {
         ),
       ];
       const resolvedSeatIds =
-        seatIdsFromCart.length > 0
-          ? seatIdsFromCart
-          : screeningId
-            ? selectedSeatIdsByScreening[screeningId] || []
+        screeningId && selectedSeatIdsByScreening[screeningId]
+          ? selectedSeatIdsByScreening[screeningId]
+          : seatIdsFromCart.length > 0
+            ? seatIdsFromCart
             : [];
 
       if (ticketItems.length === 0) {
