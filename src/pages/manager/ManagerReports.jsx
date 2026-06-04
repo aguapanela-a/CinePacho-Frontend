@@ -12,50 +12,12 @@ export default function ManagerReports() {
   // Datos de prueba específicos para el multiplex actual
   // En producción, estos vendrían de la API filtrados por multiplexId
   const stats = [
-    {
-      title: 'Ventas del Mes',
-      value: '$4.2M',
-      icon: TrendingUp,
-      color: 'text-green-400',
-      bg: 'bg-green-500/10',
-    },
-    {
-      title: 'Boletas Vendidas',
-      value: '1,840',
-      icon: Ticket,
-      color: 'text-magenta',
-      bg: 'bg-magenta/10',
-    },
-    {
-      title: 'Snacks Vendidos',
-      value: '1,250',
-      icon: Popcorn,
-      color: 'text-gold',
-      bg: 'bg-gold/10',
-    },
-    {
-      title: 'Clientes Atendidos',
-      value: '980',
-      icon: Users,
-      color: 'text-cyan-400',
-      bg: 'bg-cyan-500/10',
-    },
+  
   ]
 
-  const dailySales = [
-    { day: 'Lun', sales: 120000 },
-    { day: 'Mar', sales: 145000 },
-    { day: 'Mié', sales: 180000 },
-    { day: 'Jue', sales: 165000 },
-    { day: 'Vie', sales: 220000 },
-    { day: 'Sáb', sales: 350000 },
-    { day: 'Dom', sales: 280000 },
-  ]
+  const dailySales = []
 
   const topMovies = [
-    { title: 'Dune: Parte 2', sales: '$890K', percentage: 85 },
-    { title: 'Kung Fu Panda 4', sales: '$650K', percentage: 72 },
-    { title: 'Godzilla x Kong', sales: '$520K', percentage: 58 },
   ]
 
   return (
