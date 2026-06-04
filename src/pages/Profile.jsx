@@ -410,34 +410,39 @@ export default function Profile() {
             )}
 
             {!loadingReviews && userReviews.length > 0 && (
-              <div className="space-y-4">
-                {userReviews.map((review, idx) => (
-                  <div key={idx} className="bg-carbon border border-border/40 rounded-2xl p-5 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-magenta">
-                        {review.reviewType === 'MOVIE' ? 'Película' : 'Servicio'}
-                      </span>
-                      <span className="text-xs text-text-secondary">
-                        {new Date(review.reviewDate).toLocaleDateString('es-CO')}
-                      </span>
+                <div className="space-y-4">
+                  {userReviews.map((review, idx) => (
+                    <div key={idx} className="bg-carbon border border-border/40 rounded-2xl p-5 flex flex-col gap-2">
+                      
+                      <div className="flex items-center justify-between gap-3">
+                        {/* Aquí está el cambio principal */}
+                        <span className="text-sm font-bold text-magenta truncate">
+                          {review.movieTitle}
+                        </span>
+                        <span className="text-xs text-text-secondary shrink-0">
+                          {new Date(review.createdAt).toLocaleDateString('es-CO')}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 text-gold mb-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            size={14}
+                            fill={i < review.rating ? 'currentColor' : 'none'}
+                            className={i < review.rating ? 'text-gold' : 'text-border'}
+                          />
+                        ))}
+                      </div>
+                      
+                      {review.comment && (
+                        <p className="text-sm text-white/90 italic">"{review.comment}"</p>
+                      )}
+                      
                     </div>
-                    <div className="flex items-center gap-1 text-gold mb-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={14}
-                          fill={i < review.rating ? 'currentColor' : 'none'}
-                          className={i < review.rating ? 'text-gold' : 'text-border'}
-                        />
-                      ))}
-                    </div>
-                    {review.comment && (
-                      <p className="text-sm text-white/90 italic">"{review.comment}"</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
           </div>
         </div>
       </div>

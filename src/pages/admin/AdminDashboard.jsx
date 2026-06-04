@@ -9,8 +9,18 @@ import {
   Film,
   Loader2,
   AlertTriangle,
+  Download,
+  FileSpreadsheet,
+  Filter,
+  ChevronDown,
 } from 'lucide-react'
 import { generateSalesReport, generateSnackSalesReport } from '../../services/reportService'
+import { getAllMultiplexes } from '../../services/multiplexService'
+import {
+  exportDashboardToPDF,
+  exportToExcel,
+  prepareDashboardExcelData,
+} from '../../utils/exportUtils'
 
 const formatCOP = (value) => {
   if (!value || isNaN(value)) return '$0'
@@ -21,10 +31,23 @@ const todayISO = () => new Date().toISOString().split('T')[0]
 
 export default function AdminDashboard() {
   const [endDate, setEndDate] = useState(todayISO())
+  const [selectedMultiplex, setSelectedMultiplex] = useState('all')
+  const [multiplexList, setMultiplexList] = useState([])
   const [ticketData, setTicketData] = useState(null)
   const [snackData, setSnackData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [exporting, setExporting] = useState(false)
+
+  // Cargar lista de multiplexes al montar
+  useEffect(() => {
+    getAllMultiplexes()
+      .then((data) => {
+        if (Array.isArray(data)) setMultiplexList(data)
+        else if (data?.content) setMultiplexList(data.content)
+      })
+      .catch(() => setMultiplexList([]))
+  }, [])
 
   const loadReports = async () => {
     setLoading(true)
@@ -48,8 +71,25 @@ export default function AdminDashboard() {
     loadReports()
   }, [endDate])
 
+  // Filtrar datos por multiplex seleccionado
+  const filteredTicketData = useMemo(() => {
+    if (!ticketData || selectedMultiplex === 'all') return ticketData
+    const filtered = ticketData.multiplexes?.filter(
+      (m) => m.multiplexId === selectedMultiplex || m.multiplexName === selectedMultiplex
+    )
+    return { ...ticketData, multiplexes: filtered || [] }
+  }, [ticketData, selectedMultiplex])
+
+  const filteredSnackData = useMemo(() => {
+    if (!snackData || selectedMultiplex === 'all') return snackData
+    const filtered = snackData.multiplexes?.filter(
+      (m) => m.multiplexId === selectedMultiplex || m.multiplexName === selectedMultiplex
+    )
+    return { ...snackData, multiplexes: filtered || [] }
+  }, [snackData, selectedMultiplex])
+
   const kpis = useMemo(() => {
-    if (!ticketData || !snackData) return null
+    if (!filteredTicketData || !filteredSnackData) return null
 
     let totalTickets = 0
     let ticketRevenue = 0
@@ -59,7 +99,7 @@ export default function AdminDashboard() {
 
     const movieMap = new Map()
 
-    ticketData.multiplexes?.forEach((mp) => {
+    filteredTicketData.multiplexes?.forEach((mp) => {
       mp.days?.forEach((day) => {
         day.screenings?.forEach((s) => {
           totalTickets += s.ticketsQuantity || 0
@@ -75,7 +115,7 @@ export default function AdminDashboard() {
       })
     })
 
-    snackData.multiplexes?.forEach((mp) => {
+    filteredSnackData.multiplexes?.forEach((mp) => {
       mp.days?.forEach((day) => {
         day.snacks?.forEach((s) => {
           totalSnacks += s.snacksQuantity || 0
@@ -91,7 +131,7 @@ export default function AdminDashboard() {
       .slice(0, 5)
       .map(([name, amount]) => ({ name, amount }))
 
-    const multiplexStats = ticketData.multiplexes?.map((mp) => {
+    const multiplexStats = filteredTicketData.multiplexes?.map((mp) => {
       let mpRevenue = 0
       let mpTickets = 0
       mp.days?.forEach((day) => {
@@ -116,7 +156,7 @@ export default function AdminDashboard() {
       topMovies,
       multiplexStats,
     }
-  }, [ticketData, snackData])
+  }, [filteredTicketData, filteredSnackData])
 
   const chartMax = useMemo(() => {
     if (!kpis) return 1
@@ -124,27 +164,108 @@ export default function AdminDashboard() {
     return Math.ceil(maxRev * 1.15)
   }, [kpis])
 
+  const handleExportPDF = () => {
+    if (!kpis || !ticketData) return
+    setExporting(true)
+    try {
+      exportDashboardToPDF({
+        kpis,
+        ticketData: filteredTicketData,
+        endDate,
+        selectedMultiplex: selectedMultiplex === 'all' ? 'Todas las sedes' : selectedMultiplex,
+      })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleExportExcel = () => {
+    if (!kpis || !ticketData) return
+    setExporting(true)
+    try {
+      const rows = prepareDashboardExcelData(kpis, filteredTicketData)
+      exportToExcel(rows, 'Dashboard', `dashboard-${endDate}`)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const selectedMultiplexName =
+    selectedMultiplex === 'all'
+      ? 'Todas las sedes'
+      : multiplexList.find((m) => m.id === selectedMultiplex || m.name === selectedMultiplex)?.name || selectedMultiplex
+
   return (
     <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display tracking-wider text-white">
             Dashboard General
           </h1>
           <p className="text-xs text-text-secondary mt-1">
-            Métricas consolidadas de todas las sedes — {ticketData?.startDate} a {ticketData?.endDate}
+            {ticketData?.startDate && ticketData?.endDate
+              ? `${ticketData.startDate} → ${ticketData.endDate} • ${selectedMultiplexName}`
+              : 'Selecciona un período'}
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-surface/50 border border-border/50 rounded-xl px-3 py-2">
-          <Calendar size={16} className="text-magenta" />
-          <input
-            type="date"
-            value={endDate}
-            max={todayISO()}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="bg-transparent text-white text-sm outline-none font-mono"
-          />
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Selector de Fecha */}
+          <div className="flex items-center gap-2 bg-surface/50 border border-border/50 rounded-xl px-3 py-2">
+            <Calendar size={16} className="text-magenta" />
+            <input
+              type="date"
+              value={endDate}
+              max={todayISO()}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent text-white text-sm outline-none font-mono"
+            />
+          </div>
+
+          {/* Selector de Multiplex */}
+          <div className="relative">
+            <div className="flex items-center gap-2 bg-surface/50 border border-border/50 rounded-xl px-3 py-2 cursor-pointer hover:border-magenta/40 transition-colors">
+              <Filter size={16} className="text-cyan-400" />
+              <select
+                value={selectedMultiplex}
+                onChange={(e) => setSelectedMultiplex(e.target.value)}
+                className="bg-transparent text-white text-sm outline-none cursor-pointer appearance-none pr-6"
+              >
+                <option value="all" className="bg-carbon text-white">Todas las sedes</option>
+                {multiplexList.map((m) => (
+                  <option key={m.id || m.multiplexId} value={m.id || m.multiplexId} className="bg-carbon text-white">
+                    {m.name || m.multiplexName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="text-text-secondary absolute right-3 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Exportar PDF */}
+          <button
+            onClick={handleExportPDF}
+            disabled={exporting || !kpis}
+            className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold tracking-wider uppercase hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={14} />
+            PDF
+          </button>
+
+          {/* Exportar Excel */}
+          <button
+            onClick={handleExportExcel}
+            disabled={exporting || !kpis}
+            className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-xs font-bold tracking-wider uppercase hover:bg-green-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileSpreadsheet size={14} />
+            Excel
+          </button>
         </div>
       </div>
 
@@ -193,7 +314,7 @@ export default function AdminDashboard() {
               },
               {
                 title: 'Sedes Activas',
-                value: String(ticketData?.multiplexes?.length || 0),
+                value: String(filteredTicketData?.multiplexes?.length || 0),
                 sub: 'Con transacciones en el período',
                 icon: Building2,
                 color: 'text-cyan-400',
@@ -243,76 +364,79 @@ export default function AdminDashboard() {
               </div>
 
               <div className="overflow-x-auto">
-                <svg
-                  viewBox={`0 0 ${Math.max(600, kpis.multiplexStats.length * 100 + 120)} 300`}
-                  className="w-full min-w-[500px]"
-                  style={{ height: 280 }}
-                >
-                  {/* Grid */}
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <line
-                      key={i}
-                      x1="80"
-                      y1={40 + i * 50}
-                      x2={Math.max(600, kpis.multiplexStats.length * 100 + 100)}
-                      y2={40 + i * 50}
-                      stroke="rgba(255,255,255,0.06)"
-                      strokeWidth="1"
-                    />
-                  ))}
-                  {/* Y labels */}
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <text
-                      key={i}
-                      x="70"
-                      y={45 + i * 50}
-                      fill="#666"
-                      fontSize="10"
-                      textAnchor="end"
-                    >
-                      {formatCOP(Math.round((chartMax / 4) * (4 - i))).replace('$', '')}
-                    </text>
-                  ))}
+                {kpis.multiplexStats.length > 0 ? (
+                  <svg
+                    viewBox={`0 0 ${Math.max(600, kpis.multiplexStats.length * 100 + 120)} 300`}
+                    className="w-full min-w-[500px]"
+                    style={{ height: 280 }}
+                  >
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <line
+                        key={i}
+                        x1="80"
+                        y1={40 + i * 50}
+                        x2={Math.max(600, kpis.multiplexStats.length * 100 + 100)}
+                        y2={40 + i * 50}
+                        stroke="rgba(255,255,255,0.06)"
+                        strokeWidth="1"
+                      />
+                    ))}
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <text
+                        key={i}
+                        x="70"
+                        y={45 + i * 50}
+                        fill="#666"
+                        fontSize="10"
+                        textAnchor="end"
+                      >
+                        {formatCOP(Math.round((chartMax / 4) * (4 - i))).replace('$', '')}
+                      </text>
+                    ))}
 
-                  {/* Bars */}
-                  {kpis.multiplexStats.map((mp, i) => {
-                    const barHeight = (mp.revenue / chartMax) * 200
-                    const x = 100 + i * 100
-                    const y = 240 - barHeight
-                    return (
-                      <g key={mp.name}>
-                        <rect
-                          x={x}
-                          y={y}
-                          width={50}
-                          height={barHeight}
-                          fill="#C8167A"
-                          opacity="0.85"
-                          rx="4"
-                        />
-                        <text
-                          x={x + 25}
-                          y={y - 8}
-                          fill="#fff"
-                          fontSize="10"
-                          textAnchor="middle"
-                          fontWeight="bold"
-                        >
-                          {formatCOP(mp.revenue).replace('$', '')}
-                        </text>
-                        <text
-                          x={x + 25}
-                          y="260"
-                          fill="#888"
-                          fontSize="10"
-                          textAnchor="middle"
-                        >
-                          {mp.name.length > 8 ? mp.name.substring(0, 8) + '...' : mp.name}
-                        </text>
-                      </g>
-                    )
-                  })}
-                </svg>
+                    {kpis.multiplexStats.map((mp, i) => {
+                      const barHeight = (mp.revenue / chartMax) * 200
+                      const x = 100 + i * 100
+                      const y = 240 - barHeight
+                      return (
+                        <g key={mp.name}>
+                          <rect
+                            x={x}
+                            y={y}
+                            width={50}
+                            height={barHeight}
+                            fill="#C8167A"
+                            opacity="0.85"
+                            rx="4"
+                          />
+                          <text
+                            x={x + 25}
+                            y={y - 8}
+                            fill="#fff"
+                            fontSize="10"
+                            textAnchor="middle"
+                            fontWeight="bold"
+                          >
+                            {formatCOP(mp.revenue).replace('$', '')}
+                          </text>
+                          <text
+                            x={x + 25}
+                            y="260"
+                            fill="#888"
+                            fontSize="10"
+                            textAnchor="middle"
+                          >
+                            {mp.name.length > 8 ? mp.name.substring(0, 8) + '...' : mp.name}
+                          </text>
+                        </g>
+                      )
+                    })}
+                  </svg>
+                ) : (
+                  <p className="text-text-secondary text-xs text-center py-12">
+                    No hay datos de sedes para mostrar en el gráfico
+                  </p>
+                )}
               </div>
             </div>
 
@@ -394,7 +518,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20 text-xs text-text-primary">
-                  {ticketData?.multiplexes?.map((mp) => {
+                  {filteredTicketData?.multiplexes?.map((mp) => {
                     const mpTicketRev = mp.days?.reduce(
                       (sum, d) =>
                         sum +
@@ -407,7 +531,7 @@ export default function AdminDashboard() {
                       0
                     ) || 0
 
-                    const snackMp = snackData?.multiplexes?.find(
+                    const snackMp = filteredSnackData?.multiplexes?.find(
                       (s) => s.multiplexId === mp.multiplexId
                     )
                     const mpSnackRev = snackMp?.days?.reduce(
