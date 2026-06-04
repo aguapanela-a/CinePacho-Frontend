@@ -78,7 +78,7 @@ export default function CashierDashboard() {
               name: s.nameSnack,
               price: Number(s.priceSnack) || 0,
               multiplexId,
-              imageUrl: s.imageUrl || null,
+              imageUrl: '/comboFamiliar.png',
             })),
           );
         } else {
@@ -595,11 +595,17 @@ export default function CashierDashboard() {
                   <button
                     key={snack.id}
                     onClick={() => handleAddSnackToCart(snack)}
-                    className="bg-carbon border border-border/50 rounded-2xl p-5 text-left hover:border-gold/50 hover:bg-gold/5 transition-all group flex flex-col h-32 cursor-pointer"
+                    className="bg-carbon border border-border/50 rounded-2xl p-5 text-left hover:border-gold/50 hover:bg-gold/5 transition-all group flex flex-col min-h-[140px] cursor-pointer"
                   >
-                    <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                      <Popcorn size={18} className="text-gold" />
+                    {/* Contenedor de la imagen */}
+                    <div className="w-14 h-14 rounded-xl bg-surface overflow-hidden mb-3 group-hover:scale-310 transition-transform shrink-0">
+                      <img 
+                        src={snack.image || "/comboFamiliar.png"} 
+                        alt={snack.name} 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
+
                     <span className="font-bold text-sm text-text-primary line-clamp-1">
                       {snack.name}
                     </span>
