@@ -1,12 +1,12 @@
-let BASE_URL = import.meta.env.VITE_API_URL || ''
+// let BASE_URL = import.meta.env.VITE_API_URL || ''
 
-//BASE_URL = 'http://localhost:8010'
+// //BASE_URL = 'http://localhost:8010'
 
-if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
-  BASE_URL = 'https://back-cinepacho-production.up.railway.app'
-}
+// if (window.location.hostname.includes('vercel.app') && !BASE_URL) {
+//   BASE_URL = 'https://back-cinepacho-production.up.railway.app'
+// }
 
-//  const BASE_URL = 'http://localhost:8010'
+ const BASE_URL = 'http://localhost:8010'
 
 /**
  * Retorna los headers estándar incluyendo el JWT si existe en localStorage.
