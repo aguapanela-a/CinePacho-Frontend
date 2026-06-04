@@ -252,7 +252,6 @@ export default function AdminMovies() {
         movieId: selectedMovie.id,
         roomId,
         dateTime: dateTime.replace("T", " ") + ":00",
-        price: parseFloat(price),
         format,
       });
       setCreatedScreening(result);
