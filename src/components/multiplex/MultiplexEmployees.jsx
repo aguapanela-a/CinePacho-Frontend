@@ -36,10 +36,13 @@ const ALL_ROLES = [
 export default function MultiplexEmployees({
   multiplexId, // <-- REVISA QUE EL PADRE PASE ESTO CORRECTAMENTE
   canAssignManager = false,
+  userType,
   canDismiss = false,
   canRequestDismiss = false,
   canAddEmployee = true,
 }) {
+
+
   const { t } = useLanguage()
   const [multiplex, setMultiplex] = useState(null)
   const [employees, setEmployees] = useState([])
@@ -56,6 +59,11 @@ export default function MultiplexEmployees({
   const [errorForm, setErrorForm] = useState(null)
   const [creating, setCreating] = useState(false)
 
+
+  // Obtener el usuario autenticado desde localStorage
+  const storedUser = JSON.parse(localStorage.getItem("cinepacho_user"));
+  const currentUserEmail = storedUser?.name; // Esto guardará "emailDeusuario@ajsdj"
+  console.log("Usuario autenticado:", currentUserEmail)
 
   //confirmar borrar empleados
   
@@ -400,44 +408,59 @@ export default function MultiplexEmployees({
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          type="button"
-                          onClick={() => {
-                            console.log('Employee data:', emp)
+      type="button"
+      // Bloquea el botón si el empleado de la fila es el usuario logueado
+      disabled={emp.email === currentUserEmail}
+      onClick={() => {
+        console.log('Employee data:', emp)
 
-                            const currentMultiplex = multiplexes.find(m => m.nameMultiplex === emp.nameMultiplex)
-                            setEmployeeToEdit({
-                              uniqueCode: emp.uniqueCode,
-                              name: emp.name,
-                              email: emp.email,
-                              phoneNumber: emp.phoneNumber,
-                              rol: emp.rol,
-                              userType: emp.userType || 'EMPLOYEE',
-                              indentityCard: emp.indentityCard,
-                              salary: emp.salary,
-                              startDate: emp.startDate ? (emp.startDate.includes('T') ? emp.startDate.split('T')[0] : emp.startDate.split(' ')[0]) : '',
-                              password: '',
-                              multiplexId: currentMultiplex?.idMultiplex || currentMultiplex?.id || '',
-                            })
-                            console.log('Multiplex encontrado:', currentMultiplex)
-                            console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name: m.nameMultiplex })))
-                            console.log('StartDate original:', emp.startDate)
-                            setIsEditModalOpen(true)
-                          }}
-                          className="w-10 h-10 rounded-xl border border-border/50 hover:border-magenta/40 hover:bg-magenta/10 transition-all flex items-center justify-center text-text-secondary hover:text-white cursor-pointer"
-                        >
-                          <Pencil size={16} />
-                        </button>
+        const currentMultiplex = multiplexes.find(m => m.nameMultiplex === emp.nameMultiplex)
+        setEmployeeToEdit({
+          uniqueCode: emp.uniqueCode,
+          name: emp.name,
+          email: emp.email,
+          phoneNumber: emp.phoneNumber,
+          rol: emp.rol,
+          userType: emp.userType || 'EMPLOYEE',
+          indentityCard: emp.indentityCard,
+          salary: emp.salary,
+          startDate: emp.startDate ? (emp.startDate.includes('T') ? emp.startDate.split('T')[0] : emp.startDate.split(' ')[0]) : '',
+          password: '',
+          multiplexId: currentMultiplex?.idMultiplex || currentMultiplex?.id || '',
+        })
+        console.log('Multiplex encontrado:', currentMultiplex)
+        console.log('IDs disponibles:', multiplexes.map(m => ({ id: m.idMultiplex, name: m.nameMultiplex })))
+        console.log('StartDate original:', emp.startDate)
+        setIsEditModalOpen(true)
+      }}
+      // Clases dinámicas: si está deshabilitado cambia el borde, apaga el texto y desactiva los hovers
+      className={`w-10 h-10 rounded-xl border transition-all flex items-center justify-center 
+        ${emp.email === currentUserEmail 
+          ? "border-border/20 text-text-secondary/30 bg-carbon/50 cursor-not-allowed" 
+          : "border-border/50 text-text-secondary hover:border-magenta/40 hover:bg-magenta/10 hover:text-white cursor-pointer"
+        }`}
+      title={emp.email === currentUserEmail ? "No puedes editar tu propio usuario desde este panel" : "Editar empleado"}
+    >
+      <Pencil size={16} />
+    </button>
 
                         <button
-                          type="button"
-                          onClick={() => {
-                            setEmployeeToDelete(emp)
-                            setIsDeleteModalOpen(true)
-                          }}
-                          className="w-10 h-10 rounded-xl border border-border/50 hover:border-red-500/40 hover:bg-red-500/10 transition-all flex items-center justify-center text-text-secondary hover:text-red-400 cursor-pointer"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+  type="button"
+  // Revisa si el email del empleado coincide con el del usuario logueado
+  disabled={emp.email === currentUserEmail} 
+  onClick={() => {
+    setEmployeeToDelete(emp)
+    setIsDeleteModalOpen(true)
+  }}
+  className={`w-10 h-10 rounded-xl border transition-all flex items-center justify-center 
+    ${emp.email === currentUserEmail 
+      ? "border-border/20 text-text-secondary/30 bg-carbon/50 cursor-not-allowed" 
+      : "border-border/50 text-text-secondary hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 cursor-pointer"
+    }`}
+  title={emp.email === currentUserEmail ? "No puedes eliminar tu propio usuario" : "Eliminar empleado"}
+>
+  <Trash2 size={16} />
+</button>
                       </div>
                     </td>
 
@@ -484,20 +507,56 @@ export default function MultiplexEmployees({
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Teléfono</label>
                 <input type="text" value={newEmployee.phoneNumber} onChange={(e) => setNewEmployee({ ...newEmployee, phoneNumber: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="3001234567" />
               </div>
-              <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Cargo</label>
-                <select value={newEmployee.rol} onChange={(e) => setNewEmployee({ ...newEmployee, rol: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer">
-                  <option value=""></option>
-                  {ALL_ROLES.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Tipo de usuario</label>
-                <select value={newEmployee.userType} onChange={(e) => setNewEmployee({ ...newEmployee, userType: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer">
-                  <option value="EMPLOYEE">EMPLOYEE</option>
-                  <option value="MANAGER">MANAGER</option>
-                </select>
-              </div>
+             
+<div>
+  <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Cargo</label>
+  <select 
+    value={newEmployee.rol} 
+    onChange={(e) => {
+      const selectedRolId = e.target.value;
+      
+      // Buscamos el objeto del rol seleccionado para validar por su nombre o propiedad
+      const selectedRole = ALL_ROLES.find(r => r.id === parseInt(selectedRolId));
+      
+      // Lógica: Si NO es un rol administrativo, forzamos el tipo a EMPLOYEE
+      const isAdministrative = selectedRole?.name.toLowerCase().includes('manager') || selectedRole?.name.toLowerCase().includes('admin');
+      
+      setNewEmployee({ 
+        ...newEmployee, 
+        rol: selectedRolId,
+        // Si no es administrativo, obligamos a que sea EMPLOYEE
+        userType: isAdministrative ? newEmployee.userType : "EMPLOYEE"
+      });
+    }} 
+    className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer"
+  >
+    <option value="">Seleccione un cargo</option>
+    {ALL_ROLES.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}
+  </select>
+</div>
+
+<div>
+  <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Tipo de usuario</label>
+  <select 
+    value={newEmployee.userType} 
+    onChange={(e) => setNewEmployee({ ...newEmployee, userType: e.target.value })} 
+    // Deshabilitamos el select si el cargo actual no amerita un MANAGER
+    disabled={!ALL_ROLES.find(r => r.id === parseInt(newEmployee.rol))?.name.toLowerCase().includes('manager')}
+    className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <option value="EMPLOYEE">EMPLOYEE</option>
+    <option value="MANAGER">MANAGER</option>
+  </select>
+  
+  {/* Opcional: Un pequeño texto informativo si está deshabilitado */}
+  {!ALL_ROLES.find(r => r.id === parseInt(newEmployee.rol))?.name.toLowerCase().includes('manager') && newEmployee.rol && (
+    <span className="text-[10px] text-text-secondary mt-1 block italic">
+      Este cargo solo permite tipo de usuario EMPLOYEE.
+    </span>
+  )}
+</div>
+
+
               <div>
                 <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Contraseña</label>
                 <input type="password" value={newEmployee.password} onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })} className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta" placeholder="Min. 8 caracteres" />
@@ -629,19 +688,26 @@ export default function MultiplexEmployees({
         </div>
 
         <div>
-          <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">
-            Tipo de usuario
-          </label>
-          <select
-            value={employeeToEdit?.userType || 'EMPLOYEE'}
-            onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, userType: e.target.value })}
-            className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta"
-            disabled={employeeToEdit?.rol === 'MANAGER'}          
-          >
-            <option value="EMPLOYEE">EMPLOYEE</option>
-            <option value="MANAGER">MANAGER</option>
-          </select>
-        </div>
+  <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">Tipo de usuario</label>
+  <select 
+    value={employeeToEdit?.userType || 'EMPLOYEE'} 
+    onChange={(e) => setEmployeeToEdit({ ...employeeToEdit, userType: e.target.value })} 
+    // Deshabilitamos el select si el cargo actual no amerita un MANAGER
+    disabled={!ALL_ROLES.find(r => r.id === parseInt(employeeToEdit?.rol))?.name.toLowerCase().includes('manager')}
+    className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <option value="EMPLOYEE">EMPLOYEE</option>
+    <option value="MANAGER">MANAGER</option>
+  </select>
+  
+  {/* Opcional: Un pequeño texto informativo si está deshabilitado */}
+  {!ALL_ROLES.find(r => r.id === parseInt(employeeToEdit?.rol))?.name.toLowerCase().includes('manager') && employeeToEdit?.rol && (
+    <span className="text-[10px] text-text-secondary mt-1 block italic">
+      Este cargo solo permite tipo de usuario EMPLOYEE.
+    </span>
+  )}
+</div>
+
 
         <div>
           <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">

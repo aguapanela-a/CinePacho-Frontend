@@ -67,7 +67,7 @@ export default function ManagerSidebar() {
           </p>
         </div>
         <h2 className="text-white font-bold text-xl font-display tracking-wider">
-          {multiplex?.name || t('manager.unassigned')}
+          {multiplex?.nameMultiplex || 'hola'}
         </h2>
         {multiplex?.city && (
           <p className="text-xs text-text-secondary mt-1 truncate">
@@ -91,7 +91,7 @@ export default function ManagerSidebar() {
         {[
           { to: '/manager/dashboard',  label: t('admin.dashboard'),  icon: LayoutDashboard },
           { to: '/manager/empleados',  label: t('admin.employees'),  icon: Users },
-          { to: '/manager/inventario', label: t('admin.inventory'),  icon: Popcorn },
+          { to: '/manager/inventario', label: t('admin.snacks'),  icon: Popcorn },
           { to: '/manager/reportes',   label: t('admin.reports'),   icon: FileBarChart2 },
         ].map(({ to, label, icon: Icon }) => (
           <NavLink

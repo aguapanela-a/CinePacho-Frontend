@@ -14,6 +14,7 @@ export default function ManagerEmployees() {
     <ManagerLayout>
       <MultiplexEmployees
         multiplexId={user?.multiplexId}
+        userType={user?.userType}
         canAssignManager={false}
         canDismiss={false}
         canRequestDismiss={true}

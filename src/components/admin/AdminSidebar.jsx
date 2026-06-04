@@ -47,8 +47,7 @@ export default function AdminSidebar() {
       { to: '/admin/empleados', label: t('admin.employees'), icon: Users },
       { to: '/admin/multiplex', label: t('admin.multiplex'), icon: Building2 },
       { to: '/admin/peliculas', label: t('admin.movies'), icon: Film },
-      { to: '/admin/snacks', label: t('admin.snacks'), icon: Popcorn },
-      { to: '/admin/inventario', label: t('admin.inventory'), icon: Boxes }, // Corregido a Boxes
+      { to: '/admin/snacks', label: t('admin.snacks'), icon: Popcorn }, // Corregido a Boxes
       { to: '/admin/reportes', label: t('admin.reports'), icon: FileBarChart2 },
     ]
   }

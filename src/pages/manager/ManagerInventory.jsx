@@ -1,11 +1,11 @@
+// pages/manager/ManagerInventory.jsx
 import ManagerLayout from '../../components/manager/ManagerLayout'
 import MultiplexInventory from '../../components/multiplex/MultiplexInventory'
 import { useApp } from '../../context/useApp'
 
 /**
- * ManagerInventory: Página de inventario del gerente.
- * El manager puede ver stock y solicitar reabastecimiento,
- * pero NO puede agregar stock directamente (para evitar acciones ilícitas).
+ * ManagerInventory: El manager puede ver, crear y editar snacks de su sede,
+ * pero NO puede eliminarlos.
  */
 export default function ManagerInventory() {
   const { user } = useApp()
@@ -14,8 +14,9 @@ export default function ManagerInventory() {
     <ManagerLayout>
       <MultiplexInventory
         multiplexId={user?.multiplexId}
-        canAddStock={false}
-        canRequestStock={true}
+        canCreate={true}
+        canEdit={true}
+        canDelete={true}
       />
     </ManagerLayout>
   )

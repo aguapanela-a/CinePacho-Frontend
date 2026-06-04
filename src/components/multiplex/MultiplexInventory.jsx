@@ -1,338 +1,391 @@
-import { useState, useEffect } from 'react'
-import {
-  Popcorn,
-  Search,
-  PackagePlus,
-  CheckCircle,
-  X,
-} from 'lucide-react'
-import { getAdminSnacksByMultiplex } from '../../services/snackService'
+// components/multiplex/MultiplexInventory.jsx
+import { useState, useEffect, useCallback } from 'react'
+import { Popcorn, Plus, Pencil, Search, Loader2, AlertCircle, Package, Trash2 } from 'lucide-react'
+import { getAdminSnacksByMultiplex, createSnack, updateSnack, deleteSnack } from '../../services/snackService'
 import { getMultiplexById } from '../../services/multiplexService'
 
-const formatCOP = (value) => '$' + Number(value || 0).toLocaleString('es-CO')
+const EMPTY_FORM = {
+  nameSnack: '',
+  descriptionSnack: '',
+  priceSnack: '',
+  quantitySnack: '',
+  pointsSnack: '',
+}
+
+const stockBadge = (qty) => {
+  if (qty <= 0)  return 'bg-red-500/10 text-red-400 border-red-500/20'
+  if (qty <= 10) return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+  return 'bg-green-500/10 text-green-400 border-green-500/20'
+}
+const stockLabel = (qty) => qty <= 0 ? 'Agotado' : qty <= 10 ? 'Bajo' : 'OK'
 
 export default function MultiplexInventory({
   multiplexId,
-  canAddStock = false,
-  canRequestStock = false,
+  canCreate = false,
+  canEdit   = false,
+  canDelete = false,
 }) {
   const [multiplex, setMultiplex] = useState(null)
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [snacks, setSnacks]       = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(null)
+  const [search, setSearch]       = useState('')
+
+  // Modal crear/editar
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId]     = useState(null)
+  const [form, setForm]               = useState(EMPTY_FORM)
+  const [saving, setSaving]           = useState(false)
+  const [formError, setFormError]     = useState(null)
+
+  // Modal eliminar
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [snackToDelete, setSnackToDelete]         = useState(null)
+  const [deleting, setDeleting]                   = useState(false)
+
+  // ── Carga ──────────────────────────────────────────────────────────────
+  const fetchSnacks = useCallback(async () => {
+    if (!multiplexId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await getAdminSnacksByMultiplex(multiplexId)
+      setSnacks(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [multiplexId])
 
   useEffect(() => {
     if (!multiplexId) return
-    const load = async () => {
-      setLoading(true)
-      try {
-        const [multiplexData, snacks] = await Promise.all([
-          getMultiplexById(multiplexId),
-          getAdminSnacksByMultiplex(multiplexId),
-        ])
-        setMultiplex(multiplexData)
-        setItems(Array.isArray(snacks) ? snacks : [])
-      } catch {
-        setMultiplex(null)
-        setItems([])
-      } finally {
-        setLoading(false)
-      }
+    getMultiplexById(multiplexId)
+      .then(setMultiplex)
+      .catch(() => setMultiplex(null))
+    fetchSnacks()
+  }, [multiplexId, fetchSnacks])
+
+  // ── Filtro ─────────────────────────────────────────────────────────────
+  const filtered = snacks.filter(s =>
+    s.nameSnack?.toLowerCase().includes(search.toLowerCase()) ||
+    s.descriptionSnack?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  // ── Modales ────────────────────────────────────────────────────────────
+  const openCreate = () => {
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setFormError(null)
+    setIsModalOpen(true)
+  }
+
+  const openEdit = (snack) => {
+    setEditingId(snack.idSnack)
+    setForm({
+      nameSnack:        snack.nameSnack,
+      descriptionSnack: snack.descriptionSnack,
+      priceSnack:       snack.priceSnack,
+      quantitySnack:    snack.quantitySnack,
+      pointsSnack:      snack.pointsSnack ?? '',
+    })
+    setFormError(null)
+    setIsModalOpen(true)
+  }
+
+  const openDeleteModal = (snack) => {
+    setSnackToDelete(snack)
+    setIsDeleteModalOpen(true)
+  }
+
+  // ── Guardar ────────────────────────────────────────────────────────────
+  const handleSave = async () => {
+    const { nameSnack, descriptionSnack, priceSnack, quantitySnack, pointsSnack } = form
+    if (!nameSnack || priceSnack === '' || quantitySnack === '' || pointsSnack === '') {
+      setFormError('Nombre, precio, cantidad y puntos son obligatorios.')
+      return
     }
-    load()
-  }, [multiplexId])
-  const [search, setSearch] = useState('')
-  const [filterCategory, setFilterCategory] = useState('Todos')
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState(null)
-  const [requestQty, setRequestQty] = useState('')
-  const [requestReason, setRequestReason] = useState('')
-  const [requestSuccess, setRequestSuccess] = useState(false)
-
-  const categories = ['Todos', ...new Set(items.map(item => item.category || item.categorySnack || 'Snacks'))]
-
-  const filteredItems = items.filter(item => {
-    const itemName = item.nameSnack || item.name || ''
-    const matchesSearch = itemName.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = filterCategory === 'Todos' || (item.category || item.categorySnack || 'Snacks') === filterCategory
-    return matchesSearch && matchesCategory
-  })
-
-  const openActionModal = (item) => {
-    setSelectedItem(item)
-    setRequestQty('')
-    setRequestReason('')
-    setRequestSuccess(false) // Forzar reinicio del estado del modal
-    setIsRequestModalOpen(true)
+    setSaving(true)
+    setFormError(null)
+    const payload = {
+      nameSnack,
+      descriptionSnack,
+      priceSnack:    parseFloat(priceSnack),
+      quantitySnack: parseInt(quantitySnack, 10),
+      pointsSnack:   parseInt(pointsSnack, 10),
+      multiplexId,
+    }
+    try {
+      if (editingId) {
+        await updateSnack(editingId, payload)
+      } else {
+        await createSnack(payload)
+      }
+      await fetchSnacks()
+      setIsModalOpen(false)
+    } catch (err) {
+      setFormError(err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleCloseModal = () => {
-    setIsRequestModalOpen(false)
-    setSelectedItem(null)
-    setRequestQty('')
-    setRequestReason('')
-    setRequestSuccess(false) // Limpieza preventiva
-  }
-
-  const handleAddStock = () => {
-    const qty = parseInt(requestQty)
-    if (isNaN(qty) || qty <= 0) return
-
-    setItems(items.map(item => 
-      item.id === selectedItem.id 
-        ? { ...item, stock: item.stock + qty }
-        : item
-    ))
-    setRequestSuccess(true)
-  }
-
-  const handleRequestStock = () => {
-    const qty = parseInt(requestQty)
-    if (isNaN(qty) || qty <= 0) return
-    
-    // Simula el envío exitoso
-    setRequestSuccess(true)
+  // ── Eliminar ───────────────────────────────────────────────────────────
+  const confirmDeleteSnack = async () => {
+    if (!snackToDelete) return
+    setDeleting(true)
+    try {
+      await deleteSnack(snackToDelete.idSnack)
+      await fetchSnacks()
+      setIsDeleteModalOpen(false)
+      setSnackToDelete(null)
+    } catch (err) {
+      alert(`Error al eliminar: ${err.message}`)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-surface/40 border border-border/30 rounded-3xl p-6 flex items-center gap-4">
-        <div className="w-12 h-12 bg-magenta/10 border border-magenta/20 rounded-2xl flex items-center justify-center text-magenta">
-          <Popcorn size={22} />
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-[fadeUp_0.5s_ease-out_forwards]">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-magenta/10 border border-magenta/20 rounded-2xl flex items-center justify-center text-magenta">
+            <Popcorn size={22} />
+          </div>
+          <div>
+            <h1 className="text-4xl font-display uppercase tracking-widest text-white">
+              <span className="gradient-brand">Snacks</span>
+            </h1>
+            <p className="text-text-secondary text-sm mt-1">
+              Sede: {multiplex?.nameMultiplex || (loading ? 'Cargando...' : 'No disponible')}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold font-display tracking-wider text-white">Inventario de Sede</h1>
-          <p className="text-xs text-text-secondary mt-0.5">Sede: {multiplex?.nameMultiplex || multiplex?.name || 'Cargando...'}</p>
-        </div>
+
+        {canCreate && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 bg-gradient-to-r from-magenta to-vinotinto text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-magenta/20 hover:opacity-90 transition-all cursor-pointer"
+          >
+            <Plus size={18} /> Nuevo Snack
+          </button>
+        )}
       </div>
 
-      {/* Controles de Filtrado */}
-      <div className="flex flex-col md:flex-row gap-4 bg-surface/20 border border-border/20 rounded-2xl p-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
-          <input
-            type="text"
-            placeholder="Buscar insumo o snack..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-carbon border border-border/50 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
-          />
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-5 py-4">
+          <AlertCircle size={18} /> {error}
+          <button onClick={fetchSnacks} className="ml-auto text-xs underline">Reintentar</button>
         </div>
-        
-        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
-          {categories.map(cat => (
-            <button
-              type="button"
-              key={cat}
-              onClick={() => setFilterCategory(cat)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                filterCategory === cat
-                  ? 'bg-gradient-to-r from-magenta to-vinotinto text-white shadow-md'
-                  : 'bg-carbon text-text-secondary border border-border/50 hover:text-white'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+      )}
+
+      {/* Tabla */}
+      <div className="bg-surface/50 border border-border/50 rounded-3xl p-6 backdrop-blur-xl animate-[fadeUp_0.6s_ease-out_forwards]">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="relative flex-1 max-w-sm">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+            <input
+              type="text"
+              placeholder="Buscar snack..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-carbon border border-border/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-gold outline-none transition-colors"
+            />
+          </div>
+          <span className="text-xs text-text-secondary">
+            {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+          </span>
         </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20 gap-4 text-text-secondary">
+            <Loader2 size={28} className="animate-spin text-magenta" />
+            <span>Cargando snacks...</span>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 text-text-secondary">
+            <Popcorn size={40} className="mx-auto mb-3 opacity-30" />
+            <p>{search ? `Sin resultados para "${search}"` : 'No hay snacks registrados.'}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border/50">
+                  {[
+                    'Nombre', 'Descripción', 'Precio', 'Stock', 'Puntos', 'Estado',
+                    ...(canEdit || canDelete ? ['Acción'] : [])
+                  ].map(h => (
+                    <th key={h} className="py-4 px-4 text-xs font-bold text-text-secondary uppercase tracking-widest">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {filtered.map(snack => (
+                  <tr key={snack.idSnack} className="hover:bg-carbon/50 transition-colors group">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-magenta/10 border border-magenta/20 flex items-center justify-center">
+                          <Popcorn size={16} className="text-magenta" />
+                        </div>
+                        <span className="font-bold text-white">{snack.nameSnack}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-text-secondary max-w-xs truncate">
+                      {snack.descriptionSnack || '—'}
+                    </td>
+                    <td className="py-4 px-4 font-bold text-gold">
+                      ${Number(snack.priceSnack).toLocaleString('es-CO')}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <Package size={14} className="text-text-secondary" />
+                        <span className="text-white font-bold">{snack.quantitySnack}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 font-bold text-white">
+                      {snack.pointsSnack != null ? snack.pointsSnack : '—'}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${stockBadge(snack.quantitySnack)}`}>
+                        {stockLabel(snack.quantitySnack)}
+                      </span>
+                    </td>
+
+                    {(canEdit || canDelete) && (
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          {canEdit && (
+                            <button
+                              onClick={() => openEdit(snack)}
+                              className="flex items-center gap-1.5 text-xs font-bold text-text-secondary hover:text-gold border border-border/50 hover:border-gold/40 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+                            >
+                              <Pencil size={12} /> Editar
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(snack)}
+                              className="w-8 h-8 rounded-xl border border-border/50 hover:border-red-500/40 hover:bg-red-500/10 transition-all flex items-center justify-center text-text-secondary hover:text-red-400 cursor-pointer"
+                              title="Eliminar snack"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Grid de Items */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredItems.map(item => {
-          const stock = item.quantitySnack ?? item.stock
-          const minStock = item.minStock ?? 0
-          const isLowStock = stock <= minStock
-          const isOut = stock === 0
-          const name = item.nameSnack || item.name || 'Snack'
-          const category = item.category || item.categorySnack || 'Snacks'
-          const price = item.priceSnack ?? item.price
-
-          return (
-            <div
-              key={item.idSnack || item.id}
-              className={`bg-surface/40 border rounded-2xl p-5 flex flex-col justify-between transition-all relative overflow-hidden ${
-                isOut 
-                  ? 'border-red-500/30 bg-red-500/[0.02]' 
-                  : isLowStock 
-                    ? 'border-yellow-500/30 bg-yellow-500/[0.01]' 
-                    : 'border-border/30'
-              }`}
-            >
-              {/* Alertas Visuales */}
-              {isLowStock && (
-                <div className={`absolute top-0 right-0 px-3 py-1 text-[9px] font-bold tracking-wider rounded-bl-xl uppercase ${
-                  isOut ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {isOut ? 'Agotado' : 'Stock Crítico'}
-                </div>
-              )}
-
+      {/* Modal Crear / Editar */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+            <div className="flex items-center justify-between mb-8">
               <div>
-                <span className="text-[10px] uppercase tracking-widest font-bold text-text-secondary block mb-1">
-                  {category}
-                </span>
-                <h3 className="text-white font-bold text-base leading-snug mb-3">
-                  {name}
-                </h3>
-
-                <div className="grid grid-cols-2 gap-2 bg-carbon/50 border border-white/5 rounded-xl p-3 mb-4">
-                  <div>
-                    <span className="text-[9px] text-text-secondary uppercase block font-medium">Stock Actual</span>
-                    <span className={`text-base font-display tracking-wide font-bold ${
-                      isOut ? 'text-red-400' : isLowStock ? 'text-yellow-400' : 'text-green-400'
-                    }`}>
-                      {stock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-text-secondary uppercase block font-medium">Mínimo Requerido</span>
-                    <span className="text-base font-display tracking-wide font-bold text-white">
-                      {minStock} <span className="text-xs font-body font-normal text-text-secondary">uds</span>
-                    </span>
-                  </div>
-                </div>
+                <h2 className="text-3xl font-display tracking-widest text-white uppercase">
+                  {editingId ? 'Editar ' : 'Nuevo '}<span className="gradient-brand">Snack</span>
+                </h2>
+                <p className="text-text-secondary text-sm mt-1">
+                  {editingId ? 'Actualizar datos del producto' : 'Añadir producto al catálogo'}
+                </p>
               </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-10 h-10 rounded-xl border border-border/50 hover:bg-carbon transition-colors text-text-secondary"
+              >✕</button>
+            </div>
 
-              <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/20">
-                <div>
-                  <span className="text-[9px] text-text-secondary uppercase block font-medium">Precio Venta</span>
-                  <span className="text-white font-bold text-sm">
-                    {price > 0 ? formatCOP(price) : 'N/A (Insumo)'}
-                  </span>
+            <div className="space-y-4">
+              {[
+                { key: 'nameSnack',        label: 'Nombre',           placeholder: 'Combo Mega Cine', type: 'text'   },
+                { key: 'descriptionSnack', label: 'Descripción',      placeholder: 'Palomitas + 2 refrescos', type: 'text' },
+                { key: 'priceSnack',       label: 'Precio ($)',       placeholder: '45000',           type: 'number' },
+                { key: 'quantitySnack',    label: 'Cantidad en stock',placeholder: '50',              type: 'number' },
+                { key: 'pointsSnack',      label: 'Puntos por snack', placeholder: '5',               type: 'number' },
+              ].map(({ key, label, placeholder, type }) => (
+                <div key={key}>
+                  <label className="block text-xs font-bold tracking-widest text-text-secondary mb-2 uppercase">{label}</label>
+                  <input
+                    type={type}
+                    value={form[key]}
+                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                    className="w-full bg-carbon border border-border/50 rounded-2xl px-4 py-3 outline-none focus:border-magenta text-white transition-colors"
+                    placeholder={placeholder}
+                  />
                 </div>
+              ))}
+            </div>
 
-                {(canAddStock || canRequestStock) && (
-                  <button
-                    type="button"
-                    onClick={() => openActionModal(item)}
-                    className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
-                      canAddStock 
-                        ? 'bg-magenta/10 border-magenta/30 text-magenta hover:bg-magenta/20'
-                        : 'bg-gold/10 border-gold/30 text-gold hover:bg-gold/20'
-                    }`}
-                    title={canAddStock ? 'Agregar stock' : 'Solicitar reabastecimiento'}
-                  >
-                    <PackagePlus size={16} />
-                  </button>
-                )}
+            {formError && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <AlertCircle size={15} /> {formError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all"
+              >Cancelar</button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-magenta/20 disabled:opacity-60"
+              >
+                {saving && <Loader2 size={16} className="animate-spin" />}
+                {editingId ? 'Guardar cambios' : 'Crear snack'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-surface border border-border/50 rounded-3xl p-8 animate-[scaleIn_0.25s_ease-out_forwards]">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <Trash2 className="text-red-400" size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-display tracking-widest text-white uppercase">Confirmar eliminación</h2>
+                <p className="text-text-secondary text-sm mt-1">Esta acción no se puede deshacer</p>
               </div>
             </div>
-          )
-        })}
-      </div>
 
-      {/* Modal Reabastecimiento */}
-      {isRequestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleCloseModal} />
-          <div className="bg-surface border border-border/80 rounded-3xl w-full max-w-md p-6 relative z-10 space-y-5 animate-[scaleUp_0.2s_ease-out]">
-            
-            {requestSuccess ? (
-              <div className="text-center py-6 space-y-4">
-                <div className="w-14 h-14 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto text-green-400">
-                  <CheckCircle size={28} />
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-lg font-display tracking-wider">
-                    {canAddStock ? 'Stock Actualizado' : 'Solicitud Enviada'}
-                  </h3>
-                  <p className="text-sm text-text-secondary mt-1">
-                    {canAddStock 
-                      ? `Se han sumado ${requestQty} unidades a ${selectedItem?.name}.`
-                      : `La solicitud por ${requestQty} unidades ha sido radicada al Administrador.`}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-magenta to-vinotinto text-white font-bold transition-all shadow-lg cursor-pointer text-sm"
-                >
-                  Aceptar
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <PackagePlus size={20} className={canAddStock ? 'text-magenta' : 'text-gold'} />
-                    <h2 className="text-lg font-bold font-display text-white tracking-wider">
-                      {canAddStock ? 'Cargar Inventario' : 'Solicitar Stock'}
-                    </h2>
-                  </div>
-                  <button type="button" onClick={handleCloseModal} className="text-text-secondary hover:text-white">
-                    <X size={18} />
-                  </button>
-                </div>
+            <div className="bg-carbon border border-border/50 rounded-2xl p-4 mb-8">
+              <p className="text-text-secondary text-sm">¿Deseas eliminar el snack:</p>
+              <p className="text-white font-bold text-lg mt-2">{snackToDelete?.nameSnack}</p>
+            </div>
 
-                <div className="bg-carbon/40 border border-border/30 rounded-xl p-3 text-xs">
-                  <span className="text-text-secondary block">Insumo seleccionado:</span>
-                  <span className="text-white font-bold text-sm block mt-0.5">{selectedItem?.name}</span>
-                  <span className="text-text-secondary block mt-2">
-                    Stock actual: <strong className="text-white">{selectedItem?.stock} uds</strong>
-                  </span>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">
-                      Cantidad a ingresar
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Ej. 50"
-                      value={requestQty}
-                      onChange={(e) => setRequestQty(e.target.value)}
-                      className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-magenta"
-                    />
-                  </div>
-
-                  {canRequestStock && (
-                    <div>
-                      <label className="text-[10px] font-bold text-text-secondary tracking-widest uppercase block mb-1.5">
-                        Justificación del pedido
-                      </label>
-                      <textarea
-                        rows="2"
-                        placeholder="Motivo (Ej. Alta demanda de fin de semana)"
-                        value={requestReason}
-                        onChange={(e) => setRequestReason(e.target.value)}
-                        className="w-full bg-carbon border border-border/50 rounded-xl px-4 py-3 text-white outline-none focus:border-magenta resize-none text-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all cursor-pointer text-sm"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (canAddStock) {
-                        handleAddStock()
-                      } else if (canRequestStock) {
-                        handleRequestStock()
-                      }
-                    }}
-                    disabled={!requestQty || parseInt(requestQty) <= 0}
-                    className={`px-6 py-3 rounded-2xl text-white font-bold transition-all shadow-lg text-sm cursor-pointer ${
-                      requestQty && parseInt(requestQty) > 0
-                        ? 'bg-gradient-to-r from-magenta to-vinotinto shadow-magenta/20 hover:opacity-90'
-                        : 'bg-border/50 cursor-not-allowed'
-                    }`}
-                  >
-                    {canAddStock ? 'Agregar stock' : 'Enviar solicitud'}
-                  </button>
-                </div>
-              </>
-            )}
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => { setIsDeleteModalOpen(false); setSnackToDelete(null) }}
+                className="px-5 py-3 rounded-2xl border border-border/50 text-text-secondary hover:text-white hover:bg-carbon transition-all disabled:opacity-50"
+              >Cancelar</button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDeleteSnack}
+                className="px-6 py-3 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-all shadow-lg disabled:bg-red-500/50 flex items-center gap-2"
+              >
+                {deleting ? 'Eliminando...' : 'Eliminar snack'}
+              </button>
+            </div>
           </div>
         </div>
       )}
