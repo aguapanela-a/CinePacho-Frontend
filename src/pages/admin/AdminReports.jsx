@@ -101,7 +101,7 @@ export default function AdminReports() {
     )
     return { ...snackData, multiplexes: filtered || [] }
   }, [snackData, selectedMultiplex])
-
+// por fin
   const toggleMultiplex = (id) => {
     setExpandedMultiplex((prev) => (prev === id ? null : id))
     setExpandedDay(null)
