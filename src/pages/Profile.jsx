@@ -365,8 +365,8 @@ export default function Profile() {
                           >
                             <Star size={12} className="inline mr-1" />
                             {buyerId
-                              ? (t('review.evaluate') || 'Evaluar')
-                              : (t('review.unavailable') || 'No disponible')}
+                              ? (t('Evaluar') || 'Evaluar')
+                              : (t('No disponible') || 'No disponible')}
                           </button>
                         )}
                       </div>
@@ -386,7 +386,7 @@ export default function Profile() {
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/50">
               <Star className="text-gold" size={24} />
               <h2 className="text-2xl font-display text-white tracking-widest uppercase">
-                {t('profile.myReviews') || 'Mis Valoraciones'}
+                {t('Mis Valoraciones') || 'Mis Valoraciones'}
               </h2>
             </div>
 
