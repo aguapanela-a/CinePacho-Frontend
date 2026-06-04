@@ -117,13 +117,13 @@ export default function ReviewModal({ order, onClose, buyerId }) {
             <div className="flex items-center gap-2 text-magenta">
               <Film size={18} />
               <span className="text-sm font-bold tracking-wider uppercase">
-                {t('Califica la Película') || 'Califica la Película'}
+                {t('Califica el servicio') || 'Califica la Película'}
               </span>
             </div>
             <StarRating
               value={movieRating}
               onChange={setMovieRating}
-              label={t('¿Qué te pareció la película?') || '¿Qué te pareció la película?'}
+              label={t('¿Qué piensas de nuestro servicio?') || '¿Qué te pareció la película?'}
             />
           </div>
 
@@ -132,13 +132,13 @@ export default function ReviewModal({ order, onClose, buyerId }) {
             <div className="flex items-center gap-2 text-gold">
               <Building2 size={18} />
               <span className="text-sm font-bold tracking-wider uppercase">
-                {t('Califica el Servicio') || 'Califica el Servicio'}
+                {t('Califica la pelicula') || 'Califica el Servicio'}
               </span>
             </div>
             <StarRating
               value={serviceRating}
               onChange={setServiceRating}
-              label={t('¿Cómo fue la atención en el multiplex?') || '¿Cómo fue la atención en el multiplex?'}
+              label={t('¿Qué piensas sobre la pelicula?') || '¿Cómo fue la atención en el multiplex?'}
             />
           </div>
 
